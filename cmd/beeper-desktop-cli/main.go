@@ -11,7 +11,7 @@ import (
 	"slices"
 
 	"github.com/beeper/desktop-api-cli/pkg/cmd"
-	"github.com/beeper/desktop-api-go"
+	"github.com/beeper/desktop-api-go/v5"
 	"github.com/tidwall/gjson"
 	"github.com/urfave/cli/v3"
 )

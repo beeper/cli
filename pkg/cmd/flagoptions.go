@@ -20,7 +20,7 @@ import (
 	"github.com/beeper/desktop-api-cli/internal/apiquery"
 	"github.com/beeper/desktop-api-cli/internal/debugmiddleware"
 	"github.com/beeper/desktop-api-cli/internal/requestflag"
-	"github.com/beeper/desktop-api-go/option"
+	"github.com/beeper/desktop-api-go/v5/option"
 
 	"github.com/goccy/go-yaml"
 	"github.com/urfave/cli/v3"

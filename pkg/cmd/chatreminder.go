@@ -8,7 +8,7 @@ import (
 
 	"github.com/beeper/desktop-api-cli/internal/apiquery"
 	"github.com/beeper/desktop-api-cli/internal/requestflag"
-	"github.com/beeper/desktop-api-go"
+	"github.com/beeper/desktop-api-go/v5"
 	"github.com/urfave/cli/v3"
 )
 

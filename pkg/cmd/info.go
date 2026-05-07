@@ -7,8 +7,8 @@ import (
 	"fmt"
 
 	"github.com/beeper/desktop-api-cli/internal/apiquery"
-	"github.com/beeper/desktop-api-go"
-	"github.com/beeper/desktop-api-go/option"
+	"github.com/beeper/desktop-api-go/v5"
+	"github.com/beeper/desktop-api-go/v5/option"
 	"github.com/tidwall/gjson"
 	"github.com/urfave/cli/v3"
 )

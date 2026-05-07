@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Mark the necessary Go modules as private to avoid Go's proxy
-export GOPRIVATE="${GOPRIVATE:+$GOPRIVATE,}github.com/beeper/desktop-api-go,github.com/stainless-sdks/beeper-desktop-api-go"
+export GOPRIVATE="${GOPRIVATE:+$GOPRIVATE,}github.com/beeper/desktop-api-go/v5,github.com/stainless-sdks/beeper-desktop-api-go/v5"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

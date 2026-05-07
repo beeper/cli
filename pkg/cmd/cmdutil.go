@@ -17,7 +17,7 @@ import (
 	"syscall"
 
 	"github.com/beeper/desktop-api-cli/internal/jsonview"
-	"github.com/beeper/desktop-api-go/option"
+	"github.com/beeper/desktop-api-go/v5/option"
 
 	"github.com/charmbracelet/x/term"
 	"github.com/itchyny/json2yaml"
