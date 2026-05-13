@@ -1,5 +1,6 @@
 .prism.log
 .stdy.log
 dist/
+node_modules/
 /beeper-desktop-cli
 *.exe

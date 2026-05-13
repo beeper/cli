@@ -1,0 +1,85 @@
+{
+  "name": "@beeper/desktop-api-cli",
+  "version": "0.0.0",
+  "description": "Beeper Desktop API command-line interface",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "beeper": "./bin/run.js",
+    "beeper-desktop-cli": "./bin/run.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
+    "dev": "node --import tsx ./bin/dev.js",
+    "test": "npm run build && node ./test/cli-smoke.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "oclif": {
+    "additionalHelpFlags": [
+      "-h"
+    ],
+    "commands": {
+      "strategy": "pattern",
+      "target": "./dist/commands",
+      "globPatterns": [
+        "**/*.js"
+      ]
+    },
+    "bin": "beeper",
+    "dirname": "beeper",
+    "flexibleTaxonomy": true,
+    "helpOptions": {
+      "maxWidth": 100
+    },
+    "plugins": [
+      "@oclif/plugin-help",
+      "@oclif/plugin-autocomplete",
+      "@oclif/plugin-not-found"
+    ],
+    "topicSeparator": " ",
+    "topics": {
+      "api": {
+        "description": "Call raw Desktop API endpoints."
+      },
+      "assets": {
+        "description": "Upload and download message assets."
+      },
+      "auth": {
+        "description": "Authenticate with local Beeper Desktop."
+      },
+      "chat": {
+        "description": "Open and inspect one chat."
+      },
+      "chats": {
+        "description": "List and search chats."
+      },
+      "config": {
+        "description": "Manage local CLI configuration."
+      },
+      "contacts": {
+        "description": "Search contacts across accounts."
+      },
+      "messages": {
+        "description": "List and search chat messages."
+      }
+    }
+  },
+  "dependencies": {
+    "@beeper/desktop-api": "^5.0.0",
+    "@oclif/core": "^4.11.2",
+    "@oclif/plugin-autocomplete": "^3.2.49",
+    "@oclif/plugin-help": "^6.2.48",
+    "@oclif/plugin-not-found": "^3.2.85"
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}
