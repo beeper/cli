@@ -1,16 +1,17 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../../lib/client.js'
+import { apiCopy, cliCopy } from '../../lib/copy.js'
 import { printData } from '../../lib/output.js'
 
 export default class AssetsDownload extends Command {
-  static override summary = 'Download an mxc:// or localmxc:// asset'
+  static override summary = apiCopy.assets.download
   static override args = {
     url: Args.string({ description: 'Asset URL', required: true }),
   }
   static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
+    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     debug: Flags.boolean({ default: false }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
+    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
   }
 
   async run(): Promise<void> {

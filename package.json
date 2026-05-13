@@ -16,9 +16,10 @@
   ],
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
+    "check:api-copy": "npm run build && node scripts/check-api-copy.mjs",
     "dev": "node --import tsx ./bin/dev.js",
     "pack:homebrew": "npm run build && node scripts/build-homebrew-archive.mjs",
-    "test": "npm run build && node ./test/cli-smoke.mjs",
+    "test": "npm run build && node scripts/check-api-copy.mjs && node ./test/cli-smoke.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "oclif": {

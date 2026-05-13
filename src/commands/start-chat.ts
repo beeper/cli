@@ -1,21 +1,22 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../lib/client.js'
+import { apiCopy, cliCopy } from '../lib/copy.js'
 import { printData } from '../lib/output.js'
 import { listAccountIDs, resolveAccountIDs, userQueryFromInput } from '../lib/resolve.js'
 
 export default class StartChat extends Command {
-  static override summary = 'Resolve a contact and open or create a direct chat'
+  static override summary = apiCopy.chats.start
   static override args = {
     query: Args.string({ description: 'Phone, email, username, user ID, or name', required: false }),
   }
   static override flags = {
-    account: Flags.string({ multiple: true, description: 'Account ID, network, bridge, or account user. Omit to try every account.' }),
+    account: Flags.string({ multiple: true, description: `${cliCopy.args.accountSelector}. Omit to try every account.` }),
     'allow-invite': Flags.boolean({ default: false, description: 'Allow invite-based DM creation when required' }),
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
+    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     debug: Flags.boolean({ default: false }),
     email: Flags.string({ description: 'Email address' }),
     id: Flags.string({ description: 'Known user ID' }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
+    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     message: Flags.string({ description: 'Optional first message' }),
     name: Flags.string({ description: 'Display name hint' }),
     phone: Flags.string({ description: 'Phone number' }),

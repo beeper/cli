@@ -1,19 +1,20 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../lib/client.js'
+import { apiCopy, cliCopy } from '../lib/copy.js'
 import { printData } from '../lib/output.js'
 import { resolveChatID } from '../lib/resolve.js'
 
 export default class Chat extends Command {
-  static override summary = 'Show one chat by ID'
+  static override summary = apiCopy.chats.retrieve
   static override args = {
-    chat: Args.string({ description: 'Chat ID, local chat ID, title, or search text', required: true }),
+    chat: Args.string({ description: cliCopy.args.chatSelector, required: true }),
   }
   static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
+    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     debug: Flags.boolean({ default: false }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
+    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     'max-participants': Flags.integer({ description: 'Maximum participants to return' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when the input is ambiguous' }),
+    pick: Flags.integer({ description: cliCopy.flags.pick }),
   }
 
   async run(): Promise<void> {

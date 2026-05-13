@@ -1,25 +1,26 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createReadStream } from 'node:fs'
 import { createClient } from '../lib/client.js'
+import { apiCopy, cliCopy, sdkParamCopy } from '../lib/copy.js'
 import { printData } from '../lib/output.js'
 import { resolveChatID } from '../lib/resolve.js'
 import { waitForMessage } from '../lib/wait.js'
 
 export default class Reply extends Command {
-  static override summary = 'Reply to a message'
+  static override summary = apiCopy.messages.send
   static override args = {
-    chat: Args.string({ description: 'Chat ID, local chat ID, title, or search text', required: true }),
-    message: Args.string({ description: 'Message ID to reply to', required: true }),
-    text: Args.string({ description: 'Reply text', required: true }),
+    chat: Args.string({ description: cliCopy.args.chatSelector, required: true }),
+    message: Args.string({ description: sdkParamCopy.replyToMessageID, required: true }),
+    text: Args.string({ description: sdkParamCopy.text, required: true }),
   }
   static override flags = {
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
+    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     debug: Flags.boolean({ default: false }),
-    file: Flags.string({ description: 'File attachment to upload and send' }),
-    'file-name': Flags.string({ description: 'Attachment display filename' }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
-    'mime-type': Flags.string({ description: 'Attachment MIME type' }),
-    pick: Flags.integer({ description: 'Pick the Nth chat when the input is ambiguous' }),
+    file: Flags.string({ description: sdkParamCopy.attachmentFile }),
+    'file-name': Flags.string({ description: sdkParamCopy.fileName }),
+    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
+    'mime-type': Flags.string({ description: sdkParamCopy.mimeType }),
+    pick: Flags.integer({ description: cliCopy.flags.pick }),
     wait: Flags.boolean({ default: false, description: 'Wait for the pending message to resolve' }),
     'wait-interval': Flags.integer({ default: 750, description: 'Milliseconds between message status checks' }),
     'wait-timeout': Flags.integer({ default: 30000, description: 'Milliseconds to wait for message resolution' }),

@@ -1,18 +1,19 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../../lib/client.js'
+import { apiCopy, cliCopy } from '../../lib/copy.js'
 import { printData } from '../../lib/output.js'
 import { listAccountIDs, resolveAccountIDs } from '../../lib/resolve.js'
 
 export default class ContactsSearch extends Command {
-  static override summary = 'Search account contacts'
+  static override summary = apiCopy.contacts.search
   static override args = {
     query: Args.string({ description: 'Contact search query', required: true }),
   }
   static override flags = {
-    account: Flags.string({ multiple: true, description: 'Account ID, network, bridge, or account user. Omit to search every account.' }),
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
+    account: Flags.string({ multiple: true, description: `${cliCopy.args.accountSelector}. Omit to search every account.` }),
+    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     debug: Flags.boolean({ default: false }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
+    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
   }
 
   async run(): Promise<void> {

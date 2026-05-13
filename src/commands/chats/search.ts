@@ -1,20 +1,21 @@
 import { Args, Command, Flags } from '@oclif/core'
 import { createClient } from '../../lib/client.js'
+import { apiCopy, cliCopy, sdkParamCopy } from '../../lib/copy.js'
 import { collectPage, printData, printIDs } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
 
 export default class ChatsSearch extends Command {
-  static override summary = 'Search chats by title, network, or participants'
+  static override summary = apiCopy.chats.search
   static override args = {
-    query: Args.string({ description: 'Literal chat search query', required: true }),
+    query: Args.string({ description: sdkParamCopy.searchQuery, required: true }),
   }
   static override flags = {
-    account: Flags.string({ multiple: true, description: 'Limit to account ID, network, bridge, or account user' }),
-    'base-url': Flags.string({ description: 'Beeper Desktop API base URL' }),
+    account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
+    'base-url': Flags.string({ description: cliCopy.flags.baseURL }),
     debug: Flags.boolean({ default: false }),
     ids: Flags.boolean({ default: false, description: 'Print only chat IDs' }),
     inbox: Flags.string({ options: ['primary', 'low-priority', 'archive'] }),
-    json: Flags.boolean({ default: false, description: 'Print JSON' }),
+    json: Flags.boolean({ default: false, description: cliCopy.flags.json }),
     limit: Flags.integer({ default: 20, description: 'Maximum chats to print' }),
     scope: Flags.string({ options: ['titles', 'participants'] }),
     type: Flags.string({ options: ['single', 'group', 'any'] }),
