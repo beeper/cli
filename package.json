@@ -77,7 +77,9 @@
     "@oclif/core": "^4.11.2",
     "@oclif/plugin-autocomplete": "^3.2.49",
     "@oclif/plugin-help": "^6.2.48",
-    "@oclif/plugin-not-found": "^3.2.85"
+    "@oclif/plugin-not-found": "^3.2.85",
+    "@opentui/core": "^0.2.9",
+    "@opentui/react": "^0.2.9"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",

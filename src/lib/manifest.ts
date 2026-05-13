@@ -27,6 +27,7 @@ export const commandManifest = [
   { command: 'doctor', description: 'Check Desktop API readiness' },
   { command: 'draft', description: 'Set a chat draft' },
   { command: 'edit', description: apiCopy.messages.update },
+  { command: 'export', description: 'Export accounts, chats, messages, Markdown transcripts, and attachments' },
   { command: 'focus', description: 'Focus Beeper Desktop or one chat' },
   { command: 'llm', description: 'Print compact CLI help for agents' },
   { command: 'message', description: apiCopy.messages.retrieve },

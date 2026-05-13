@@ -77,6 +77,20 @@ beeper search pizza
 ```
 
 ```sh
+beeper export --out ./beeper-export
+beeper export --chat "Family" --out ./family-export
+beeper export --account imessage --out ./imessage-export
+```
+
+`export` writes `accounts.json`, `chats.json`, `manifest.json`, and one folder
+per chat containing `chat.json`, `messages.json`, `messages.markdown`,
+`messages.html`, and downloaded attachments. Runs are resumable: interrupted exports keep
+`.beeper-export-state.json` plus per-chat `messages.partial.jsonl` checkpoints
+and continue from the last saved cursor on the next run. Progress is printed to
+stderr by default; pass `--quiet` to suppress it or `--no-attachments` to skip
+attachment downloads.
+
+```sh
 beeper send "Family" "on my way"
 beeper send "Family" "on my way" --wait
 beeper send "Family" "see attached" --file ./photo.jpg

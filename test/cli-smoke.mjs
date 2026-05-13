@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { readdirSync, statSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { commandManifest } from '../dist/lib/manifest.js'
+import { exportBeeperData } from '../dist/lib/export/index.js'
 import { resolveAccountID, resolveAccountIDs, resolveChatID } from '../dist/lib/resolve.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -47,6 +49,7 @@ for (const command of [
   ['reply-file', '--help'],
   ['watch', '--help'],
   ['current-user', '--help'],
+  ['export', '--help'],
   ['whoami', '--help'],
   ['config', 'get', '--help'],
   ['config', 'set', '--help'],
@@ -60,6 +63,8 @@ assert.match(ok('send', '--help'), /--pick/, 'send should expose --pick for ambi
 assert.match(ok('send', '--help'), /--wait/, 'send should expose --wait')
 assert.match(ok('messages', '--help'), /--pick/, 'messages should expose --pick for ambiguous chat names')
 assert.match(ok('chats', '--help'), /--account=<value>\.\.\./, 'chats should accept account selectors')
+assert.match(ok('export', '--help'), /--out/, 'export should expose output directory selection')
+assert.match(ok('export', '--help'), /--no-attachments/, 'export should expose attachment control')
 
 const commandsJSON = JSON.parse(ok('commands', '--json'))
 assert.equal(commandsJSON.length, commandManifest.length, 'commands --json should expose the full manifest')
@@ -153,6 +158,80 @@ assert.equal(await resolveChatID(fakeClient, 'local-family'), '!family:beeper.co
 assert.equal(await resolveChatID(fakeClient, 'Family Work'), '!family-work:beeper.com')
 assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), '!family-work:beeper.com')
 await assert.rejects(() => resolveChatID(fakeClient, 'fam'), /Ambiguous chat/)
+
+const exportRoot = mkdtempSync(join(tmpdir(), 'beeper-export-test-'))
+const attachmentSource = join(exportRoot, 'source.txt')
+writeFileSync(attachmentSource, 'hello attachment')
+let messageListCalls = 0
+const exportClient = {
+  accounts: {
+    list: async () => [
+      { accountID: 'imessage-main', bridge: { id: 'local-imessage', type: 'imessage' }, network: 'iMessage', user: { id: 'me', fullName: 'Me' } },
+    ],
+  },
+  chats: {
+    list: async function* () {
+      yield { id: '!family:beeper.com', accountID: 'imessage-main', network: 'iMessage', title: 'Family', type: 'group', participants: { hasMore: false, items: [], total: 0 }, unreadCount: 0 }
+    },
+    retrieve: async () => ({ id: '!family:beeper.com', accountID: 'imessage-main', network: 'iMessage', title: 'Family', type: 'group', participants: { hasMore: false, items: [], total: 0 }, unreadCount: 0 }),
+  },
+  messages: {
+    list: async (_chatID, query) => {
+      messageListCalls += 1
+      if (query?.cursor === 'older') {
+        return { items: [messageOne], hasMore: false, oldestCursor: null }
+      }
+      return { items: [messageTwo], hasMore: true, oldestCursor: 'older' }
+    },
+  },
+}
+const messageOne = {
+  id: 'm1',
+  accountID: 'imessage-main',
+  chatID: '!family:beeper.com',
+  senderID: '@alice:example',
+  senderName: 'Alice',
+  sortKey: '1',
+  timestamp: '2026-05-13T10:00:00Z',
+  text: 'first',
+  attachments: [{ type: 'unknown', id: `file://${attachmentSource}`, fileName: 'source.txt', mimeType: 'text/plain' }],
+}
+const messageTwo = {
+  id: 'm2',
+  accountID: 'imessage-main',
+  chatID: '!family:beeper.com',
+  senderID: '@me:example',
+  senderName: 'Me',
+  sortKey: '2',
+  timestamp: '2026-05-13T10:01:00Z',
+  text: 'second',
+}
+
+const manifest = await exportBeeperData(exportClient, {
+  downloadAttachments: true,
+  force: false,
+  outDir: exportRoot,
+  quiet: true,
+})
+assert.equal(manifest.chatCount, 1)
+assert.equal(manifest.messageCount, 2)
+assert.equal(manifest.attachmentCount, 1)
+const exportedChatDir = join(exportRoot, 'chats', 'family_beeper.com')
+assert.deepEqual(JSON.parse(readFileSync(join(exportRoot, 'accounts.json'), 'utf8'))[0].accountID, 'imessage-main')
+assert.equal(JSON.parse(readFileSync(join(exportedChatDir, 'messages.json'), 'utf8')).length, 2)
+assert.match(readFileSync(join(exportedChatDir, 'messages.markdown'), 'utf8'), /Alice[\s\S]*first[\s\S]*source\.txt/)
+assert.match(readFileSync(join(exportedChatDir, 'messages.html'), 'utf8'), /<title>Family<\/title>[\s\S]*Alice[\s\S]*first[\s\S]*source\.txt/)
+assert.equal(readFileSync(join(exportedChatDir, 'attachments', 'm1', '01-source.txt'), 'utf8'), 'hello attachment')
+assert(!existsSync(join(exportedChatDir, 'messages.partial.jsonl')), 'completed exports should remove partial checkpoint streams')
+const callsAfterFirstExport = messageListCalls
+await exportBeeperData(exportClient, {
+  downloadAttachments: true,
+  force: false,
+  outDir: exportRoot,
+  quiet: true,
+})
+assert.equal(messageListCalls, callsAfterFirstExport, 'completed chats should be skipped on resumable rerun')
+rmSync(exportRoot, { recursive: true, force: true })
 
 console.log(`cli-smoke: ${commandManifest.length} commands verified`)
 
