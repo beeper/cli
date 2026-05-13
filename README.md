@@ -1,121 +1,175 @@
 # Beeper Desktop CLI
 
-The official CLI for the [Beeper Desktop REST API](https://developers.beeper.com/desktop-api/).
+Command-line access to the [Beeper Desktop API](https://developers.beeper.com/desktop-api/).
 
-It is generated with [Stainless](https://www.stainless.com/).
+The CLI is built with TypeScript, oclif, and the official `@beeper/desktop-api`
+SDK. It supports OAuth login, chat and message workflows, live event streaming,
+asset transfer, machine-readable output, and raw API access for advanced use.
 
-<!-- x-release-please-start-version -->
-
-## Installation
-
-### Installing with Homebrew
+## Install
 
 ```sh
-brew install beeper/tap/beeper-desktop-cli
+npm install
+npm run build
+node ./bin/run.js --help
 ```
 
-### Installing with Go
-
-To test or install the CLI locally, you need [Go](https://go.dev/doc/install) version 1.22 or later installed.
+During development, run commands directly from TypeScript:
 
 ```sh
-go install 'github.com/beeper/desktop-api-cli/cmd/beeper-desktop-cli@latest'
+npm run dev -- --help
 ```
 
-Once you have run `go install`, the binary is placed in your Go bin directory:
+The package exposes both `beeper` and `beeper-desktop-cli`.
 
-- **Default location**: `$HOME/go/bin` (or `$GOPATH/bin` if GOPATH is set)
-- **Check your path**: Run `go env GOPATH` to see the base directory
-
-If commands aren't found after installation, add the Go bin directory to your PATH:
+## Authenticate
 
 ```sh
-# Add to your shell profile (.zshrc, .bashrc, etc.)
-export PATH="$PATH:$(go env GOPATH)/bin"
+beeper auth login
+beeper auth status
 ```
 
-<!-- x-release-please-end -->
+`auth login` uses OAuth2 Authorization Code with PKCE. It registers a local
+client, opens the authorization URL, listens on a loopback callback, exchanges
+the authorization code, and stores the bearer token in
+`~/.config/beeper/config.json`.
 
-### Running Locally
-
-After cloning the git repository for this project, you can use the
-`scripts/run` script to run the tool locally:
+For non-interactive use, pass a token through the environment:
 
 ```sh
-./scripts/run args...
+BEEPER_ACCESS_TOKEN=... beeper chats --json
 ```
 
-## Usage
-
-The CLI follows a resource-based command structure:
+## Common Workflows
 
 ```sh
-beeper-desktop-cli [resource] <command> [flags...]
+beeper doctor
+beeper status
+beeper accounts
+beeper whoami
 ```
 
 ```sh
-beeper-desktop-cli chats search \
-  --include-muted \
-  --limit 3 \
-  --type single
+beeper chats
+beeper chats --ids
+beeper chats search dinner
+beeper chat "Family"
+beeper chat open "Family"
 ```
 
-For details about specific commands, use the `--help` flag.
-
-### Environment variables
-
-| Environment variable  | Description                                                                                           | Required |
-| --------------------- | ----------------------------------------------------------------------------------------------------- | -------- |
-| `BEEPER_ACCESS_TOKEN` | Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for all API operations. | yes      |
-
-### Global flags
-
-- `--access-token` - Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for all API operations. (can also be set with `BEEPER_ACCESS_TOKEN` env var)
-- `--help` - Show command line usage
-- `--debug` - Enable debug logging (includes HTTP request/response details)
-- `--version`, `-v` - Show the CLI version
-- `--base-url` - Use a custom API backend URL
-- `--format` - Change the output format (`auto`, `explore`, `json`, `jsonl`, `pretty`, `raw`, `yaml`)
-- `--format-error` - Change the output format for errors (`auto`, `explore`, `json`, `jsonl`, `pretty`, `raw`, `yaml`)
-- `--transform` - Transform the data output using [GJSON syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md)
-- `--transform-error` - Transform the error output using [GJSON syntax](https://github.com/tidwall/gjson/blob/master/SYNTAX.md)
-
-### Passing files as arguments
-
-To pass files to your API, you can use the `@myfile.ext` syntax:
-
-```bash
-beeper-desktop-cli <command> --arg @abe.jpg
+```sh
+beeper messages "Family"
+beeper messages "Family" --ids
+beeper messages search deploy --chat "Team"
+beeper search pizza
 ```
 
-Files can also be passed inside JSON or YAML blobs:
-
-```bash
-beeper-desktop-cli <command> --arg '{image: "@abe.jpg"}'
-# Equivalent:
-beeper-desktop-cli <command> <<YAML
-arg:
-  image: "@abe.jpg"
-YAML
+```sh
+beeper send "Family" "on my way"
+beeper send "Family" "on my way" --wait
+beeper send "Family" "see attached" --file ./photo.jpg
+beeper reply "Family" MESSAGE_ID "yes"
+beeper edit "Family" MESSAGE_ID "updated text"
+beeper delete-message "Family" MESSAGE_ID
 ```
 
-If you need to pass a string literal that begins with an `@` sign, you can
-escape the `@` sign to avoid accidentally passing a file.
-
-```bash
-beeper-desktop-cli <command> --username '\@abe'
+```sh
+beeper contacts search jane
+beeper contacts search jane --account imessage
+beeper start-chat +15551234567
+beeper start-chat jane@example.com --account imessage
+beeper create-chat --account imessage --participant USER_ID
 ```
 
-#### Explicit encoding
-
-For JSON endpoints, the CLI tool does filetype sniffing to determine whether the
-file contents should be sent as a string literal (for plain text files) or as a
-base64-encoded string literal (for binary files). If you need to explicitly send
-the file as either plain text or base64-encoded data, you can use
-`@file://myfile.txt` (for string encoding) or `@data://myfile.dat` (for
-base64-encoding). Note that absolute paths will begin with `@file://` or
-`@data://`, followed by a third `/` (for example, `@file:///tmp/file.txt`).
-
-```bash
-beeper-desktop-cli <command> --arg @data://file.txt
+```sh
+beeper read "Family"
+beeper unread "Family"
+beeper archive "Family"
+beeper unarchive "Family"
+beeper mute "Family"
+beeper unmute "Family"
+beeper remind "Family" 2026-05-13T12:00:00Z
+beeper unremind "Family"
 ```
+
+```sh
+beeper assets upload ./photo.jpg
+beeper assets download mxc://example.org/media
+```
+
+```sh
+beeper watch --json
+beeper tail --json
+beeper shell
+printf '%s\n' '{"id":1,"command":"status --json"}' | beeper rpc
+```
+
+```sh
+beeper config get --json
+beeper config set baseURL http://localhost:23373
+beeper config reset
+```
+
+```sh
+beeper api get /v1/info
+beeper api post /v1/chats/CHAT/archive --body '{"archived":true}'
+```
+
+## Input Resolution
+
+Commands accept practical identifiers instead of requiring exact IDs everywhere:
+
+- Chat arguments accept Beeper chat IDs, local chat IDs, exact titles, or search text.
+- Ambiguous chat matches return numbered choices; pass `--pick N` to select one.
+- Account arguments accept account IDs, network names, bridge type/id, or account user identity.
+- Account filters can expand a network name to multiple matching accounts.
+- `contacts search` and `start-chat` can search across all accounts when `--account` is omitted.
+
+Send commands can wait for Desktop to resolve a pending message:
+
+```sh
+beeper send "Family" "on my way" --wait
+```
+
+Use `--wait-timeout` and `--wait-interval` to tune the polling window.
+
+## Output
+
+Most commands support:
+
+- `--json` for structured output
+- `--debug` for SDK debug logging
+- `--base-url` to point at a different local Desktop API server
+
+`commands --json` prints a compact command manifest for tools and agents.
+`llm` prints a concise human-readable command guide.
+
+## Compatibility Aliases
+
+These aliases are supported for convenience:
+
+| Alias | Canonical command |
+| --- | --- |
+| `beeper threads` | `beeper chats` |
+| `beeper thread CHAT` | `beeper chat CHAT` |
+| `beeper chat open CHAT [MESSAGE]` | `beeper focus CHAT [MESSAGE]` |
+| `beeper mark-read CHAT` | `beeper read CHAT` |
+| `beeper mark-unread CHAT` | `beeper unread CHAT` |
+| `beeper tail` | `beeper watch` |
+| `beeper whoami` | `beeper current-user` |
+
+File-oriented helpers are also available:
+
+```sh
+beeper send-file CHAT FILE [TEXT]
+beeper reply-file CHAT MESSAGE FILE [TEXT]
+```
+
+## Environment
+
+| Environment variable | Description |
+| --- | --- |
+| `BEEPER_ACCESS_TOKEN` | Bearer token. Overrides stored OAuth login. |
+| `BEEPER_DESKTOP_BASE_URL` | Beeper Desktop API base URL. Defaults to `http://localhost:23373`. |
+| `BEEPER_BASE_URL` | SDK-compatible base URL fallback. |
+| `BEEPER_CLI_CONFIG_DIR` | Override config directory for testing or isolated profiles. |

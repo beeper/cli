@@ -114,3 +114,14 @@ jobs:
 
       - name: Run tests
         run: ./scripts/test
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 25
+          cache: npm
+
+      - name: Install TypeScript CLI dependencies
+        run: npm ci
+
+      - name: Run TypeScript CLI tests
+        run: npm test

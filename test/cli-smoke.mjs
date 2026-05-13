@@ -1,0 +1,177 @@
+import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { readdirSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { commandManifest } from '../dist/lib/manifest.js'
+import { resolveAccountID, resolveAccountIDs, resolveChatID } from '../dist/lib/resolve.js'
+
+const root = fileURLToPath(new URL('..', import.meta.url))
+const run = (...args) => spawnSync(process.execPath, ['./bin/run.js', ...args], {
+  cwd: root,
+  encoding: 'utf8',
+  env: {
+    ...process.env,
+    BEEPER_CLI_CONFIG_DIR: '/tmp/beeper-cli-test',
+  },
+})
+
+const ok = (...args) => {
+  const result = run(...args)
+  assert.equal(result.status, 0, `${args.join(' ')} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`)
+  return result.stdout
+}
+
+const commandFiles = listCommandFiles(join(root, 'src/commands'))
+const commandNames = commandFiles.map(file => fileToCommand(file)).sort()
+const manifestNames = commandManifest.map(item => item.command).sort()
+
+assert.deepEqual(manifestNames, commandNames, 'command manifest must match src/commands')
+assert.equal(new Set(manifestNames).size, manifestNames.length, 'command manifest must not contain duplicates')
+
+const help = ok('--help')
+assert.match(help, /\bchat\b/, 'help should expose canonical chat command')
+assert.match(help, /\bchats\b/, 'help should expose canonical chats command')
+assert.match(help, /\bthread\b/, 'help should expose compatibility thread alias')
+assert.doesNotMatch(help, /\bserve\b/, 'help must not expose assets serve')
+assert.doesNotMatch(help, /\bfailed-sends\b|\bscheduled\b|\blocal\s+stats\b/, 'help must not expose stale local DB commands')
+
+for (const command of [
+  ['chat', '--help'],
+  ['chat', 'open', '--help'],
+  ['chats', '--help'],
+  ['thread', '--help'],
+  ['threads', '--help'],
+  ['tail', '--help'],
+  ['send-file', '--help'],
+  ['reply-file', '--help'],
+  ['watch', '--help'],
+  ['current-user', '--help'],
+  ['whoami', '--help'],
+  ['config', 'get', '--help'],
+  ['config', 'set', '--help'],
+  ['config', 'reset', '--help'],
+  ['llm'],
+]) {
+  ok(...command)
+}
+
+assert.match(ok('send', '--help'), /--pick/, 'send should expose --pick for ambiguous chat names')
+assert.match(ok('send', '--help'), /--wait/, 'send should expose --wait')
+assert.match(ok('messages', '--help'), /--pick/, 'messages should expose --pick for ambiguous chat names')
+assert.match(ok('chats', '--help'), /--account=<value>\.\.\./, 'chats should accept account selectors')
+
+const commandsJSON = JSON.parse(ok('commands', '--json'))
+assert.equal(commandsJSON.length, commandManifest.length, 'commands --json should expose the full manifest')
+assert(commandsJSON.some(item => item.command === 'threads'), 'commands --json should include alias commands')
+assert(commandsJSON.some(item => item.command === 'chat'), 'commands --json should include canonical chat command')
+assert(commandsJSON.some(item => item.command === 'chat open'), 'commands --json should include chat open alias')
+assert(commandsJSON.some(item => item.command === 'tail'), 'commands --json should include tail alias')
+assert(commandsJSON.some(item => item.command === 'whoami'), 'commands --json should include whoami alias')
+assert(!commandsJSON.some(item => item.command.includes('serve')), 'commands --json must not include serve')
+
+const configDir = '/tmp/beeper-cli-test-config'
+const configEnv = { ...process.env, BEEPER_CLI_CONFIG_DIR: configDir }
+let config = spawnSync(process.execPath, ['./bin/run.js', 'config', 'set', 'baseURL', 'http://127.0.0.1:23373'], {
+  cwd: root,
+  encoding: 'utf8',
+  env: configEnv,
+})
+assert.equal(config.status, 0, config.stderr)
+config = spawnSync(process.execPath, ['./bin/run.js', 'config', 'get', 'baseURL'], {
+  cwd: root,
+  encoding: 'utf8',
+  env: configEnv,
+})
+assert.equal(config.status, 0, config.stderr)
+assert.match(config.stdout, /127\.0\.0\.1:23373/)
+config = spawnSync(process.execPath, ['./bin/run.js', 'config', 'reset'], {
+  cwd: root,
+  encoding: 'utf8',
+  env: configEnv,
+})
+assert.equal(config.status, 0, config.stderr)
+
+const rpc = spawnSync('printf', ['%s\n', '{"id":1,"command":"auth status --json"}'], {
+  encoding: 'utf8',
+  cwd: root,
+})
+assert.equal(rpc.status, 0, rpc.stderr)
+const rpcResult = spawnSync(process.execPath, ['./bin/run.js', 'rpc'], {
+  cwd: root,
+  encoding: 'utf8',
+  env: {
+    ...process.env,
+    BEEPER_CLI_CONFIG_DIR: '/tmp/beeper-cli-test',
+  },
+  input: rpc.stdout,
+})
+assert.equal(rpcResult.status, 0, rpcResult.stderr)
+const rpcLine = JSON.parse(rpcResult.stdout)
+assert.equal(rpcLine.id, 1)
+assert.equal(rpcLine.ok, true)
+assert.match(rpcLine.stdout, /"authenticated": false/)
+
+const shell = spawnSync(process.execPath, ['./bin/run.js', 'shell'], {
+  cwd: root,
+  encoding: 'utf8',
+  env: {
+    ...process.env,
+    BEEPER_CLI_CONFIG_DIR: '/tmp/beeper-cli-test',
+  },
+  input: 'auth status --json\nquit\n',
+})
+assert.equal(shell.status, 0, shell.stderr)
+assert.match(shell.stdout, /"authenticated": false/)
+
+const fakeClient = {
+  accounts: {
+    list: async () => [
+      { accountID: 'imessage-main', bridge: { id: 'local-imessage', type: 'imessage' }, network: 'iMessage', user: { displayName: 'Main' } },
+      { accountID: 'telegram-main', bridge: { id: 'telegramgo', type: 'telegram' }, network: 'Telegram', user: { displayName: 'Main' } },
+    ],
+  },
+  chats: {
+    retrieve: async id => {
+      if (id === '!exact:beeper.com' || id === 'local-family') return { id: '!family:beeper.com', localChatID: 'local-family', title: 'Family', network: 'iMessage' }
+      throw new Error('not found')
+    },
+    search: async function* ({ query }) {
+      const rows = [
+        { id: '!family:beeper.com', localChatID: 'local-family', title: 'Family', network: 'iMessage' },
+        { id: '!family-work:beeper.com', localChatID: 'local-family-work', title: 'Family Work', network: 'Telegram' },
+      ].filter(chat => chat.title.toLowerCase().includes(String(query).toLowerCase()))
+      for (const row of rows) yield row
+    },
+  },
+}
+
+assert.equal(await resolveAccountID(fakeClient, 'imessage'), 'imessage-main')
+assert.deepEqual(await resolveAccountIDs(fakeClient, ['main'], { allowMultiplePerInput: true }), ['imessage-main', 'telegram-main'])
+await assert.rejects(() => resolveAccountID(fakeClient, 'main'), /Ambiguous account/)
+assert.equal(await resolveChatID(fakeClient, 'local-family'), '!family:beeper.com')
+assert.equal(await resolveChatID(fakeClient, 'Family Work'), '!family-work:beeper.com')
+assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), '!family-work:beeper.com')
+await assert.rejects(() => resolveChatID(fakeClient, 'fam'), /Ambiguous chat/)
+
+console.log(`cli-smoke: ${commandManifest.length} commands verified`)
+
+function listCommandFiles(dir) {
+  const files = []
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry)
+    if (statSync(path).isDirectory()) {
+      files.push(...listCommandFiles(path))
+    } else if (path.endsWith('.ts')) {
+      files.push(path)
+    }
+  }
+  return files
+}
+
+function fileToCommand(file) {
+  const rel = relative(join(root, 'src/commands'), file).replace(/\.ts$/, '')
+  return rel.endsWith('/index')
+    ? rel.slice(0, -'/index'.length).replaceAll('/', ' ')
+    : rel.replaceAll('/', ' ')
+}
