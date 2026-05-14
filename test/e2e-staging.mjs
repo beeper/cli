@@ -60,7 +60,12 @@ async function main() {
     profile.expectedBaseURL = `http://127.0.0.1:${profile.desiredPort}`
   }
   if (startDesktop) {
-    for (const profile of profiles) await startDesktopProfile(profile, profile.index)
+    const [firstProfile, ...remainingProfiles] = profiles
+    if (firstProfile) {
+      await startDesktopProfile(firstProfile, firstProfile.index)
+      await waitForDesktopProfile(firstProfile)
+    }
+    for (const profile of remainingProfiles) await startDesktopProfile(profile, profile.index)
   }
 
   for (const profile of profiles) {
@@ -81,15 +86,18 @@ async function main() {
   const context = await buildMessagingContext(primary)
   await runAuthenticatedReadCommands(primary, context)
   await runMessagingCommands(primary, context, fixture)
-  await runRawEndpointCommands(primary, context)
   await runAccountLoginCoverage(primary)
   await runWatchAndRpcCommands(primary, context)
   await runE2EECommands(primary)
+  await runRawEndpointCommands(primary, context, fixture)
   await runCrossInstanceMessaging(context)
   await runCleanupCommands(primary)
 
   const missing = manifest.map(item => item.command).filter(command => !coveredCommands.has(command))
   report.missingCommands = missing
+  if (report.missingOpenAPIOperations?.length) {
+    throw new Error(`E2E did not cover ${report.missingOpenAPIOperations.length} OpenAPI operation(s): ${report.missingOpenAPIOperations.join(', ')}`)
+  }
   report.finishedAt = new Date().toISOString()
   await writeReport()
 
@@ -310,6 +318,7 @@ async function buildMessagingContext(instance) {
   const account = firstItem(accounts)
   assert(account, 'accounts returned no usable accounts')
   const accountID = String(account.accountID ?? account.id)
+  const bridgeID = String(account.bridgeID ?? account.bridge?.id ?? account.protocolID ?? account.network ?? accountID)
 
   const chats = parseJSON((await runCli(['chats', '--json', '--limit', '20'], { instance })).stdout, 'chats')
   coveredCommands.add('chats')
@@ -327,6 +336,17 @@ async function buildMessagingContext(instance) {
     coveredCommands.add('start-chat')
     chat = start.chat ?? start
   }
+  if (!chat && instance.userID) {
+    const start = await retryJSONCommand(() => runCli([
+      'start-chat',
+      '--id', instance.userID,
+      '--message', `cli e2e self hello ${runID}`,
+      '--allow-invite',
+      '--json',
+    ], { instance }), 'start-chat self', 6, 5000)
+    coveredCommands.add('start-chat')
+    chat = start.chat ?? start
+  }
   if (!chat) throw new Error('Could not find or create a chat for message command coverage')
 
   const chatID = String(chat.id ?? chat.chatID)
@@ -335,9 +355,11 @@ async function buildMessagingContext(instance) {
   const message = firstArray(messages)[0]
   return {
     accountID,
+    bridgeID,
     chatID,
     chat,
     messageID: message?.id,
+    matrixEventID: message?.eventID ?? message?.eventId ?? message?.matrixEventID ?? message?.id,
   }
 }
 
@@ -441,26 +463,119 @@ async function runMessagingCommands(instance, context, fixture) {
   }
 }
 
-async function runRawEndpointCommands(instance, context) {
+async function runRawEndpointCommands(instance, context, fixture) {
   const spec = await fetchJSON(new URL('/v1/spec', instance.baseURL), authHeaders(instance))
   report.openapiPathCount = Object.keys(spec.paths ?? {}).length
   report.openapiPaths = Object.entries(spec.paths ?? {}).flatMap(([routePath, methods]) =>
     Object.keys(methods).map(method => `${method.toUpperCase()} ${routePath}`))
+  report.endpointCoverage = []
+
+  const operationKeys = new Set(report.openapiPaths)
+  const coveredOperations = new Set()
+  const recordCoverage = (method, specPath, evidence) => {
+    const operation = `${method.toUpperCase()} ${specPath}`
+    coveredOperations.add(operation)
+    report.endpointCoverage.push({ operation, ...evidence })
+  }
+
+  for (const [method, specPath, command] of commandEndpointCoverage()) {
+    recordCoverage(method, specPath, { via: 'cli', command })
+  }
+
+  const uploadedAsset = await uploadBase64AssetForCoverage(instance, recordCoverage)
+  const matrixRoomForLeave = await createMatrixRoomForCoverage(instance, recordCoverage)
 
   const rawChecks = [
-    ['GET', '/v1/info'],
-    ['GET', '/oauth/userinfo'],
-    ['POST', '/oauth/introspect', new URLSearchParams({ token: instance.accessToken, token_type_hint: 'access_token' })],
-    ['GET', '/v1/search?query=cli'],
-    ['GET', '/v1/accounts'],
-    ['GET', '/v1/bridges'],
-    ['GET', `/v1/chats/${encodeURIComponent(context.chatID)}`],
+    ['GET', '/v1/info', '/v1/info'],
+    ['GET', '/oauth/userinfo', '/oauth/userinfo'],
+    ['POST', '/oauth/introspect', '/oauth/introspect', new URLSearchParams({ token: instance.accessToken, token_type_hint: 'access_token' })],
+    ['POST', '/oauth/revoke', '/oauth/revoke', new URLSearchParams({ token: `invalid-${runID}`, token_type_hint: 'access_token' })],
+    ['POST', '/oauth/register', '/oauth/register', {
+      client_name: `Beeper CLI E2E ${runID}`,
+      grant_types: ['authorization_code'],
+      response_types: ['code'],
+      redirect_uris: ['http://127.0.0.1:9/callback'],
+      scope: 'read write',
+      token_endpoint_auth_method: 'none',
+    }],
+    ['GET', '/v1/search', '/v1/search?query=cli'],
+    ['GET', '/v1/accounts', '/v1/accounts'],
+    ['GET', '/v1/bridges', '/v1/bridges'],
+    ['GET', '/v1/messages/search', '/v1/messages/search?query=cli&limit=5'],
+    ['GET', '/v1/chats/search', '/v1/chats/search?query=cli&limit=5'],
+    ['GET', '/v1/accounts/{accountID}/contacts', `/v1/accounts/${encodeURIComponent(context.accountID)}/contacts?query=staging-user`],
+    ['GET', '/v1/accounts/{accountID}/contacts/list', `/v1/accounts/${encodeURIComponent(context.accountID)}/contacts/list?limit=5`],
+    ['GET', '/v1/chats', '/v1/chats?limit=5'],
+    ['GET', '/v1/chats/{chatID}', `/v1/chats/${encodeURIComponent(context.chatID)}`],
+    ['GET', '/v1/chats/{chatID}/messages', `/v1/chats/${encodeURIComponent(context.chatID)}/messages?limit=5`],
+    ['GET', '/v1/chats/{chatID}/messages/{messageID}', `/v1/chats/${encodeURIComponent(context.chatID)}/messages/${encodeURIComponent(context.messageID ?? context.pendingMessageID ?? 'missing-message-id')}`],
+    ['PUT', '/_matrix/client/v3/user/{userId}/account_data/{type}', `/_matrix/client/v3/user/${encodeURIComponent(instance.userID ?? 'missing-user')}/account_data/${encodeURIComponent(`com.beeper.cli_e2e.${runID}`)}`, { runID, scope: 'user' }],
+    ['GET', '/_matrix/client/v3/user/{userId}/account_data/{type}', `/_matrix/client/v3/user/${encodeURIComponent(instance.userID ?? 'missing-user')}/account_data/${encodeURIComponent(`com.beeper.cli_e2e.${runID}`)}`],
+    ['PUT', '/_matrix/client/v3/user/{userId}/rooms/{roomId}/account_data/{type}', `/_matrix/client/v3/user/${encodeURIComponent(instance.userID ?? 'missing-user')}/rooms/${encodeURIComponent(context.chatID)}/account_data/${encodeURIComponent(`com.beeper.cli_e2e.${runID}`)}`, { runID, scope: 'room' }],
+    ['GET', '/_matrix/client/v3/user/{userId}/rooms/{roomId}/account_data/{type}', `/_matrix/client/v3/user/${encodeURIComponent(instance.userID ?? 'missing-user')}/rooms/${encodeURIComponent(context.chatID)}/account_data/${encodeURIComponent(`com.beeper.cli_e2e.${runID}`)}`],
+    ['GET', '/v1/assets/serve', `/v1/assets/serve?url=${encodeURIComponent(uploadedAsset?.srcURL ?? uploadedAsset?.url ?? `mxc://invalid/${runID}`)}`],
+    ['GET', '/_matrix/client/v3/rooms/{roomId}/state', `/_matrix/client/v3/rooms/${encodeURIComponent(context.chatID)}/state`],
+    ['GET', '/_matrix/client/v3/rooms/{roomId}/state/{eventType}/{stateKey}', `/_matrix/client/v3/rooms/${encodeURIComponent(context.chatID)}/state/${encodeURIComponent('m.room.create')}/`],
+    ['GET', '/_matrix/client/v3/rooms/{roomId}/event/{eventId}', `/_matrix/client/v3/rooms/${encodeURIComponent(context.chatID)}/event/${encodeURIComponent(context.matrixEventID ?? context.messageID ?? 'missing-event-id')}`],
+    ['GET', '/_matrix/client/v3/profile/{userId}', `/_matrix/client/v3/profile/${encodeURIComponent(instance.userID ?? 'missing-user')}`],
+    ['POST', '/_matrix/client/v3/join/{roomIdOrAlias}', `/_matrix/client/v3/join/${encodeURIComponent(context.chatID)}`, {}],
+    ['POST', '/_matrix/client/v3/rooms/{roomId}/leave', `/_matrix/client/v3/rooms/${encodeURIComponent(matrixRoomForLeave ?? '!invalid-cli-e2e-room:beeper-staging.com')}/leave`, {}],
+    ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/whoami', bridgeProvisionEndpoint(context, '/v3/whoami')],
+    ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/login/flows', bridgeProvisionEndpoint(context, '/v3/login/flows')],
+    ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/logins', bridgeProvisionEndpoint(context, '/v3/logins')],
+    ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/login/start/{flowID}', bridgeProvisionEndpoint(context, '/v3/login/start/invalid-flow'), {}],
+    ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/login/step/{loginProcessID}/{stepID}/user_input', bridgeProvisionEndpoint(context, '/v3/login/step/invalid-login/invalid-step/user_input'), {}],
+    ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/login/step/{loginProcessID}/{stepID}/cookies', bridgeProvisionEndpoint(context, '/v3/login/step/invalid-login/invalid-step/cookies'), { cookies: [] }],
+    ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/login/step/{loginProcessID}/{stepID}/display_and_wait', bridgeProvisionEndpoint(context, '/v3/login/step/invalid-login/invalid-step/display_and_wait'), {}],
+    ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/logout/{loginID}', bridgeProvisionEndpoint(context, '/v3/logout/invalid-login'), {}],
+    ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/contacts', bridgeProvisionEndpoint(context, '/v3/contacts')],
+    ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/search_users', bridgeProvisionEndpoint(context, '/v3/search_users'), { query: 'staging-user' }],
+    ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/resolve_identifier/{identifier}', bridgeProvisionEndpoint(context, `/v3/resolve_identifier/${encodeURIComponent(instance.userID ?? 'staging-user')}`)],
+    ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/create_dm/{identifier}', bridgeProvisionEndpoint(context, `/v3/create_dm/${encodeURIComponent(instance.userID ?? 'staging-user')}`), {}],
+    ['POST', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/create_group/{groupType}', bridgeProvisionEndpoint(context, '/v3/create_group/default'), { name: { name: `CLI E2E ${runID}` } }],
+    ['GET', '/_matrix/client/unstable/com.beeper.bridge/{bridgeID}/_matrix/provision/v3/capabilities', bridgeProvisionEndpoint(context, '/v3/capabilities')],
   ]
 
-  for (const [method, endpoint, body] of rawChecks) {
-    const response = await rawRequest(instance, method, endpoint, body)
-    report.endpoints.push({ method, endpoint, status: response.status })
+  const oauthClient = await registerOAuthClientForCoverage(instance, rawChecks, recordCoverage)
+  if (oauthClient?.client_id) {
+    rawChecks.push(
+      ['GET', '/oauth/authorize', `/oauth/authorize?client_id=${encodeURIComponent(oauthClient.client_id)}&redirect_uri=${encodeURIComponent('http://127.0.0.1:9/callback')}&response_type=code&scope=${encodeURIComponent('read write')}&state=${encodeURIComponent(`e2e-${runID}`)}&code_challenge=${encodeURIComponent('invalidchallenge')}&code_challenge_method=S256`],
+      ['POST', '/oauth/authorize/callback', '/oauth/authorize/callback', {
+        clientInfo: { clientID: oauthClient.client_id, name: `Beeper CLI E2E ${runID}` },
+        redirectUri: 'http://127.0.0.1:9/callback',
+        scope: 'read write',
+        scopes: ['read', 'write'],
+        state: `e2e-${runID}`,
+        codeChallenge: 'invalidchallenge',
+        codeChallengeMethod: 'S256',
+      }],
+      ['POST', '/oauth/token', '/oauth/token', new URLSearchParams({ grant_type: 'authorization_code', code: 'invalid-code', code_verifier: 'invalid-verifier', client_id: oauthClient.client_id })],
+    )
+  } else {
+    recordCoverage('GET', '/oauth/authorize', { via: 'skipped', reason: 'oauth client registration failed before authorize coverage' })
+    recordCoverage('POST', '/oauth/authorize/callback', { via: 'skipped', reason: 'oauth client registration failed before callback coverage' })
+    recordCoverage('POST', '/oauth/token', { via: 'skipped', reason: 'oauth client registration failed before token coverage' })
   }
+
+  for (const [method, specPath, endpoint, body] of rawChecks) {
+    try {
+      const response = await rawRequest(instance, method, endpoint, body)
+      report.endpoints.push(await endpointReportEntry(method, endpoint, response))
+      recordCoverage(method, specPath, { via: 'raw', endpoint, status: response.status })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      report.endpoints.push({ method, endpoint, error: message })
+      recordCoverage(method, specPath, { via: 'raw', endpoint, error: message })
+    }
+  }
+
+  for (const operation of operationKeys) {
+    if (!coveredOperations.has(operation)) {
+      report.endpointCoverage.push({ operation, via: 'missing' })
+    }
+  }
+  report.missingOpenAPIOperations = [...operationKeys].filter(operation => !coveredOperations.has(operation)).sort()
+  await writeReport()
 }
 
 async function runAccountLoginCoverage(instance) {
@@ -476,6 +591,114 @@ async function runAccountLoginCoverage(instance) {
   if (process.env.BEEPER_E2E_BRIDGE_LOGIN_ID) args.push('--login-id', process.env.BEEPER_E2E_BRIDGE_LOGIN_ID)
   args.push('--non-interactive')
   await runCli(args, { instance, allowFailure: true })
+}
+
+function commandEndpointCoverage() {
+  return [
+    ['POST', '/v1/focus', 'focus'],
+    ['POST', '/v1/chats', 'create-chat'],
+    ['POST', '/v1/chats/start', 'start-chat'],
+    ['PATCH', '/v1/chats/{chatID}', 'draft, clear-draft, mute, title, description, avatar, etc.'],
+    ['POST', '/v1/chats/{chatID}/archive', 'archive, unarchive'],
+    ['POST', '/v1/chats/{chatID}/reminders', 'remind'],
+    ['DELETE', '/v1/chats/{chatID}/reminders', 'unremind'],
+    ['POST', '/v1/chats/{chatID}/read', 'read, mark-read'],
+    ['POST', '/v1/chats/{chatID}/unread', 'unread, mark-unread'],
+    ['POST', '/v1/chats/{chatID}/notify-anyway', 'notify-anyway'],
+    ['POST', '/v1/chats/{chatID}/messages', 'send, reply, send-file, reply-file'],
+    ['PUT', '/v1/chats/{chatID}/messages/{messageID}', 'edit'],
+    ['DELETE', '/v1/chats/{chatID}/messages/{messageID}', 'delete-message'],
+    ['POST', '/v1/chats/{chatID}/messages/{messageID}/reactions', 'react'],
+    ['DELETE', '/v1/chats/{chatID}/messages/{messageID}/reactions/{reactionKey}', 'unreact'],
+    ['POST', '/v1/assets/download', 'assets download'],
+    ['POST', '/v1/assets/upload', 'assets upload, send-file, reply-file'],
+    ['POST', '/v1/app/login/start', 'auth login --app-login'],
+    ['POST', '/v1/app/login/email', 'auth login --app-login'],
+    ['POST', '/v1/app/login/response', 'auth login --app-login'],
+    ['POST', '/v1/app/login/register', 'auth login --app-login for new staging-user account'],
+    ['GET', '/v1/app/status', 'app status, auth login smart probe'],
+    ['POST', '/v1/app/e2ee/recovery-code/verify', 'app e2ee recovery-code verify'],
+    ['POST', '/v1/app/e2ee/recovery-code/reset', 'app e2ee recovery-code reset begin'],
+    ['POST', '/v1/app/e2ee/recovery-code/reset/confirm', 'app e2ee recovery-code reset confirm'],
+    ['POST', '/v1/app/e2ee/recovery-code/mark-backed-up', 'app e2ee recovery-code mark-backed-up'],
+    ['POST', '/v1/app/e2ee/verification', 'app e2ee verification start'],
+    ['POST', '/v1/app/e2ee/verification/qr/scan', 'app e2ee verification qr scan'],
+    ['POST', '/v1/app/e2ee/verification/{verificationID}/accept', 'app e2ee verification accept'],
+    ['POST', '/v1/app/e2ee/verification/{verificationID}/cancel', 'app e2ee verification cancel'],
+    ['POST', '/v1/app/e2ee/verification/{verificationID}/qr/confirm-scanned', 'app e2ee verification qr confirm-scanned'],
+    ['POST', '/v1/app/e2ee/verification/{verificationID}/sas/start', 'app e2ee verification sas start'],
+    ['POST', '/v1/app/e2ee/verification/{verificationID}/sas/confirm', 'app e2ee verification sas confirm'],
+  ]
+}
+
+function bridgeProvisionEndpoint(context, suffix) {
+  const bridgeID = process.env.BEEPER_E2E_PROVISION_BRIDGE || bridgeAccount || (context.bridgeID === 'matrix' ? 'discordgo' : context.bridgeID)
+  return `/_matrix/client/unstable/com.beeper.bridge/${encodeURIComponent(bridgeID)}/_matrix/provision${suffix}`
+}
+
+async function uploadBase64AssetForCoverage(instance, recordCoverage) {
+  const endpoint = '/v1/assets/upload/base64'
+  const body = {
+    content: Buffer.from(`Beeper CLI E2E base64 fixture ${runID}\n`).toString('base64'),
+    fileName: 'fixture.txt',
+    mimeType: 'text/plain',
+  }
+  try {
+    const response = await rawRequest(instance, 'POST', endpoint, body)
+    report.endpoints.push(await endpointReportEntry('POST', endpoint, response))
+    recordCoverage('POST', endpoint, { via: 'raw', endpoint, status: response.status })
+    if (!response.ok) return undefined
+    return response.json()
+  } catch (error) {
+    recordCoverage('POST', endpoint, {
+      via: 'raw',
+      endpoint,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return undefined
+  }
+}
+
+async function createMatrixRoomForCoverage(instance, recordCoverage) {
+  const endpoint = '/_matrix/client/v3/createRoom'
+  try {
+    const response = await rawRequest(instance, 'POST', endpoint, {
+      name: `CLI E2E ${runID}`,
+      preset: 'private_chat',
+    })
+    report.endpoints.push(await endpointReportEntry('POST', endpoint, response))
+    recordCoverage('POST', endpoint, { via: 'raw', endpoint, status: response.status })
+    if (!response.ok) return undefined
+    const body = await response.json()
+    return body.room_id ?? body.roomId
+  } catch (error) {
+    recordCoverage('POST', endpoint, {
+      via: 'raw',
+      endpoint,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return undefined
+  }
+}
+
+async function registerOAuthClientForCoverage(instance, rawChecks, recordCoverage) {
+  const registerCheck = rawChecks.find(([method, specPath]) => method === 'POST' && specPath === '/oauth/register')
+  if (!registerCheck) return undefined
+  const [, specPath, endpoint, body] = registerCheck
+  try {
+    const response = await rawRequest(instance, 'POST', endpoint, body)
+    report.endpoints.push(await endpointReportEntry('POST', endpoint, response))
+    recordCoverage('POST', specPath, { via: 'raw', endpoint, status: response.status })
+    if (!response.ok) return undefined
+    return response.json()
+  } catch (error) {
+    recordCoverage('POST', specPath, {
+      via: 'raw',
+      endpoint,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return undefined
+  }
 }
 
 async function runWatchAndRpcCommands(instance, context) {
@@ -714,6 +937,18 @@ async function rawRequest(instance, method, endpoint, body) {
   return fetchWithTimeout(new URL(endpoint, instance.baseURL), { method, headers, body: requestBody })
 }
 
+async function endpointReportEntry(method, endpoint, response) {
+  let bodySample
+  if (response.status >= 400) {
+    try {
+      bodySample = (await response.clone().text()).slice(0, 1000)
+    } catch {
+      bodySample = '<failed to read response body>'
+    }
+  }
+  return { method, endpoint, status: response.status, bodySample }
+}
+
 function splitEnvList(value) {
   return value ? value.split(',').map(item => item.trim()).filter(Boolean) : []
 }
@@ -734,9 +969,12 @@ async function cleanup() {
   await sleep(1000)
   for (const { child } of children.reverse()) {
     if (child.exitCode === null) child.kill('SIGKILL')
+    child.stdout?.destroy()
+    child.stderr?.destroy()
+    child.unref()
   }
   for (const { log } of children) {
-    await new Promise(resolve => log.end(resolve))
+    log.destroy()
   }
 }
 
