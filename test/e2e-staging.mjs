@@ -582,7 +582,16 @@ async function runAccountLoginCoverage(instance) {
   await runCli(['accounts', 'add', '--json'], { instance, allowFailure: true })
   coveredCommands.add('accounts add')
 
-  if (!bridgeAccount) return
+  if (!bridgeAccount) {
+    report.bridgeAccountLogin = {
+      status: 'requires-user-input',
+      message: 'Set BEEPER_E2E_BRIDGE_ACCOUNT plus BEEPER_E2E_BRIDGE_FIELD/BEEPER_E2E_BRIDGE_COOKIE/BEEPER_E2E_BRIDGE_FLOW as needed to run a real bridge login flow.',
+    }
+    if (process.env.BEEPER_E2E_REQUIRE_BRIDGE_ACCOUNT === '1') {
+      throw new Error(report.bridgeAccountLogin.message)
+    }
+    return
+  }
 
   const args = ['accounts', 'add', bridgeAccount, '--json']
   for (const value of splitEnvList(process.env.BEEPER_E2E_BRIDGE_FIELD)) args.push('--field', value)
@@ -591,6 +600,10 @@ async function runAccountLoginCoverage(instance) {
   if (process.env.BEEPER_E2E_BRIDGE_LOGIN_ID) args.push('--login-id', process.env.BEEPER_E2E_BRIDGE_LOGIN_ID)
   args.push('--non-interactive')
   await runCli(args, { instance, allowFailure: true })
+  report.bridgeAccountLogin = {
+    status: 'attempted',
+    bridgeAccount,
+  }
 }
 
 function commandEndpointCoverage() {
