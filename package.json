@@ -16,10 +16,12 @@
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "check:api-copy": "npm run build && node scripts/check-api-copy.mjs",
+    "check:readme": "npm run build && node scripts/generate-readme.mjs --check",
     "dev": "node --import tsx ./bin/dev.js",
     "e2e:staging": "npm run build && node test/e2e-staging.mjs",
     "pack:homebrew": "npm run build && node scripts/build-homebrew-archive.mjs",
-    "test": "npm run build && node scripts/check-api-copy.mjs && node ./test/cli-smoke.mjs",
+    "readme": "npm run build && node scripts/generate-readme.mjs",
+    "test": "npm run build && node scripts/generate-readme.mjs --check && node scripts/check-api-copy.mjs && node ./test/cli-smoke.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "oclif": {
