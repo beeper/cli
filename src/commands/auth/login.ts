@@ -1,6 +1,7 @@
 import { Command, Flags } from '@oclif/core'
 import { loginWithPKCE } from '../../lib/oauth.js'
 import { readConfig, updateConfig } from '../../lib/config.js'
+import { findLocalDesktop, getDesktopAppStatus } from '../../lib/desktop-auth.js'
 import {
   type AppLoginOutput,
   type AppLoginSuccess,
@@ -34,11 +35,18 @@ export default class AuthLogin extends Command {
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthLogin)
     const config = await readConfig()
-    const baseURL = flags['server-url'] ?? config.baseURL
+    const desktop = await findLocalDesktop({
+      baseURL: flags['server-url'] ?? config.baseURL,
+      scan: !flags['server-url'],
+    })
+    const baseURL = desktop.baseURL
 
     const useAppLogin = flags['app-login']
       || Boolean(flags.email || flags.code || flags.username || flags['accept-terms'])
-      || (!flags.oauth && await this.shouldUseAppLogin(baseURL))
+
+    if (!useAppLogin && !flags.oauth && await this.shouldUseAppLogin(baseURL)) {
+      throw new Error('Beeper Desktop is not signed in. Open Beeper Desktop and sign in, then rerun this command, or pass --app-login to sign in the app itself.')
+    }
 
     if (!useAppLogin || flags.oauth) {
       const token = await loginWithPKCE({
@@ -83,14 +91,8 @@ export default class AuthLogin extends Command {
   }
 
   private async shouldUseAppLogin(baseURL: string): Promise<boolean> {
-    const response = await fetch(new URL('/v1/app/status', baseURL))
-
-    if (response.status === 401 || response.status === 403) return false
-    if (response.status === 404) return false
-    if (!response.ok) throw new Error(`GET /v1/app/status failed: ${response.status} ${await response.text()}`)
-
-    const status = await response.json() as { state?: string }
-    return status.state === 'needs-login'
+    const status = await getDesktopAppStatus(baseURL)
+    return status?.state === 'needs-login'
   }
 
   private async register(

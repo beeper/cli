@@ -39,17 +39,19 @@ npm run readme
 ## Authenticate
 
 ```sh
-beeper login --server-url http://localhost:23373
+beeper chats
 beeper auth status
 ```
 
-`login` checks the local Desktop app state first. If Beeper Desktop is already
-signed in, it uses OAuth2 Authorization Code with PKCE and stores the server URL
-and bearer token in `~/.config/beeper/config.json`. After that, commands reuse
-the remembered server URL.
+On first use, authenticated commands look for a local Beeper Desktop API on the
+default port range. If Beeper Desktop is already signed in, the CLI immediately
+uses OAuth2 Authorization Code with PKCE and stores the server URL and bearer
+token in `~/.config/beeper/config.json`. After that, commands reuse the
+remembered server URL.
 
-If the local Desktop app is not authenticated, `login` falls into the app
-bootstrap flow. You can force that flow with:
+If the local Desktop app is not authenticated, the CLI exits with an error
+instead of starting another login flow. You can explicitly sign in the app
+itself with:
 
 ```sh
 beeper login --app-login --email you@example.com

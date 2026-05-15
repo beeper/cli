@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { join, relative } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { commandManifest } from '../dist/lib/manifest.js'
 import { exportBeeperData } from '../dist/lib/export/index.js'
+import { ensureDesktopToken, findLocalDesktop } from '../dist/lib/desktop-auth.js'
 import { resolveAccountID, resolveAccountIDs, resolveChatID } from '../dist/lib/resolve.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -172,6 +174,18 @@ assert.equal(await resolveChatID(fakeClient, 'Family Work'), '!family-work:beepe
 assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), '!family-work:beeper.com')
 await assert.rejects(() => resolveChatID(fakeClient, 'fam'), /Ambiguous chat/)
 
+const loggedOutDesktop = await withMockDesktop({ state: 'needs-login' }, async baseURL => {
+  const desktop = await findLocalDesktop({ baseURL })
+  assert.equal(desktop.baseURL, baseURL)
+  assert.equal(desktop.status?.state, 'needs-login')
+  await assert.rejects(
+    () => ensureDesktopToken({ baseURL, openBrowser: false }),
+    /Beeper Desktop is not signed in/,
+  )
+  return true
+})
+assert.equal(loggedOutDesktop, true)
+
 const exportRoot = mkdtempSync(join(tmpdir(), 'beeper-export-test-'))
 const attachmentSource = join(exportRoot, 'source.txt')
 writeFileSync(attachmentSource, 'hello attachment')
@@ -266,4 +280,32 @@ function fileToCommand(file) {
   return rel.endsWith('/index')
     ? rel.slice(0, -'/index'.length).replaceAll('/', ' ')
     : rel.replaceAll('/', ' ')
+}
+
+function withMockDesktop(appStatus, callback) {
+  const server = createServer((req, res) => {
+    if (req.url === '/v1/info') {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ ok: true }))
+      return
+    }
+    if (req.url === '/v1/app/status') {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify(appStatus))
+      return
+    }
+    res.writeHead(404).end('Not found')
+  })
+
+  return new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', async () => {
+      const address = server.address()
+      try {
+        const result = await callback(`http://127.0.0.1:${address.port}`)
+        server.close(() => resolve(result))
+      } catch (error) {
+        server.close(() => reject(error))
+      }
+    })
+  })
 }
