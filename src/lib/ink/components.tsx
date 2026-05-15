@@ -420,7 +420,7 @@ export const AssetRow: React.FC<RowProps<RecordValue>> = ({ item: asset }) => {
       </Box>
       {asset.srcURL ? (
         <Box marginLeft={2}>
-          <Link url={String(asset.srcURL)}><Text color={theme.subtle}>{String(asset.srcURL)}</Text></Link>
+          <Hyperlink url={String(asset.srcURL)}><Text color={theme.subtle}>{String(asset.srcURL)}</Text></Hyperlink>
         </Box>
       ) : null}
       {asset.uploadID ? (
@@ -460,9 +460,9 @@ export const InfoCard: React.FC<{ info: RecordValue }> = ({ info }) => {
         typeof value === 'string' ? (
           <Box marginLeft={2} key={key}>
             <Text color={theme.subtle}>{key.padEnd(12)}</Text>
-            <Link url={value.startsWith('ws') ? value.replace(/^ws/, 'http') : value}>
+            <Hyperlink url={value.startsWith('ws') ? value.replace(/^ws/, 'http') : value}>
               <Text color={theme.link}>{value}</Text>
-            </Link>
+            </Hyperlink>
           </Box>
         ) : null,
       )}
@@ -522,7 +522,7 @@ export const AuthStatusCard: React.FC<{ auth: RecordValue }> = ({ auth }) => {
         )}
       </Box>
       <KV label="endpoint" value={
-        <Link url={String(auth.baseURL)}><Text color={theme.link}>{String(auth.baseURL)}</Text></Link>
+        <Hyperlink url={String(auth.baseURL)}><Text color={theme.link}>{String(auth.baseURL)}</Text></Hyperlink>
       } />
       <KV label="source" value={String(auth.source ?? 'none')} tone="muted" />
       {auth.clientID ? <KV label="client" value={String(auth.clientID)} tone="dim" /> : null}
@@ -572,7 +572,7 @@ export const AuthCodeCard: React.FC<{ url: string; code?: string; hint?: string 
       </Box>
     )}
     <Box marginLeft={2} marginTop={1}>
-      <Link url={url}><Text color={theme.link} underline>{url}</Text></Link>
+      <Hyperlink url={url}><Text color={theme.link} underline>{url}</Text></Hyperlink>
     </Box>
     {code && (
       <Box marginLeft={2} marginTop={1}>
@@ -599,6 +599,37 @@ export const AuthSignedIn: React.FC<{ as: string; detail?: string; saved?: boole
 
 // ─── config / commands manifest ────────────────────────────────────────────────
 
+function maskToken(value: string): string {
+  if (value.length <= 12) return '••••'
+  return `${value.slice(0, 6)}…${value.slice(-4)}`
+}
+
+function renderConfigValue(key: string, value: unknown): React.ReactNode {
+  if (value == null) return <Text color={theme.subtle}>—</Text>
+  if (typeof value !== 'object') {
+    if (/token|secret|key/i.test(key) && typeof value === 'string') {
+      return <Text color={theme.subtle}>{maskToken(value)}</Text>
+    }
+    return <Text color={theme.text}>{String(value)}</Text>
+  }
+  const record = value as RecordValue
+  const inner = Object.entries(record).filter(([, v]) => v != null)
+  if (!inner.length) return <Text color={theme.subtle}>{'{}'}</Text>
+  const width = Math.max(...inner.map(([k]) => k.length)) + 2
+  return (
+    <Box flexDirection="column">
+      {inner.map(([k, v]) => (
+        <Box key={k}>
+          <Text color={theme.subtle}>{k.padEnd(width)}</Text>
+          {/^(accesstoken|token|secret|key)$/i.test(k) && typeof v === 'string'
+            ? <Text color={theme.subtle}>{maskToken(v)}</Text>
+            : <Text color={theme.text}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</Text>}
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
 export const ConfigView: React.FC<{ data: RecordValue }> = ({ data }) => {
   const entries = Object.entries(data).filter(([, v]) => v != null)
   if (!entries.length) {
@@ -615,11 +646,16 @@ export const ConfigView: React.FC<{ data: RecordValue }> = ({ data }) => {
         <Text bold color={theme.text}>Config</Text>
       </Box>
       {entries.map(([key, value]) => (
-        <Box key={key} marginLeft={2}>
-          <Text color={theme.subtle}>{key.padEnd(width)}</Text>
-          <Text color={theme.text}>
-            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-          </Text>
+        <Box key={key} marginLeft={2} flexDirection={typeof value === 'object' && value != null ? 'column' : 'row'}>
+          <Box>
+            <Text color={theme.subtle}>{key.padEnd(width)}</Text>
+            {typeof value !== 'object' || value == null ? renderConfigValue(key, value) : null}
+          </Box>
+          {typeof value === 'object' && value != null && (
+            <Box marginLeft={width + 2}>
+              {renderConfigValue(key, value)}
+            </Box>
+          )}
         </Box>
       ))}
     </Box>
@@ -635,7 +671,8 @@ export const CommandsView: React.FC<{ items: ManifestItem[]; title?: string; int
     if (!groups.has(g)) groups.set(g, [])
     groups.get(g)!.push(item)
   }
-  const width = Math.min(36, Math.max(...items.map(i => i.command.length)) + 4)
+  // Hard cap so descriptions stay aligned. Anything longer drops its description onto the next indented line.
+  const NAME_WIDTH = 32
   return (
     <Box flexDirection="column">
       <Box>
@@ -651,12 +688,20 @@ export const CommandsView: React.FC<{ items: ManifestItem[]; title?: string; int
       {[...groups.entries()].map(([group, list]) => (
         <Box flexDirection="column" key={group} marginTop={1}>
           <Box marginLeft={2}><Text color={theme.subtle}>{group.toUpperCase()}</Text></Box>
-          {list.map(item => (
-            <Box key={item.command} marginLeft={2}>
-              <Text color={theme.primaryGlow}>{item.command.padEnd(width)}</Text>
-              <Text color={theme.muted}>{item.description}</Text>
-            </Box>
-          ))}
+          {list.map(item => {
+            const fits = item.command.length <= NAME_WIDTH
+            return fits ? (
+              <Box key={item.command} marginLeft={2}>
+                <Text color={theme.primaryGlow}>{item.command.padEnd(NAME_WIDTH + 2)}</Text>
+                <Text color={theme.muted}>{item.description}</Text>
+              </Box>
+            ) : (
+              <Box key={item.command} marginLeft={2} flexDirection="column">
+                <Text color={theme.primaryGlow}>{item.command}</Text>
+                <Box marginLeft={2}><Text color={theme.muted}>{item.description}</Text></Box>
+              </Box>
+            )
+          })}
         </Box>
       ))}
     </Box>

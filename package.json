@@ -88,7 +88,6 @@
     "@oclif/plugin-not-found": "^3.2.85",
     "figures": "^6.1.0",
     "ink": "^7.0.3",
-    "ink-link": "^5.0.0",
     "ink-spinner": "^5.0.0",
     "react": "^19.2.6"
   },

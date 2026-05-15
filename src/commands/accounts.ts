@@ -4,6 +4,11 @@ import { apiCopy, cliCopy } from '../lib/copy.js'
 import { printData, printList } from '../lib/output.js'
 import { withSpinner } from '../lib/ui.js'
 
+function accountItems(accounts: unknown): unknown[] {
+  if (Array.isArray(accounts)) return accounts
+  return (accounts as { items?: unknown[] }).items ?? []
+}
+
 export default class Accounts extends Command {
   static override summary = apiCopy.accounts.list
   static override flags = {
@@ -19,7 +24,7 @@ export default class Accounts extends Command {
     const accounts = useSpinner
       ? await withSpinner('Loading accounts…', () => client.accounts.list(), {
         done: value => {
-          const count = (value as { items?: unknown[] }).items?.length ?? 0
+          const count = accountItems(value).length
           return `${count} account${count === 1 ? '' : 's'}`
         },
       })
@@ -28,7 +33,7 @@ export default class Accounts extends Command {
       await printData(accounts, 'json')
       return
     }
-    const items = (accounts as { items?: unknown[] }).items ?? []
+    const items = accountItems(accounts)
     await printList(items, 'human', {
       title: 'No accounts connected',
       subtitle: 'Add an account to start chatting from the CLI.',

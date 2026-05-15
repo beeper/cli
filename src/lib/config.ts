@@ -15,21 +15,22 @@ export type Config = {
   baseURL: string
 }
 
-const defaultBaseURL = 'http://localhost:23373'
+const defaultBaseURL = 'http://127.0.0.1:23373'
 
 export const configPath = () =>
   join(process.env.BEEPER_CLI_CONFIG_DIR ?? join(homedir(), '.config', 'beeper'), 'config.json')
 
 export async function readConfig(): Promise<Config> {
+  const baseURL = process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL
   try {
     const raw = await readFile(configPath(), 'utf8')
     const parsed = JSON.parse(raw) as Partial<Config>
     return {
-      baseURL: parsed.baseURL || process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL || defaultBaseURL,
+      baseURL: baseURL || parsed.baseURL || defaultBaseURL,
       auth: parsed.auth,
     }
   } catch {
-    return { baseURL: process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL || defaultBaseURL }
+    return { baseURL: baseURL || defaultBaseURL }
   }
 }
 

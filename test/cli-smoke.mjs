@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join, relative } from 'node:path'
@@ -100,10 +100,10 @@ assert.equal(config.status, 0, config.stderr)
 config = spawnSync(process.execPath, ['./bin/run.js', 'config', 'get', 'baseURL'], {
   cwd: root,
   encoding: 'utf8',
-  env: configEnv,
+  env: { ...configEnv, BEEPER_DESKTOP_BASE_URL: 'http://127.0.0.1:24444' },
 })
 assert.equal(config.status, 0, config.stderr)
-assert.match(config.stdout, /127\.0\.0\.1:23373/)
+assert.match(config.stdout, /127\.0\.0\.1:24444/)
 config = spawnSync(process.execPath, ['./bin/run.js', 'config', 'reset'], {
   cwd: root,
   encoding: 'utf8',
@@ -142,6 +142,21 @@ const shell = spawnSync(process.execPath, ['./bin/run.js', 'shell'], {
 })
 assert.equal(shell.status, 0, shell.stderr)
 assert.match(shell.stdout, /"authenticated": false/)
+
+const accountsOutput = await withMockAPI(async baseURL => {
+  const result = await runAsync(['./bin/run.js', 'accounts', '--base-url', baseURL], {
+    cwd: root,
+    env: {
+      ...process.env,
+      BEEPER_ACCESS_TOKEN: 'bdapi_test',
+      BEEPER_CLI_CONFIG_DIR: '/tmp/beeper-cli-accounts-test',
+    },
+  })
+  assert.equal(result.status, 0, result.stderr)
+  return result.stdout
+})
+assert.match(accountsOutput, /iMessage/)
+assert.doesNotMatch(accountsOutput, /No accounts connected/)
 
 const fakeClient = {
   accounts: {
@@ -306,5 +321,47 @@ function withMockDesktop(appStatus, callback) {
         server.close(() => reject(error))
       }
     })
+  })
+}
+
+function withMockAPI(callback) {
+  const server = createServer((req, res) => {
+    if (req.url === '/v1/accounts') {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify([
+        { accountID: 'imessage-main', bridge: { id: 'local-imessage', type: 'imessage' }, network: 'iMessage', user: { displayName: 'Main' } },
+      ]))
+      return
+    }
+    res.writeHead(404).end('Not found')
+  })
+
+  return new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', async () => {
+      const address = server.address()
+      try {
+        const result = await callback(`http://127.0.0.1:${address.port}`)
+        server.close(() => resolve(result))
+      } catch (error) {
+        server.close(() => reject(error))
+      }
+    })
+  })
+}
+
+function runAsync(args, options) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, args, {
+      ...options,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let stdout = ''
+    let stderr = ''
+    child.stdout.setEncoding('utf8')
+    child.stderr.setEncoding('utf8')
+    child.stdout.on('data', chunk => { stdout += chunk })
+    child.stderr.on('data', chunk => { stderr += chunk })
+    child.on('error', reject)
+    child.on('close', status => resolve({ status, stdout, stderr }))
   })
 }
