@@ -15,10 +15,22 @@ const scanPorts = Array.from({ length: 20 }, (_, index) => defaultPort + index)
 
 export async function findLocalDesktop(options: { baseURL?: string; scan?: boolean; timeoutMs?: number } = {}): Promise<DesktopProbe> {
   const config = await readConfig()
-  const candidates = candidateBaseURLs(options.baseURL ?? config.baseURL, options.scan ?? true)
-  for (const baseURL of candidates) {
-    const probe = await probeDesktop(baseURL, options.timeoutMs ?? 500)
-    if (probe) return probe
+  const preferred = options.baseURL ?? config.baseURL
+  const candidates = candidateBaseURLs(preferred, options.scan ?? true)
+  const timeoutMs = options.timeoutMs ?? 500
+
+  const preferredProbe = await probeDesktop(preferred, timeoutMs)
+  if (preferredProbe) return preferredProbe
+
+  const rest = candidates.filter(url => url !== preferred)
+  if (rest.length) {
+    try {
+      return await Promise.any(rest.map(async url => {
+        const probe = await probeDesktop(url, timeoutMs)
+        if (!probe) throw new Error('not found')
+        return probe
+      }))
+    } catch { /* fall through */ }
   }
 
   throw new Error(`Could not find a running Beeper Desktop API on ${candidates.join(', ')}.`)

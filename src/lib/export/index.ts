@@ -1,4 +1,5 @@
 import { createWriteStream } from 'node:fs'
+import type { FileHandle } from 'node:fs/promises'
 import { copyFile, mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -154,14 +155,13 @@ export async function exportBeeperData(client: any, options: ExportOptions): Pro
 }
 
 async function collectChats(client: any, options: ExportOptions): Promise<Chat[]> {
-  const chats: Chat[] = []
   if (options.chatIDs?.length) {
-    for (const chatID of options.chatIDs) {
-      chats.push(await client.chats.retrieve(chatID, { maxParticipantCount: 0 }))
-    }
-    return chats
+    return Promise.all(options.chatIDs.map(chatID =>
+      client.chats.retrieve(chatID, { maxParticipantCount: 0 }) as Promise<Chat>,
+    ))
   }
 
+  const chats: Chat[] = []
   for await (const chat of client.chats.list({ accountIDs: options.accountIDs })) {
     chats.push(chat)
     if (options.limitChats && chats.length >= options.limitChats) break
@@ -186,36 +186,53 @@ async function exportChatMessages(
   let messagesWritten = existing.length
   let attachmentCount = chatState.attachmentCount
 
-  while (true) {
-    const page = await client.messages.list(chatID, cursor ? { cursor } : undefined)
-    const items = page.items as Message[]
-    if (!items.length) break
+  await mkdir(dirname(partialPath), { recursive: true })
+  const partialHandle = await open(partialPath, 'a')
+  let attachmentManifestHandle: FileHandle | undefined
+  const writeAttachmentEntry = async (entry: AttachmentExport): Promise<void> => {
+    if (!attachmentManifestHandle) {
+      const manifestPath = join(chatDir, 'attachments', 'attachments.jsonl')
+      await mkdir(dirname(manifestPath), { recursive: true })
+      attachmentManifestHandle = await open(manifestPath, 'a')
+    }
+    await attachmentManifestHandle.appendFile(`${JSON.stringify(entry)}\n`)
+  }
 
-    for (const message of items) {
-      if (seen.has(message.id)) continue
-      await appendJSONL(partialPath, message)
-      seen.add(message.id)
-      existing.push(message)
-      messagesWritten += 1
+  try {
+    while (true) {
+      const page = await client.messages.list(chatID, cursor ? { cursor } : undefined)
+      const items = page.items as Message[]
+      if (!items.length) break
 
-      if (options.downloadAttachments) {
-        const downloaded = await downloadMessageAttachments(client, chatDir, message)
-        attachmentCount += downloaded.length
+      for (const message of items) {
+        if (seen.has(message.id)) continue
+        await partialHandle.appendFile(`${JSON.stringify(message)}\n`)
+        seen.add(message.id)
+        existing.push(message)
+        messagesWritten += 1
+
+        if (options.downloadAttachments) {
+          const downloaded = await downloadMessageAttachments(client, chatDir, message, writeAttachmentEntry)
+          attachmentCount += downloaded
+        }
+
+        if (options.limitMessages && messagesWritten >= options.limitMessages) break
       }
 
+      cursor = page.oldestCursor ?? null
+      chatState.cursor = cursor
+      chatState.messageCount = messagesWritten
+      chatState.attachmentCount = attachmentCount
+      chatState.updatedAt = new Date().toISOString()
+      await writeJSONAtomic(statePath, state)
+      progress(options, `  ${chatTitle(chat)}: ${messagesWritten} messages${options.downloadAttachments ? `, ${attachmentCount} attachments` : ''}`)
+
       if (options.limitMessages && messagesWritten >= options.limitMessages) break
+      if (!page.hasMore || !cursor) break
     }
-
-    cursor = page.oldestCursor ?? null
-    chatState.cursor = cursor
-    chatState.messageCount = messagesWritten
-    chatState.attachmentCount = attachmentCount
-    chatState.updatedAt = new Date().toISOString()
-    await writeJSONAtomic(statePath, state)
-    progress(options, `  ${chatTitle(chat)}: ${messagesWritten} messages${options.downloadAttachments ? `, ${attachmentCount} attachments` : ''}`)
-
-    if (options.limitMessages && messagesWritten >= options.limitMessages) break
-    if (!page.hasMore || !cursor) break
+  } finally {
+    await partialHandle.close()
+    if (attachmentManifestHandle) await attachmentManifestHandle.close()
   }
 
   existing.sort((a, b) => String(a.sortKey || a.timestamp).localeCompare(String(b.sortKey || b.timestamp)))
@@ -223,28 +240,34 @@ async function exportChatMessages(
   return { attachmentCount, attachments: allAttachments, messages: existing }
 }
 
-async function downloadMessageAttachments(client: any, chatDir: string, message: Message): Promise<AttachmentExport[]> {
+async function downloadMessageAttachments(
+  client: any,
+  chatDir: string,
+  message: Message,
+  writeEntry: (entry: AttachmentExport) => Promise<void>,
+): Promise<number> {
   const attachments = message.attachments ?? []
-  const exported: AttachmentExport[] = []
+  let count = 0
   for (const [index, attachment] of attachments.entries()) {
     const sourceURL = attachment.id || attachment.srcURL
     if (sourceURL) {
       const path = await downloadURL(client, sourceURL, chatDir, message.id, index, attachment.fileName, attachment.mimeType)
-      if (path) exported.push({ attachment, index, kind: 'attachment', messageID: message.id, path, sourceURL })
+      if (path) {
+        await writeEntry({ attachment, index, kind: 'attachment', messageID: message.id, path, sourceURL })
+        count += 1
+      }
     }
 
     if (attachment.posterImg) {
       const path = await downloadURL(client, attachment.posterImg, chatDir, message.id, index, `poster-${attachment.fileName ?? index}`, undefined)
-      if (path) exported.push({ attachment, index, kind: 'poster', messageID: message.id, path, sourceURL: attachment.posterImg })
+      if (path) {
+        await writeEntry({ attachment, index, kind: 'poster', messageID: message.id, path, sourceURL: attachment.posterImg })
+        count += 1
+      }
     }
   }
 
-  if (exported.length) {
-    const manifestPath = join(chatDir, 'attachments', 'attachments.jsonl')
-    for (const item of exported) await appendJSONL(manifestPath, item)
-  }
-
-  return exported
+  return count
 }
 
 async function downloadURL(
@@ -406,16 +429,6 @@ async function readAttachmentsManifest(chatDir: string): Promise<AttachmentExpor
   return readJSONL<AttachmentExport>(join(chatDir, 'attachments', 'attachments.jsonl'))
 }
 
-async function appendJSONL(path: string, value: unknown): Promise<void> {
-  await mkdir(dirname(path), { recursive: true })
-  const handle = await open(path, 'a')
-  try {
-    await handle.appendFile(`${JSON.stringify(value)}\n`)
-  } finally {
-    await handle.close()
-  }
-}
-
 async function readJSONL<T>(path: string): Promise<T[]> {
   try {
     const content = await readFile(path, 'utf8')
@@ -480,19 +493,21 @@ function fileNameFromURL(url: string, mimeType?: string): string {
     const parsed = new URL(url)
     const name = basename(parsed.pathname)
     if (name) return name
-  } catch {
-    // Keep fallback below for Matrix URLs and local paths.
-  }
+  } catch { /* fall through */ }
   return `attachment${extensionForMimeType(mimeType)}`
+}
+
+const mimeExtensions: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'video/mp4': '.mp4',
+  'audio/mpeg': '.mp3',
 }
 
 function extensionForMimeType(mimeType?: string): string {
   if (!mimeType) return ''
-  if (mimeType === 'image/jpeg') return '.jpg'
-  if (mimeType === 'image/png') return '.png'
-  if (mimeType === 'image/gif') return '.gif'
-  if (mimeType === 'video/mp4') return '.mp4'
-  if (mimeType === 'audio/mpeg') return '.mp3'
+  if (mimeExtensions[mimeType]) return mimeExtensions[mimeType]!
   const subtype = mimeType.split('/')[1]
   return subtype && !subtype.includes('+') ? `.${subtype}` : ''
 }

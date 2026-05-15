@@ -48,7 +48,6 @@ type Kind =
 
 function detectKind(record: RecordValue): Kind {
   if (typeof record.id === 'string' && typeof record.accountID === 'string' && typeof record.title === 'string' && typeof record.unreadCount === 'number') {
-    // Detail view if it carries participant data (single chat retrieved); else row.
     if (record.participants && typeof record.participants === 'object') return 'chatDetail'
     return 'chat'
   }

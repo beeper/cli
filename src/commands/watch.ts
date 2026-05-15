@@ -49,7 +49,7 @@ export default class Watch extends Command {
   }
 
   private async runHuman(ws: WebSocket, subscribed: string[], baseURL: string): Promise<void> {
-    const stream = startStream({ baseURL, subscribed })
+    const stream = await startStream({ baseURL, subscribed })
     let closed = false
 
     const finish = async (): Promise<void> => {
