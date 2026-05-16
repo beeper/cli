@@ -2,7 +2,7 @@ import { Args, Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
-import { collectPage, printData, printIDs, printList } from '../../lib/output.js'
+import { collectPage, printData, printList } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
@@ -26,7 +26,9 @@ export default class ContactsList extends BeeperCommand {
     const load = async (): Promise<Array<Record<string, unknown>>> => {
       const collected: Array<Record<string, unknown>> = []
       for (const accountID of accountIDs) {
-        const contacts = await collectPage(client.accounts.contacts.list(accountID, { query: flags.query }), flags.limit)
+        const remaining = flags.limit - collected.length
+        if (remaining <= 0) break
+        const contacts = await collectPage(client.accounts.contacts.list(accountID, { query: flags.query }), remaining)
         collected.push(...contacts.map(item => ({ ...(item as unknown as Record<string, unknown>), accountID })))
         if (collected.length >= flags.limit) break
       }
@@ -38,7 +40,10 @@ export default class ContactsList extends BeeperCommand {
       })
       : await load()
     if (flags.ids) {
-      printIDs(items)
+      for (const item of items) {
+        const id = item.userID ?? item.id
+        if (id) process.stdout.write(`${String(id)}\n`)
+      }
       return
     }
     if (flags.json) {
