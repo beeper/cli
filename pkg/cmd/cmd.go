@@ -88,6 +88,71 @@ func init() {
 			&focus,
 			&search,
 			{
+				Name:     "app",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appStatus,
+				},
+			},
+			{
+				Name:     "app:login",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appLoginEmail,
+					&appLoginRegister,
+					&appLoginResponse,
+					&appLoginStart,
+				},
+			},
+			{
+				Name:     "app:e2ee:recovery-code",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appE2eeRecoveryCodeMarkBackedUp,
+					&appE2eeRecoveryCodeVerify,
+				},
+			},
+			{
+				Name:     "app:e2ee:recovery-code:reset",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appE2eeRecoveryCodeResetCreate,
+					&appE2eeRecoveryCodeResetConfirm,
+				},
+			},
+			{
+				Name:     "app:e2ee:verification",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appE2eeVerificationCreate,
+					&appE2eeVerificationAccept,
+					&appE2eeVerificationCancel,
+				},
+			},
+			{
+				Name:     "app:e2ee:verification:qr",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appE2eeVerificationQrConfirmScanned,
+					&appE2eeVerificationQrScan,
+				},
+			},
+			{
+				Name:     "app:e2ee:verification:sas",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appE2eeVerificationSasConfirm,
+					&appE2eeVerificationSasStart,
+				},
+			},
+			{
 				Name:     "accounts",
 				Category: "API RESOURCE",
 				Suggest:  true,
@@ -102,6 +167,116 @@ func init() {
 				Commands: []*cli.Command{
 					&accountsContactsList,
 					&accountsContactsSearch,
+				},
+			},
+			{
+				Name:     "bridges",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&bridgesList,
+				},
+			},
+			{
+				Name:     "matrix:users",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixUsersRetrieveProfile,
+				},
+			},
+			{
+				Name:     "matrix:users:account-data",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixUsersAccountDataRetrieve,
+					&matrixUsersAccountDataUpdate,
+				},
+			},
+			{
+				Name:     "matrix:rooms",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixRoomsCreate,
+					&matrixRoomsJoin,
+					&matrixRoomsLeave,
+				},
+			},
+			{
+				Name:     "matrix:rooms:account-data",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixRoomsAccountDataRetrieve,
+					&matrixRoomsAccountDataUpdate,
+				},
+			},
+			{
+				Name:     "matrix:rooms:state",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixRoomsStateRetrieve,
+					&matrixRoomsStateList,
+				},
+			},
+			{
+				Name:     "matrix:rooms:events",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixRoomsEventsRetrieve,
+				},
+			},
+			{
+				Name:     "matrix:bridges:auth",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixBridgesAuthListFlows,
+					&matrixBridgesAuthListLogins,
+					&matrixBridgesAuthLogout,
+					&matrixBridgesAuthStartLogin,
+					&matrixBridgesAuthSubmitCookies,
+					&matrixBridgesAuthSubmitUserInput,
+					&matrixBridgesAuthWaitForStep,
+					&matrixBridgesAuthWhoami,
+				},
+			},
+			{
+				Name:     "matrix:bridges:contacts",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixBridgesContactsList,
+				},
+			},
+			{
+				Name:     "matrix:bridges:users",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixBridgesUsersResolve,
+					&matrixBridgesUsersSearch,
+				},
+			},
+			{
+				Name:     "matrix:bridges:rooms",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixBridgesRoomsCreateDm,
+					&matrixBridgesRoomsCreateGroup,
+				},
+			},
+			{
+				Name:     "matrix:bridges:capabilities",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&matrixBridgesCapabilitiesRetrieve,
 				},
 			},
 			{
