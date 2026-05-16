@@ -20,6 +20,7 @@ export default class Description extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(Description)
     ensureWritable(flags)
+    if (flags.clear && args.description) throw new Error('Use either DESCRIPTION or --clear, not both')
     if (!flags.clear && !args.description) throw new Error('Provide DESCRIPTION or pass --clear')
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, args.chat, { pick: flags.pick })
