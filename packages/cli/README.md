@@ -29,6 +29,26 @@ brew install beeper/tap/beeper-cli
 
 The installed command is `beeper`.
 
+## Plugins
+
+Beeper CLI supports oclif plugins for third-party commands:
+
+```sh
+beeper plugins
+beeper plugins install beeper-cli-plugin-example
+beeper plugins uninstall beeper-cli-plugin-example
+```
+
+Plugin authors should depend on the stable SDK entrypoint instead of importing
+CLI internals:
+
+```ts
+import { BeeperCommand, createBeeperClient, ensureWritable } from 'beeper-cli/plugin-sdk'
+```
+
+Plugins should use namespaced commands such as `beeper github issue create` and
+must treat installed plugins as trusted code, because plugins run arbitrary Node.js.
+
 ## Local Development
 
 ```sh
