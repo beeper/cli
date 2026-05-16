@@ -98,8 +98,10 @@ function matchAccounts(accounts: AnyRecord[], input: string): AnyRecord[] {
 async function retrieveChat(client: any, input: string): Promise<AnyRecord | undefined> {
   try {
     return await client.chats.retrieve(input, { maxParticipants: 0 })
-  } catch {
-    return undefined
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (/not\s*found|404/i.test(message)) return undefined
+    throw error
   }
 }
 
