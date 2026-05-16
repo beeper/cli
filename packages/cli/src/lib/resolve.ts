@@ -16,7 +16,7 @@ export async function resolveAccountIDs(
 ): Promise<string[] | undefined> {
   if (!inputs?.length) return undefined
 
-  const accounts = await client.accounts.list() as AnyRecord[]
+  const accounts = accountItems(await client.accounts.list())
   const resolved: string[] = []
   for (const input of inputs) {
     const matches = matchAccounts(accounts, input)
@@ -37,7 +37,7 @@ export async function resolveAccountID(client: any, input: string): Promise<stri
 }
 
 export async function listAccountIDs(client: any): Promise<string[]> {
-  const accounts = await client.accounts.list() as AnyRecord[]
+  const accounts = accountItems(await client.accounts.list())
   return accounts.map(account => String(account.accountID)).filter(Boolean)
 }
 
@@ -70,6 +70,11 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
   throw new Error(formatAmbiguous(`chat "${input}"`, matches.map(formatChat)))
 }
 
+function accountItems(accounts: unknown): AnyRecord[] {
+  if (Array.isArray(accounts)) return accounts as AnyRecord[]
+  return ((accounts as { items?: AnyRecord[] }).items ?? [])
+}
+
 function matchAccounts(accounts: AnyRecord[], input: string): AnyRecord[] {
   const normalizedInput = normalize(input)
   const exact = accounts.filter(account =>
@@ -97,7 +102,7 @@ function matchAccounts(accounts: AnyRecord[], input: string): AnyRecord[] {
 
 async function retrieveChat(client: any, input: string): Promise<AnyRecord | undefined> {
   try {
-    return await client.chats.retrieve(input, { maxParticipants: 0 })
+    return await client.chats.retrieve(input, { maxParticipantCount: 0 })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (/not\s*found|404/i.test(message)) return undefined

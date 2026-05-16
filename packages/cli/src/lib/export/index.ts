@@ -66,7 +66,7 @@ export async function exportBeeperData(client: any, options: ExportOptions): Pro
   const startedAt = state.createdAt
 
   progress(options, `Export directory: ${options.outDir}`)
-  const accounts = await client.accounts.list()
+  const accounts = accountItems(await client.accounts.list())
   await writeJSONAtomic(join(options.outDir, 'accounts.json'), accounts)
   progress(options, `Accounts: ${accounts.length}`)
 
@@ -207,15 +207,18 @@ async function exportChatMessages(
 
       for (const message of items) {
         if (seen.has(message.id)) continue
-        await partialHandle.appendFile(`${JSON.stringify(message)}\n`)
-        seen.add(message.id)
-        existing.push(message)
-        messagesWritten += 1
 
         if (options.downloadAttachments) {
           const downloaded = await downloadMessageAttachments(client, chatDir, message, writeAttachmentEntry)
           attachmentCount += downloaded
         }
+
+        await partialHandle.appendFile(`${JSON.stringify(message)}\n`)
+        seen.add(message.id)
+        existing.push(message)
+        messagesWritten += 1
+        chatState.attachmentCount = attachmentCount
+        await writeJSONAtomic(statePath, state)
 
         if (options.limitMessages && messagesWritten >= options.limitMessages) break
       }
@@ -477,6 +480,11 @@ async function exists(path: string): Promise<boolean> {
     if (error?.code === 'ENOENT') return false
     throw error
   }
+}
+
+function accountItems(accounts: unknown): unknown[] {
+  if (Array.isArray(accounts)) return accounts
+  return (accounts as { items?: unknown[] }).items ?? []
 }
 
 function safeSegment(value: string): string {
