@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import {readFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
 import {join, resolve} from 'node:path';
 
-const root = resolve(new URL('..', import.meta.url).pathname);
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const {apiCopy} = await import('../dist/lib/copy.js');
 
 const checks = [
