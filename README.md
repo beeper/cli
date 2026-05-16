@@ -66,13 +66,13 @@ For details about specific commands, use the `--help` flag.
 
 ### Environment variables
 
-| Environment variable  | Description                                                                                           | Required |
-| --------------------- | ----------------------------------------------------------------------------------------------------- | -------- |
-| `BEEPER_ACCESS_TOKEN` | Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for all API operations. | yes      |
+| Environment variable  | Description                                                                                                     | Required | Default value |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- | -------- | ------------- |
+| `BEEPER_ACCESS_TOKEN` | Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for authenticated API operations. | no       | `null`        |
 
 ### Global flags
 
-- `--access-token` - Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for all API operations. (can also be set with `BEEPER_ACCESS_TOKEN` env var)
+- `--access-token` - Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for authenticated API operations. (can also be set with `BEEPER_ACCESS_TOKEN` env var)
 - `--help` - Show command line usage
 - `--debug` - Enable debug logging (includes HTTP request/response details)
 - `--version`, `-v` - Show the CLI version

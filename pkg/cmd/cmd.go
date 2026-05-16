@@ -80,7 +80,7 @@ func init() {
 			},
 			&requestflag.Flag[string]{
 				Name:    "access-token",
-				Usage:   "Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for all API operations.",
+				Usage:   "Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for authenticated API operations.",
 				Sources: cli.EnvVars("BEEPER_ACCESS_TOKEN"),
 			},
 		},
