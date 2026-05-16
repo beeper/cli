@@ -1,12 +1,14 @@
 export function splitCommandLine(input: string): string[] {
   const tokens: string[] = []
   let current = ''
+  let tokenStarted = false
   let quote: '"' | "'" | undefined
   let escaped = false
 
   for (const char of input) {
     if (escaped) {
       current += char
+      tokenStarted = true
       escaped = false
       continue
     }
@@ -17,23 +19,29 @@ export function splitCommandLine(input: string): string[] {
     }
 
     if ((char === '"' || char === "'") && (!quote || quote === char)) {
+      if (!quote) tokenStarted = true
       quote = quote ? undefined : char
       continue
     }
 
     if (!quote && /\s/.test(char)) {
-      if (current) {
+      if (tokenStarted) {
         tokens.push(current)
         current = ''
+        tokenStarted = false
       }
       continue
     }
 
     current += char
+    tokenStarted = true
   }
 
-  if (escaped) current += '\\'
+  if (escaped) {
+    current += '\\'
+    tokenStarted = true
+  }
   if (quote) throw new Error(`Unclosed ${quote} quote`)
-  if (current) tokens.push(current)
+  if (tokenStarted) tokens.push(current)
   return tokens
 }
