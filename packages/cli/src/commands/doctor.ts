@@ -31,7 +31,7 @@ export default class Doctor extends BeeperCommand {
     }
 
     await runCheck('server', 'Checking Beeper Desktop server…', async () => {
-      const response = await fetch(new URL('/v1/info', baseURL))
+      const response = await fetch(new URL('/v1/info', baseURL), { signal: AbortSignal.timeout(5000) })
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
       return `${response.status} ${response.statusText}`
     }, value => value)
