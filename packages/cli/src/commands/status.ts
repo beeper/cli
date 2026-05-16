@@ -11,7 +11,7 @@ export default class Status extends BeeperCommand {
     const config = await readConfig()
     const baseURL = flags['base-url'] ?? config.baseURL
     const fetchInfo = async (): Promise<unknown> => {
-      const response = await fetch(new URL('/v1/info', baseURL))
+      const response = await fetch(new URL('/v1/info', baseURL), { signal: AbortSignal.timeout(5000) })
       if (!response.ok) throw new Error(`Beeper Desktop API returned ${response.status} ${response.statusText}`)
       return response.json()
     }
