@@ -19,7 +19,7 @@ export default class MessagesSearch extends BeeperCommand {
     'date-before': Flags.string({ description: 'Only messages before this ISO timestamp' }),
     'exclude-low-priority': Flags.boolean({ allowNo: true, description: 'Exclude low-priority chats. Use --no-exclude-low-priority to include all.' }),
     ids: Flags.boolean({ default: false, description: 'Print only message IDs' }),
-    'include-muted': Flags.boolean({ allowNo: true, description: 'Include muted chats. Use --no-include-muted for a tighter search.' }),
+    'include-muted': Flags.boolean({ allowNo: true, default: true, description: 'Include muted chats. Use --no-include-muted for a tighter search.' }),
     limit: Flags.integer({ default: 50, description: 'Maximum messages to print' }),
     media: Flags.string({ multiple: true, options: ['any', 'video', 'image', 'link', 'file'], description: 'Filter by media type. Repeat for more types.' }),
     sender: Flags.string({ description: 'me, others, or a user ID' }),
