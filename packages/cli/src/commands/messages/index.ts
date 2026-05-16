@@ -36,7 +36,7 @@ export default class MessagesIndex extends BeeperCommand {
       printIDs(items)
       return
     }
-    printList(items, flags.json ? 'json' : 'human', {
+    await printList(items, flags.json ? 'json' : 'human', {
       title: 'No messages yet',
       subtitle: 'This chat is empty. Send the first message.',
       suggestions: [

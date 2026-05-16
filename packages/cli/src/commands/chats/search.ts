@@ -49,7 +49,7 @@ export default class ChatsSearch extends BeeperCommand {
       printIDs(items)
       return
     }
-    printList(items, flags.json ? 'json' : 'human', {
+    await printList(items, flags.json ? 'json' : 'human', {
       title: 'No chats matched',
       subtitle: `Nothing found for "${args.query}".`,
       suggestions: [

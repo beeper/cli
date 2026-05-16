@@ -55,7 +55,7 @@ export default class MessagesSearch extends BeeperCommand {
       printIDs(items)
       return
     }
-    printList(items, flags.json ? 'json' : 'human', {
+    await printList(items, flags.json ? 'json' : 'human', {
       title: 'No messages matched',
       subtitle: args.query ? `Nothing found for "${args.query}".` : 'Try a different filter combination.',
       suggestions: [

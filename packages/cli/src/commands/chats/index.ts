@@ -28,7 +28,7 @@ export default class ChatsIndex extends BeeperCommand {
       printIDs(items)
       return
     }
-    printList(items, flags.json ? 'json' : 'human', {
+    await printList(items, flags.json ? 'json' : 'human', {
       title: 'No chats yet',
       subtitle: accountIDs?.length ? 'Try another account, or check your filters.' : 'Connect an account or sync your existing ones.',
       suggestions: [
