@@ -6,9 +6,6 @@ export default class AuthVerifyCancel extends BeeperCommand {
   static override summary = 'Cancel an in-progress device verification'
   static override flags = {
     id: Flags.string({ description: 'Verification request ID. Defaults to the active request.' }),
-    user: Flags.string({ description: 'User ID whose verification request to cancel' }),
-    code: Flags.string({ description: 'Optional cancellation code' }),
-    payload: Flags.string({ description: 'Optional cancellation payload' }),
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthVerifyCancel)

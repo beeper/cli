@@ -6,9 +6,6 @@ export default class AuthVerifyApprove extends BeeperCommand {
   static override summary = 'Approve a pending device verification request'
   static override flags = {
     id: Flags.string({ description: 'Verification request ID. Defaults to the active request.' }),
-    user: Flags.string({ description: 'User ID whose verification request to approve' }),
-    code: Flags.string({ description: 'Out-of-band approval code from the other device' }),
-    payload: Flags.string({ description: 'Raw verification payload (e.g. scanned QR contents)' }),
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthVerifyApprove)

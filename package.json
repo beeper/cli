@@ -8,6 +8,7 @@
     "check": "pnpm typecheck && pnpm test && pnpm build && pnpm pack:packages",
     "clean": "pnpm -r clean",
     "changeset": "changeset",
+    "lint": "eslint .",
     "pack:packages": "mkdir -p .packs && pnpm -r --filter './packages/*' pack --pack-destination ./.packs",
     "release": "pnpm check && pnpm changeset publish",
     "test": "pnpm -r test",
@@ -18,6 +19,9 @@
     "@changesets/changelog-github": "^0.6.0",
     "@changesets/cli": "^2.31.0",
     "@types/node": "^20.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-oclif": "^6.0.165",
+    "eslint-config-prettier": "^10.1.8",
     "tsdown": "^0.21.10",
     "typescript": "^5.7.2",
     "vitest": "^4.0.18"

@@ -7,11 +7,13 @@ export {
   getAccessToken,
   getBaseURL,
   readConfig,
+  resolveTarget,
   resetConfig,
   updateConfig,
   writeConfig,
   type Config,
   type StoredAuth,
+  type Target,
 } from './lib/targets.js'
 export { createClient as createBeeperClient, requireToken } from './lib/client.js'
 export {

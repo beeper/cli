@@ -1,28 +1,26 @@
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { apiCopy, cliCopy, sdkParamCopy } from '../../lib/copy.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs, resolveChatID } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
 export default class MessagesSearch extends BeeperCommand {
   static override summary = 'Search messages across chats'
-  static override description = apiCopy.messages.search
   static override args = {
-    query: Args.string({ description: sdkParamCopy.searchQuery, required: false }),
+    query: Args.string({ description: 'Search text (literal word match)', required: false }),
   }
   static override flags = {
-    account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
-    chat: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.chatSelector}` }),
-    'chat-type': Flags.string({ options: ['group', 'single'], description: 'Limit to group chats or direct messages' }),
+    account: Flags.string({ multiple: true, description: 'Limit to an account selector. Repeat for multiple.' }),
+    chat: Flags.string({ multiple: true, description: 'Limit to a chat selector. Repeat for multiple.' }),
+    'chat-type': Flags.string({ options: ['group', 'single'], description: 'Only group chats or direct messages' }),
     after: Flags.string({ description: 'Only messages at or after this ISO timestamp' }),
     before: Flags.string({ description: 'Only messages at or before this ISO timestamp' }),
-    'exclude-low-priority': Flags.boolean({ allowNo: true, description: 'Exclude low-priority chats. Use --no-exclude-low-priority to include all.' }),
+    'exclude-low-priority': Flags.boolean({ allowNo: true, description: 'Exclude low-priority chats' }),
     ids: Flags.boolean({ default: false, description: 'Print only message IDs' }),
-    'include-muted': Flags.boolean({ allowNo: true, default: true, description: 'Include muted chats. Use --no-include-muted for a tighter search.' }),
-    limit: Flags.integer({ default: 50, description: 'Maximum messages to print' }),
-    media: Flags.string({ multiple: true, options: ['any', 'video', 'image', 'link', 'file'], description: 'Filter by media type. Repeat for more types.' }),
+    'include-muted': Flags.boolean({ allowNo: true, default: true, description: 'Include muted chats' }),
+    limit: Flags.integer({ default: 50, description: 'Maximum results' }),
+    media: Flags.string({ multiple: true, options: ['any', 'video', 'image', 'link', 'file'], description: 'Filter by media type. Repeat for multiple.' }),
     sender: Flags.string({ description: 'me, others, or a user ID' }),
   }
 
@@ -34,7 +32,7 @@ export default class MessagesSearch extends BeeperCommand {
       || flags.sender,
     )
     if (!args.query && !hasFilter) {
-      throw new Error('Provide a search query or at least one filter flag (e.g. --chat, --sender, --media, --date-after).')
+      throw new Error('Provide a search query or at least one filter flag (--chat, --sender, --media, etc.).')
     }
     const client = await createClient(flags)
     const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true })
@@ -68,8 +66,8 @@ export default class MessagesSearch extends BeeperCommand {
       title: 'No messages matched',
       subtitle: args.query ? `Nothing found for "${args.query}".` : 'Try a different filter combination.',
       suggestions: [
-        { command: 'beeper messages <chatID>', hint: 'list messages from a chat' },
-        { command: 'beeper search "<term>"', hint: 'search chats + messages' },
+        { command: 'beeper messages list --chat <chat>', hint: 'list messages from a chat' },
+        { command: 'beeper chats search "<term>"', hint: 'search chats instead' },
       ],
     })
   }

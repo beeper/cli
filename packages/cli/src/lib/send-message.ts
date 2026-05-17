@@ -8,8 +8,9 @@ export async function sendMessage(client: any, options: {
   mimeType?: string
   replyTo?: string
   text: string
+  mentions?: string[]
+  noPreview?: boolean
   wait?: boolean
-  waitIntervalMs?: number
   waitTimeoutMs?: number
 }): Promise<unknown> {
   const uploaded = options.file
@@ -34,11 +35,12 @@ export async function sendMessage(client: any, options: {
       : undefined,
     replyToMessageID: options.replyTo,
     text: options.text,
+    mentions: options.mentions?.length ? options.mentions : undefined,
+    disableLinkPreview: options.noPreview || undefined,
   })
 
   if (!options.wait) return pending
   return waitForMessage(client, options.chatID, pending.pendingMessageID, {
-    intervalMs: options.waitIntervalMs,
     timeoutMs: options.waitTimeoutMs,
   })
 }

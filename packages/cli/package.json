@@ -49,7 +49,12 @@
     "helpOptions": {
       "maxWidth": 100
     },
-    "plugins": [],
+    "plugins": [
+      "@oclif/plugin-autocomplete",
+      "@oclif/plugin-help",
+      "@oclif/plugin-not-found",
+      "@oclif/plugin-plugins"
+    ],
     "topicSeparator": " ",
     "topics": {
       "api": {

@@ -12,8 +12,8 @@ export default class ChatsDraft extends BeeperCommand {
     pick: Flags.integer({ description: 'Pick the Nth chat when --chat is ambiguous' }),
     text: Flags.string({ description: 'Draft text. Omit and pass --clear to remove the draft.' }),
     file: Flags.string({ description: 'Attachment file to upload with the draft' }),
-    'file-name': Flags.string({ description: 'Override the displayed filename of the attachment' }),
-    'mime-type': Flags.string({ description: 'Override MIME type detection for the attachment' }),
+    filename: Flags.string({ description: 'Override the displayed filename of the attachment' }),
+    mime: Flags.string({ description: 'Override MIME type detection for the attachment' }),
     clear: Flags.boolean({ default: false, description: 'Clear the existing draft instead of setting one' }),
   }
   async run(): Promise<void> {
@@ -27,7 +27,7 @@ export default class ChatsDraft extends BeeperCommand {
       await printData(await client.chats.update(chatID, { draft: null }), flags.json ? 'json' : 'human')
       return
     }
-    const upload = flags.file ? await client.assets.upload({ file: createReadStream(flags.file), fileName: flags['file-name'], mimeType: flags['mime-type'] }) : undefined
+    const upload = flags.file ? await client.assets.upload({ file: createReadStream(flags.file), fileName: flags.filename, mimeType: flags.mime }) : undefined
     await printData(await client.chats.update(chatID, { draft: { text: flags.text!, attachments: upload?.uploadID ? { [upload.uploadID]: upload as any } : undefined } }), flags.json ? 'json' : 'human')
   }
 }

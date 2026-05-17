@@ -13,9 +13,10 @@ export default class SendText extends BeeperCommand {
     message: Flags.string({ required: true, description: 'Message text to send' }),
     pick: Flags.integer({ description: 'Pick the Nth chat when --to is ambiguous' }),
     'reply-to': Flags.string({ description: 'Send as a reply to this message ID' }),
+    mention: Flags.string({ multiple: true, description: 'User ID to @-mention (repeatable)' }),
+    'no-preview': Flags.boolean({ default: false, description: 'Disable automatic link preview for URLs in the message' }),
     wait: Flags.boolean({ default: false, description: 'Wait for the message to leave the pending state (or fail) before returning' }),
-    'wait-interval': Flags.integer({ default: 750, description: 'Poll interval (ms) while --wait is set' }),
-    'wait-timeout': Flags.integer({ default: 30_000, description: 'Maximum time (ms) to wait when --wait is set' }),
+    'wait-timeout': Flags.integer({ default: 30_000, description: 'Maximum wait time in ms when --wait is set' }),
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(SendText)
@@ -23,7 +24,7 @@ export default class SendText extends BeeperCommand {
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
     try {
-      await printData(await sendMessage(client, { chatID, text: flags.message, replyTo: flags['reply-to'], wait: flags.wait, waitIntervalMs: flags['wait-interval'], waitTimeoutMs: flags['wait-timeout'] }), flags.json ? 'json' : 'human')
+      await printData(await sendMessage(client, { chatID, text: flags.message, replyTo: flags['reply-to'], mentions: flags.mention, noPreview: flags['no-preview'], wait: flags.wait, waitTimeoutMs: flags['wait-timeout'] }), flags.json ? 'json' : 'human')
     } catch (error) {
       if (!shouldFallbackToMatrix(chatID, error)) throw error
       await printData(await sendMatrixText(flags, chatID, flags.message), flags.json ? 'json' : 'human')
