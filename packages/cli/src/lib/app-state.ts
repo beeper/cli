@@ -1,7 +1,7 @@
 import { appRequest, promptYesNo } from './app-api.js'
 
 export type AppState = {
-  state: string
+  state: ReadinessState | string
   matrix?: { userID?: string; deviceID?: string; homeserver?: string }
   verification?: {
     state: string
@@ -12,14 +12,55 @@ export type AppState = {
   }
 }
 
+export type ReadinessState =
+  | 'no-target'
+  | 'target-unreachable'
+  | 'needs-login'
+  | 'login-in-progress'
+  | 'initializing'
+  | 'needs-cross-signing-setup'
+  | 'needs-verification'
+  | 'verification-in-progress'
+  | 'needs-recovery-key'
+  | 'needs-secrets'
+  | 'needs-first-sync'
+  | 'ready'
+  | 'error'
+
+export type Readiness = {
+  state: ReadinessState
+  app?: AppState
+  actions: string[]
+  message?: string
+}
+
 export function nextAppStep(state: AppState, targetID?: string): string | undefined {
   const target = targetID && targetID !== 'desktop' ? ` -t ${targetID}` : ''
   if (state.state === 'ready') return undefined
-  if (state.state === 'needs-login') return `Run: beeper login${target}`
+  if (state.state === 'needs-login') return `Run: beeper setup${target}`
   if (state.state === 'needs-verification') return `Run: beeper verify${target}`
-  if (state.state === 'needs-secrets') return `Run: beeper app e2ee recovery-code verify${target}`
-  if (state.state === 'needs-cross-signing-setup') return `Run: beeper app e2ee recovery-code reset begin${target}`
+  if (state.state === 'needs-secrets' || state.state === 'needs-recovery-key') return `Run: beeper verify recovery-key${target}`
+  if (state.state === 'needs-cross-signing-setup') return `Run: beeper verify reset-recovery-key${target}`
   return `Waiting for app state: ${state.state}`
+}
+
+export async function evaluateReadiness(options: { baseURL?: string; target?: string; token?: string | false } = {}): Promise<Readiness> {
+  try {
+    const app = await getAppState(options)
+    const state = normalizeReadinessState(app)
+    return {
+      state,
+      app,
+      actions: actionsForState(state),
+      message: nextAppStep(app, options.target),
+    }
+  } catch (error) {
+    return {
+      state: 'target-unreachable',
+      actions: ['targets status', 'targets start', 'doctor'],
+      message: error instanceof Error ? error.message : String(error),
+    }
+  }
 }
 
 export async function getAppState(options: { baseURL?: string; target?: string; token?: string | false } = {}): Promise<AppState> {
@@ -29,7 +70,7 @@ export async function getAppState(options: { baseURL?: string; target?: string; 
 export async function driveVerification(options: { baseURL?: string; target?: string; userID?: string; yes?: boolean } = {}): Promise<AppState> {
   let state = await getAppState(options)
   if (state.state === 'ready') return state
-  if (state.state === 'needs-login') throw new Error('Target is not signed in. Run `beeper login` first.')
+  if (state.state === 'needs-login') throw new Error('Target is not signed in. Run `beeper setup` after signing in to Beeper Desktop.')
 
   for (;;) {
     const verification = state.verification
@@ -70,5 +111,53 @@ export async function driveVerification(options: { baseURL?: string; target?: st
     }
 
     return state
+  }
+}
+
+function normalizeReadinessState(app: AppState): ReadinessState {
+  const known = new Set<ReadinessState>([
+    'no-target',
+    'target-unreachable',
+    'needs-login',
+    'login-in-progress',
+    'initializing',
+    'needs-cross-signing-setup',
+    'needs-verification',
+    'verification-in-progress',
+    'needs-recovery-key',
+    'needs-secrets',
+    'needs-first-sync',
+    'ready',
+    'error',
+  ])
+  if (known.has(app.state as ReadinessState)) return app.state as ReadinessState
+  if (app.verification?.state && app.state !== 'ready') return 'verification-in-progress'
+  return 'error'
+}
+
+function actionsForState(state: ReadinessState): string[] {
+  switch (state) {
+    case 'no-target':
+      return ['targets create desktop', 'targets add remote']
+    case 'target-unreachable':
+      return ['targets status', 'targets start', 'doctor']
+    case 'needs-login':
+    case 'login-in-progress':
+      return ['setup', 'auth status']
+    case 'needs-cross-signing-setup':
+      return ['verify reset-recovery-key']
+    case 'needs-verification':
+    case 'verification-in-progress':
+      return ['verify', 'verify list', 'verify sas', 'verify qr scan']
+    case 'needs-recovery-key':
+    case 'needs-secrets':
+      return ['verify recovery-key']
+    case 'needs-first-sync':
+    case 'initializing':
+      return ['setup', 'status']
+    case 'ready':
+      return ['chats list', 'messages list', 'send text']
+    case 'error':
+      return ['doctor', 'setup']
   }
 }

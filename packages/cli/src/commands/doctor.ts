@@ -1,58 +1,15 @@
 import { BeeperCommand } from '../lib/command.js'
-import { createClient, requireToken } from '../lib/client.js'
-import { readConfig } from '../lib/targets.js'
+import { evaluateReadiness } from '../lib/app-state.js'
+import { resolveTarget } from '../lib/targets.js'
+import { targetLiveStatus } from '../lib/target-status.js'
 import { printData } from '../lib/output.js'
-import { createInkSpinner as createSpinner } from '../lib/ink/spinner.js'
-
-type Check = { ok: boolean; name: string; detail?: string }
-
 export default class Doctor extends BeeperCommand {
-  static override summary = 'Verify Desktop API reachability and authentication'
-
+  static override summary = 'Check target readiness'
   async run(): Promise<void> {
     const { flags } = await this.parse(Doctor)
-    const config = await readConfig()
-    const baseURL = flags['base-url'] ?? config.baseURL
-    const showSpinners = !flags.json && process.stderr.isTTY
-
-    const checks: Check[] = []
-    const runCheck = async <T>(name: string, label: string, action: () => Promise<T>, success?: (value: T) => string): Promise<void> => {
-      const spinner = showSpinners ? createSpinner(label) : undefined
-      try {
-        const value = await action()
-        const detail = success?.(value)
-        checks.push({ ok: true, name, detail })
-        if (spinner) await spinner.succeed(detail ? `${label.replace(/…$/, '')} — ${detail}` : label.replace(/…$/, ''))
-      } catch (error) {
-        const detail = error instanceof Error ? error.message : String(error)
-        checks.push({ ok: false, name, detail })
-        if (spinner) await spinner.fail(`${label.replace(/…$/, '')} — ${detail}`)
-      }
-    }
-
-    await runCheck('server', 'Checking Beeper Desktop server…', async () => {
-      const response = await fetch(new URL('/v1/info', baseURL), { signal: AbortSignal.timeout(5000) })
-      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
-      return `${response.status} ${response.statusText}`
-    }, value => value)
-
-    await runCheck('token', 'Checking auth token…', async () => {
-      await requireToken()
-      return process.env.BEEPER_ACCESS_TOKEN ? 'env' : 'config'
-    }, value => `loaded from ${value}`)
-
-    await runCheck('authenticated-request', 'Calling authenticated endpoint…', async () => {
-      const client = await createClient({ ...flags, baseURL })
-      await client.accounts.list()
-      return 'ok'
-    })
-
-    const result = { ok: checks.every(check => check.ok), checks }
-    if (flags.json) {
-      await printData(result, 'json')
-    } else {
-      await printData(result, 'human')
-    }
-    if (!result.ok) this.exit(1)
+    const target = await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
+    const checks = { target: await targetLiveStatus(target), readiness: await evaluateReadiness({ baseURL: target.baseURL, target: target.id }) }
+    await printData({ ok: checks.readiness.state === 'ready', checks }, flags.json ? 'json' : 'human')
+    if (checks.readiness.state !== 'ready') this.exit(1)
   }
 }

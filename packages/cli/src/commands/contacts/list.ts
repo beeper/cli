@@ -8,20 +8,19 @@ import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
 export default class ContactsList extends BeeperCommand {
   static override summary = apiCopy.contacts.list
-  static override args = {
-    account: Args.string({ description: cliCopy.args.accountSelector, required: true }),
-  }
+  static override args = {}
 
   static override flags = {
     ids: Flags.boolean({ default: false, description: 'Print only contact user IDs' }),
     limit: Flags.integer({ default: 50, description: 'Maximum contacts to print' }),
+    account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
     query: Flags.string({ description: 'Optional blended contact lookup query' }),
   }
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(ContactsList)
+    const { flags } = await this.parse(ContactsList)
     const client = await createClient(flags)
-    const accountIDs = (await resolveAccountIDs(client, [args.account], { allowMultiplePerInput: true }))!
+    const accountIDs = (await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true }))!
     const useSpinner = !flags.json && !flags.ids
     const load = async (): Promise<Array<Record<string, unknown>>> => {
       const collected: Array<Record<string, unknown>> = []
@@ -54,7 +53,7 @@ export default class ContactsList extends BeeperCommand {
       title: 'No contacts found',
       subtitle: flags.query ? `Nothing matched "${flags.query}".` : 'This account has no contacts to list.',
       suggestions: [
-        { command: `beeper contacts ${args.account} <query>`, hint: 'narrow with a search' },
+        { command: 'beeper contacts search <query>', hint: 'narrow with a search' },
         { command: 'beeper accounts', hint: 'check the account is online' },
       ],
     })

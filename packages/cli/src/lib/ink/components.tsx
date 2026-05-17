@@ -497,7 +497,7 @@ export const DoctorCard: React.FC<{ checks: Array<{ ok: boolean; name: string; d
       </Box>
       {!ok && (
         <Suggestions suggestions={[
-          { command: 'beeper login', hint: 'sign in to Beeper Desktop' },
+          { command: 'beeper setup', hint: 'continue target setup' },
           { command: 'beeper status', hint: 'verify the API endpoint' },
         ]} />
       )}
@@ -530,7 +530,7 @@ export const AuthStatusCard: React.FC<{ auth: RecordValue }> = ({ auth }) => {
       {expires ? <KV label="expires" value={expires} tone="muted" /> : null}
       {!ok && (
         <Suggestions suggestions={[
-          { command: 'beeper login', hint: 'sign in to Beeper Desktop' },
+          { command: 'beeper setup', hint: 'continue target setup' },
         ]} />
       )}
     </Box>

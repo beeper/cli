@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 import {readFile, writeFile} from 'node:fs/promises';
 import {Config} from '@oclif/core/config';
+import {commandManifest} from '../dist/lib/manifest.js';
 
 const config = await Config.load({root: process.cwd()});
 const check = process.argv.includes('--check');
-const commands = [...config.commands]
-  .filter(command => !command.hidden)
-  .sort((a, b) => displayID(a.id).localeCompare(displayID(b.id)));
+const commandsByID = new Map([...config.commands].filter(command => !command.hidden).map(command => [displayID(command.id), command]));
+const commands = commandManifest.map(item => {
+  const command = commandsByID.get(item.command);
+  if (!command) throw new Error(`Missing command from built oclif config: ${item.command}`);
+  return command;
+});
 
-const globalFlags = new Set(['base-url', 'debug', 'events', 'json', 'read-only']);
+const globalFlags = new Set(['base-url', 'debug', 'events', 'full', 'json', 'read-only', 'target', 'timeout', 'yes']);
 const commandList = commands.map(command => {
   const id = displayID(command.id);
   return `| \`${id}\` | ${escapeTable(text(command.summary || command.description || ''))} |`;
@@ -18,11 +22,7 @@ const commandSections = commands.map(command => commandSection(command)).join('\
 
 const readme = `# Beeper CLI
 
-Command-line access to the [Beeper Desktop API](https://developers.beeper.com/desktop-api/).
-
-The CLI is built with TypeScript, oclif, and the official \`@beeper/desktop-api\`
-SDK. The command reference below is generated from the oclif command metadata in
-the built CLI.
+Command-line access to Beeper Desktop and Beeper Server targets.
 
 ## Inspiration
 
@@ -35,7 +35,8 @@ trying to do rather than for raw API resource names.
 
 When in doubt, the model is simple: make the default output pleasant to read,
 make machine output boring and stable, keep write commands explicit, and expose
-one obvious command for each job.
+one obvious command for each job. The public object is a target; local runtime
+profiles are implementation details.
 
 ## Install
 
@@ -67,26 +68,17 @@ Regenerate this README after command, flag, or argument changes:
 npm run readme
 \`\`\`
 
-## Authenticate
+## Setup
 
 \`\`\`sh
-beeper chats
+beeper setup
+beeper status
 beeper auth status
 \`\`\`
 
-On first use, authenticated commands look for a local Beeper Desktop API on the
-default port range. If Beeper Desktop is already signed in, the CLI immediately
-uses OAuth2 Authorization Code with PKCE and stores the server URL and bearer
-token in \`~/.config/beeper/config.json\`. After that, commands reuse the
-remembered server URL.
-
-If the local Desktop app is not authenticated, the CLI exits with an error
-instead of starting another login flow. You can explicitly sign in the app
-itself with:
-
-\`\`\`sh
-beeper login --app-login --email you@example.com
-\`\`\`
+\`beeper setup\` makes the selected target ready. It is safe to run again: the
+command inspects the current target state and continues from login, device
+verification, recovery-key, first-sync, or ready states.
 
 For non-interactive use, pass a token through the environment:
 
@@ -99,11 +91,12 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 \`\`\`sh
 beeper doctor
 beeper status
-beeper accounts
-beeper chats
-beeper messages "Family"
-beeper send text "Family" "on my way" --wait
-beeper send file "Family" ./photo.jpg "from today"
+beeper targets list
+beeper accounts list
+beeper chats list
+beeper messages list --chat "Family" --limit 50
+beeper send text --to "Family" --message "on my way"
+beeper send file --to "Family" --file ./photo.jpg --caption "from today"
 beeper export --out ./beeper-export
 beeper api get /v1/info
 \`\`\`
@@ -114,32 +107,30 @@ beeper api get /v1/info
 - Ambiguous chat matches return numbered choices; pass \`--pick N\` to select one.
 - Account arguments accept account IDs, network names, bridge type/id, or account user identity.
 - Account filters can expand a network name to multiple matching accounts.
-- \`contacts search\` and \`start-chat\` can search across all accounts when \`--account\` is omitted.
+- \`contacts search\` and \`chats start\` can search across all accounts when \`--account\` is omitted.
 - \`contacts list\` accepts the same account selectors as other account-scoped commands.
 
 ## Output
 
 Most commands support:
 
-- app-like text by default, optimized for scanning chats, messages, contacts, accounts, and assets
-- \`--json\` for exact API-shaped structured output
+- app-like text by default, optimized for scanning chats, messages, contacts, accounts, and media
+- \`--json\` for \`{"success":true,"data":...,"error":null}\` output on stdout
 - \`--events\` for NDJSON lifecycle events on stderr from long-running commands
 - \`--read-only\` to reject commands that modify Beeper or local CLI state
+- \`--full\` to disable truncation
 - \`--debug\` for SDK debug logging
-- \`--base-url\` to point at a different local Desktop API server
+- \`--target\` or \`--base-url\` to point at a different target
 
-Use \`beeper login --server-url URL\` to remember a Desktop API server URL for
-future commands.
-
-\`commands --json\` prints a compact command manifest for tools and agents.
-\`llm\` prints a concise human-readable command guide.
+\`man --json\` prints a compact command manifest for tools and agents.
+\`rpc\` runs newline-delimited JSON command RPC over stdin/stdout.
 
 ## Environment
 
 | Environment variable | Description |
 | --- | --- |
 | \`BEEPER_ACCESS_TOKEN\` | Bearer token. Overrides stored OAuth login. |
-| \`BEEPER_DESKTOP_BASE_URL\` | Beeper Desktop API base URL. Defaults to \`http://localhost:23373\`. |
+| \`BEEPER_DESKTOP_BASE_URL\` | Beeper Desktop API base URL. Defaults to \`http://127.0.0.1:23373\`. |
 | \`BEEPER_BASE_URL\` | SDK-compatible base URL fallback. |
 | \`BEEPER_CLI_CONFIG_DIR\` | Override config directory for testing or isolated profiles. |
 

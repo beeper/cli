@@ -6,8 +6,11 @@ export abstract class BeeperCommand extends Command {
     target: Flags.string({ char: 't', description: 'Beeper target' }),
     debug: Flags.boolean({ default: false, description: 'Print SDK debug logging' }),
     events: Flags.boolean({ default: false, description: 'Emit NDJSON lifecycle events on stderr' }),
+    full: Flags.boolean({ default: false, description: 'Disable output truncation' }),
     json: Flags.boolean({ default: false, description: 'Print JSON' }),
     'read-only': Flags.boolean({ default: false, description: 'Reject commands that modify Beeper or local CLI state' }),
+    timeout: Flags.string({ description: 'Maximum time to wait, such as 30s, 2m, or 1h' }),
+    yes: Flags.boolean({ char: 'y', default: false, description: 'Skip confirmation prompts' }),
   }
 
   protected override async catch(error: Error & { exitCode?: number }): Promise<void> {
@@ -20,7 +23,7 @@ export abstract class BeeperCommand extends Command {
     }
 
     if (this.argv.includes('--json')) {
-      process.stderr.write(`${JSON.stringify({ ok: false, error: message })}\n`)
+      process.stderr.write(`${JSON.stringify({ success: false, data: null, error: message })}\n`)
       return
     }
 
@@ -35,5 +38,5 @@ export function ensureWritable(flags: { 'read-only'?: boolean }): void {
 }
 
 export function writeEvent(event: string, data: Record<string, unknown> = {}): void {
-  process.stderr.write(`${JSON.stringify({ event, data, ts: new Date().toISOString() })}\n`)
+  process.stderr.write(`${JSON.stringify({ event, data, ts: Date.now() })}\n`)
 }

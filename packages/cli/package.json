@@ -49,12 +49,7 @@
     "helpOptions": {
       "maxWidth": 100
     },
-    "plugins": [
-      "@oclif/plugin-help",
-      "@oclif/plugin-autocomplete",
-      "@oclif/plugin-not-found",
-      "@oclif/plugin-plugins"
-    ],
+    "plugins": [],
     "topicSeparator": " ",
     "topics": {
       "api": {
@@ -66,14 +61,8 @@
       "accounts": {
         "description": "Manage Beeper accounts."
       },
-      "assets": {
-        "description": "Upload and download message assets."
-      },
       "auth": {
         "description": "Authenticate with local Beeper Desktop."
-      },
-      "chat": {
-        "description": "Open and inspect one chat."
       },
       "chats": {
         "description": "List and search chats."
@@ -84,17 +73,17 @@
       "contacts": {
         "description": "Search contacts across accounts."
       },
+      "media": {
+        "description": "Download message media."
+      },
       "messages": {
         "description": "List and search chat messages."
       },
       "send": {
         "description": "Send messages."
       },
-      "target": {
+      "targets": {
         "description": "Manage Beeper targets."
-      },
-      "profile": {
-        "description": "Manage local Beeper profiles."
       }
     }
   },

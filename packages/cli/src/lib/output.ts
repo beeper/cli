@@ -7,11 +7,13 @@ const writeJSON = (value: unknown, format: 'json' | 'jsonl'): void => {
   process.stdout.write(`${JSON.stringify(value, null, format === 'json' ? 2 : 0)}\n`)
 }
 
+const envelope = (data: unknown) => ({ success: true, data, error: null })
+
 const loadInk = () => import('./ink/render.js')
 
 export async function printData(value: unknown, format: OutputFormat): Promise<void> {
   if (format === 'json') {
-    writeJSON(value, 'json')
+    writeJSON(envelope(value), 'json')
     return
   }
   if (format === 'jsonl') {
@@ -32,7 +34,7 @@ export async function printList(
   empty: { title: string; subtitle?: string; suggestions?: Suggestion[] },
 ): Promise<void> {
   if (format === 'json') {
-    writeJSON(value, 'json')
+    writeJSON(envelope(value), 'json')
     return
   }
   if (format === 'jsonl') {
@@ -72,7 +74,7 @@ export async function printSuccess(
   format: OutputFormat,
 ): Promise<void> {
   if (format === 'json' || format === 'jsonl') {
-    writeJSON({ ok: true, message: opts.message, ...(opts.data ?? {}) }, format)
+    writeJSON(envelope({ message: opts.message, detail: opts.detail, entity: opts.entity, ...(opts.data ?? {}) }), format)
     return
   }
   const { renderSuccess } = await loadInk()
@@ -84,7 +86,7 @@ export async function printFailure(
   format: OutputFormat,
 ): Promise<void> {
   if (format === 'json' || format === 'jsonl') {
-    writeJSON({ ok: false, message: opts.message, ...(opts.data ?? {}) }, format)
+    writeJSON({ success: false, data: opts.data ?? null, error: opts.message }, format)
     return
   }
   const { renderFailure } = await loadInk()
@@ -93,7 +95,7 @@ export async function printFailure(
 
 export async function printConfig(data: Record<string, unknown>, format: OutputFormat): Promise<void> {
   if (format === 'json' || format === 'jsonl') {
-    writeJSON(data, format)
+    writeJSON(envelope(data), format)
     return
   }
   const { renderConfig } = await loadInk()
@@ -106,7 +108,7 @@ export async function printCommands(
   opts?: { title?: string; intro?: string[] },
 ): Promise<void> {
   if (format === 'json' || format === 'jsonl') {
-    writeJSON(items, format)
+    writeJSON(envelope(items), format)
     return
   }
   const { renderCommands } = await loadInk()

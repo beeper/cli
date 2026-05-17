@@ -13,16 +13,23 @@ export type StoredAuth = {
 
 export type Target = {
   id: string
-  type: 'desktop' | 'server'
+  type: 'desktop' | 'server' | 'remote'
   name?: string
   baseURL: string
   auth?: StoredAuth
   managed?: boolean
   dataDir?: string
   profile?: string
+  runtime?: {
+    install?: 'desktop' | 'server'
+    dataDir?: string
+    port?: number
+  }
   serverEnv?: string
   port?: number
 }
+
+export type ManagedTargetType = 'desktop' | 'server'
 
 export type Config = {
   defaultTarget?: string
@@ -41,7 +48,7 @@ export const configPath = () => join(beeperDir(), 'config.json')
 export const cachePath = () => join(beeperDir(), 'cache.json')
 export const targetsDir = () => join(beeperDir(), 'targets')
 export const pluginsDir = () => join(beeperDir(), 'plugins')
-export const profileDataDir = (type: Target['type'], id: string) => join(beeperDir(), 'profiles', type, id)
+export const profileDataDir = (type: ManagedTargetType, id: string) => join(beeperDir(), 'profiles', type, id)
 
 export async function ensureBeeperDirs(): Promise<void> {
   await Promise.all([
@@ -147,7 +154,7 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   const targetID = options.target ?? envTarget ?? config.defaultTarget
   if (targetID) {
     const target = await readTarget(targetID)
-    if (!target) throw new Error(`Unknown Beeper target "${targetID}". Run \`beeper target list\`.`)
+    if (!target) throw new Error(`Unknown Beeper target "${targetID}". Run \`beeper targets list\`.`)
     return target
   }
   const targets = await listTargets()
@@ -155,7 +162,7 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   return { id: 'desktop', type: 'desktop', name: 'Desktop', baseURL: process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL || config.baseURL || defaultBaseURL, auth: config.auth }
 }
 
-export async function createProfileTarget(type: Target['type'], id: string, options: { serverEnv?: string; port?: number } = {}): Promise<Target> {
+export async function createProfileTarget(type: ManagedTargetType, id: string, options: { serverEnv?: string; port?: number } = {}): Promise<Target> {
   const serverEnv = options.serverEnv ?? 'production'
   const port = options.port ?? await nextPort()
   const target: Target = {
@@ -166,6 +173,11 @@ export async function createProfileTarget(type: Target['type'], id: string, opti
     managed: true,
     dataDir: profileDataDir(type, id),
     profile: id,
+    runtime: {
+      install: type,
+      dataDir: profileDataDir(type, id),
+      port,
+    },
     serverEnv,
     port,
   }
