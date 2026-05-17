@@ -2,13 +2,12 @@ import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import type { BridgeAvailability } from '@beeper/desktop-api/resources/bridges.js'
-import type { AuthListFlowsResponse } from '@beeper/desktop-api/resources/matrix/bridges/auth.js'
+import type { Bridge, LoginFlow } from '@beeper/desktop-api/resources/bridges.js'
 import { createClient } from '../../lib/client.js'
 import { printAccountLoginStep, runGuidedAccountLogin } from '../../lib/account-login.js'
 import { printData } from '../../lib/output.js'
 
-type AccountType = BridgeAvailability
+type AccountType = Bridge
 
 export default class AccountsAdd extends BeeperCommand {
   static override summary = 'Add a Beeper account'
@@ -28,10 +27,9 @@ export default class AccountsAdd extends BeeperCommand {
     const { args, flags } = await this.parse(AccountsAdd)
     ensureWritable(flags)
     const client = await createClient(flags)
-    const api = client as any
 
     if (!args.account) {
-      const bridges = await api.bridges.list()
+      const bridges = await client.bridges.list()
       if (flags.json) {
         await printData(bridges, 'json')
         return
@@ -41,7 +39,7 @@ export default class AccountsAdd extends BeeperCommand {
       return
     }
 
-    const bridges = await api.bridges.list()
+    const bridges = await client.bridges.list()
     const accountType = resolveAccountType(bridges.items, args.account)
     if (accountType.status !== 'available') {
       const suffix = accountType.statusText ? `: ${accountType.statusText}` : ''
@@ -50,8 +48,8 @@ export default class AccountsAdd extends BeeperCommand {
 
     let flowID = flags.flow
     if (!flowID) {
-      const flows = await api.matrix.bridges.auth.listFlows(accountType.bridgeID)
-      const loginFlows = flows.flows ?? []
+      const flows = await client.bridges.loginFlows.list(accountType.id)
+      const loginFlows = flows.items
       if (loginFlows.length > 1) {
         if (flags.guided && !flags.json && !flags['non-interactive']) flowID = await chooseLoginFlow(loginFlows)
         else throw new Error(`Multiple sign-in methods are available for ${accountType.displayName}. Pass --flow.`)
@@ -62,11 +60,11 @@ export default class AccountsAdd extends BeeperCommand {
       if (!flags.json && loginFlows.length > 1) this.log(`Using flow ${flowID}`)
     }
 
-    const step = await api.matrix.bridges.auth.startLogin(flowID, {
-      bridgeID: accountType.bridgeID,
-      login_id: flags['login-id'],
+    const step = await client.bridges.loginSessions.create(accountType.id, {
+      flowID,
+      loginID: flags['login-id'],
     })
-    const result = flags.guided ? await runGuidedAccountLogin(client, accountType.bridgeID, step, {
+    const result = flags.guided ? await runGuidedAccountLogin(client, accountType.id, step, {
       cookies: parseKeyValueFlags(flags.cookie, '--cookie'),
       fields: parseKeyValueFlags(flags.field, '--field'),
       nonInteractive: flags['non-interactive'],
@@ -78,9 +76,9 @@ export default class AccountsAdd extends BeeperCommand {
 
 function printAvailableAccounts(items: AccountType[]): void {
   const sections: Array<[string, AccountType[]]> = [
-    ['On-Device Accounts', items.filter(item => item.bridgeProvider === 'local')],
-    ['Beeper Cloud Accounts', items.filter(item => item.bridgeProvider === 'cloud')],
-    ['Self-Hosted Accounts', items.filter(item => item.bridgeProvider === 'self-hosted')],
+    ['On-Device Accounts', items.filter(item => item.provider === 'local')],
+    ['Beeper Cloud Accounts', items.filter(item => item.provider === 'cloud')],
+    ['Self-Hosted Accounts', items.filter(item => item.provider === 'self-hosted')],
   ]
 
   for (const [title, accounts] of sections) {
@@ -88,7 +86,7 @@ function printAvailableAccounts(items: AccountType[]): void {
     process.stdout.write(`${title}\n`)
     for (const account of accounts) {
       const status = account.statusText ?? statusLabel(account)
-      process.stdout.write(`  ${account.displayName} (${account.bridgeID})${status ? ` - ${status}` : ''}\n`)
+      process.stdout.write(`  ${account.displayName} (${account.id})${status ? ` - ${status}` : ''}\n`)
     }
     process.stdout.write('\n')
   }
@@ -97,20 +95,20 @@ function printAvailableAccounts(items: AccountType[]): void {
 function resolveAccountType(items: AccountType[], input: string): AccountType {
   const normalizedInput = normalize(input)
   const exact = items.filter(item => [
-    item.bridgeID,
+    item.id,
     item.displayName,
     item.network,
-    item.bridgeType,
+    item.type,
   ].some(value => normalize(value) === normalizedInput))
 
   if (exact.length === 1) return exact[0]!
   if (exact.length > 1) throw ambiguousAccountType(input, exact)
 
   const partial = items.filter(item => [
-    item.bridgeID,
+    item.id,
     item.displayName,
     item.network,
-    item.bridgeType,
+    item.type,
   ].some(value => normalize(value).includes(normalizedInput)))
 
   if (partial.length === 1) return partial[0]!
@@ -119,7 +117,7 @@ function resolveAccountType(items: AccountType[], input: string): AccountType {
 }
 
 function ambiguousAccountType(input: string, matches: AccountType[]): Error {
-  const options = matches.map(item => `${item.displayName} (${item.bridgeID})`).join(', ')
+  const options = matches.map(item => `${item.displayName} (${item.id})`).join(', ')
   return new Error(`Account type ${input} is ambiguous. Use one of: ${options}`)
 }
 
@@ -144,7 +142,7 @@ function parseKeyValueFlags(values: string[] | undefined, flagName: string): Rec
   return parsed
 }
 
-async function chooseLoginFlow(flows: NonNullable<AuthListFlowsResponse['flows']>): Promise<string> {
+async function chooseLoginFlow(flows: LoginFlow[]): Promise<string> {
   process.stdout.write('Choose how you want to sign in:\n')
   flows.forEach((flow, index) => {
     const description = flow.description ? ` - ${flow.description}` : ''

@@ -1,6 +1,6 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../../../../lib/command.js'
-import type { QrConfirmScannedResponse } from '@beeper/desktop-api/resources/app/e2ee/verification/qr.js'
+import type { QRConfirmScannedResponse } from '@beeper/desktop-api/resources/app/setup/verifications/qr.js'
 import { appRequest } from '../../../../../lib/app-api.js'
 import { printData } from '../../../../../lib/output.js'
 
@@ -13,7 +13,7 @@ export default class AppE2EEVerificationQRConfirmScanned extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppE2EEVerificationQRConfirmScanned)
     ensureWritable(flags)
-    const result = await appRequest<QrConfirmScannedResponse>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(args.txnID)}/qr/confirm-scanned`, {
+    const result = await appRequest<QRConfirmScannedResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(args.txnID)}/qr/confirm-scanned`, {
       baseURL: flags['base-url'],
       target: flags.target,
     })

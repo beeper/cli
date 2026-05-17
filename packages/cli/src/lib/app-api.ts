@@ -1,23 +1,23 @@
 import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import { getAccessToken, resolveTarget, updateTargetCache } from './targets.js'
-import type { AppStatusResponse } from '@beeper/desktop-api/resources/app/app.js'
+import type { ResetCreateResponse } from '@beeper/desktop-api/resources/app/setup/recovery-key/reset.js'
 import type {
-  LoginRegisterResponse,
-  LoginResponseResponse,
-} from '@beeper/desktop-api/resources/app/login.js'
-import type { ResetBeginResponse } from '@beeper/desktop-api/resources/app/e2ee/recovery-code/reset.js'
+  SetupRegisterResponse,
+  SetupResponseResponse,
+  SetupRetrieveResponse,
+} from '@beeper/desktop-api/resources/app/setup/setup.js'
 
-export type AppStateSnapshot = AppStatusResponse
-export type AppLoginSuccess = LoginRegisterResponse
-export type AppRegistrationRequired = Extract<LoginResponseResponse, { registrationRequired: true }>
-export type AppLoginOutput = LoginResponseResponse
+export type AppStateSnapshot = SetupRetrieveResponse
+export type AppLoginSuccess = SetupRegisterResponse
+export type AppRegistrationRequired = Extract<SetupResponseResponse, { registrationRequired: true }>
+export type AppLoginOutput = SetupResponseResponse
 
 export type AppMutationResponse = {
   appState: AppStateSnapshot
 }
 
-export type AppRecoveryCodeResetBeginResponse = ResetBeginResponse
+export type AppRecoveryCodeResetBeginResponse = ResetCreateResponse
 
 export async function appRequest<T>(
   method: 'GET' | 'POST',
@@ -40,7 +40,7 @@ export async function appRequest<T>(
   if (response.status === 204) return undefined as T
   const text = await response.text()
   const data = (text ? JSON.parse(text) : {}) as T
-  if (method === 'GET' && path === '/v1/app/status') {
+  if (method === 'GET' && path === '/v1/app/setup') {
     await updateTargetCache(target, { baseURL, appState: data }).catch(() => undefined)
   }
   return data

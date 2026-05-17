@@ -298,7 +298,7 @@ function withMockDesktop(appStatus, callback) {
       res.end(JSON.stringify({ ok: true }))
       return
     }
-    if (req.url === '/v1/app/status') {
+    if (req.url === '/v1/app/setup') {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify(appStatus))
       return

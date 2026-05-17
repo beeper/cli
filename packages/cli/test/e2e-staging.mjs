@@ -170,7 +170,7 @@ async function waitForDesktopProfile(profile) {
     try {
       const response = await fetchWithTimeout(new URL('/v1/info', profile.expectedBaseURL), {}, 1000)
       if (response.ok) {
-        const appStatus = await fetchWithTimeout(new URL('/v1/app/status', profile.expectedBaseURL), {}, 1000)
+        const appStatus = await fetchWithTimeout(new URL('/v1/app/setup', profile.expectedBaseURL), {}, 1000)
         if (appStatus.status !== 404) return profile.expectedBaseURL
       }
     } catch {
@@ -207,7 +207,7 @@ async function scanDesktopServers() {
       if (!info?.server?.mcp_enabled) return
       let supportsAppStatus = false
       try {
-        const appStatus = await fetchWithTimeout(new URL('/v1/app/status', baseURL), {}, 500)
+        const appStatus = await fetchWithTimeout(new URL('/v1/app/setup', baseURL), {}, 500)
         supportsAppStatus = appStatus.status !== 404
       } catch {
         supportsAppStatus = false
@@ -270,9 +270,9 @@ async function loginInstance(instance) {
 }
 
 async function getUnauthedAppStatus(baseURL) {
-  const response = await fetchWithTimeout(new URL('/v1/app/status', baseURL), {}, 10_000)
+  const response = await fetchWithTimeout(new URL('/v1/app/setup', baseURL), {}, 10_000)
   if (response.status === 401 || response.status === 403) return { state: 'signed-in-auth-required' }
-  if (!response.ok) throw new Error(`GET /v1/app/status failed for ${baseURL}: ${response.status} ${await response.text()}`)
+  if (!response.ok) throw new Error(`GET /v1/app/setup failed for ${baseURL}: ${response.status} ${await response.text()}`)
   return response.json()
 }
 
@@ -624,22 +624,21 @@ function commandEndpointCoverage() {
     ['DELETE', '/v1/chats/{chatID}/messages/{messageID}/reactions/{reactionKey}', 'unreact'],
     ['POST', '/v1/assets/download', 'assets download'],
     ['POST', '/v1/assets/upload', 'assets upload, send file'],
-    ['POST', '/v1/app/login/start', 'login --app-login'],
-    ['POST', '/v1/app/login/email', 'login --app-login'],
-    ['POST', '/v1/app/login/response', 'login --app-login'],
-    ['POST', '/v1/app/login/register', 'login --app-login for new staging-user account'],
-    ['GET', '/v1/app/status', 'app status, login smart probe'],
-    ['POST', '/v1/app/e2ee/recovery-code/verify', 'app e2ee recovery-code verify'],
-    ['POST', '/v1/app/e2ee/recovery-code/reset', 'app e2ee recovery-code reset begin'],
-    ['POST', '/v1/app/e2ee/recovery-code/reset/confirm', 'app e2ee recovery-code reset confirm'],
-    ['POST', '/v1/app/e2ee/recovery-code/mark-backed-up', 'app e2ee recovery-code mark-backed-up'],
-    ['POST', '/v1/app/e2ee/verification', 'app e2ee verification start'],
-    ['POST', '/v1/app/e2ee/verification/qr/scan', 'app e2ee verification qr scan'],
-    ['POST', '/v1/app/e2ee/verification/{verificationID}/accept', 'app e2ee verification accept'],
-    ['POST', '/v1/app/e2ee/verification/{verificationID}/cancel', 'app e2ee verification cancel'],
-    ['POST', '/v1/app/e2ee/verification/{verificationID}/qr/confirm-scanned', 'app e2ee verification qr confirm-scanned'],
-    ['POST', '/v1/app/e2ee/verification/{verificationID}/sas/start', 'app e2ee verification sas start'],
-    ['POST', '/v1/app/e2ee/verification/{verificationID}/sas/confirm', 'app e2ee verification sas confirm'],
+    ['POST', '/v1/app/setup/start', 'login --app-login'],
+    ['POST', '/v1/app/setup/email', 'login --app-login'],
+    ['POST', '/v1/app/setup/response', 'login --app-login'],
+    ['POST', '/v1/app/setup/register', 'login --app-login for new staging-user account'],
+    ['GET', '/v1/app/setup', 'app status, login smart probe'],
+    ['POST', '/v1/app/setup/verification/recovery-key', 'app e2ee recovery-code verify'],
+    ['POST', '/v1/app/setup/verification/recovery-key/reset', 'app e2ee recovery-code reset begin'],
+    ['POST', '/v1/app/setup/verification/recovery-key/reset/confirm', 'app e2ee recovery-code reset confirm'],
+    ['POST', '/v1/app/setup/verifications', 'app e2ee verification start'],
+    ['POST', '/v1/app/setup/verifications/qr/scan', 'app e2ee verification qr scan'],
+    ['POST', '/v1/app/setup/verifications/{verificationID}/accept', 'app e2ee verification accept'],
+    ['POST', '/v1/app/setup/verifications/{verificationID}/cancel', 'app e2ee verification cancel'],
+    ['POST', '/v1/app/setup/verifications/{verificationID}/qr/confirm-scanned', 'app e2ee verification qr confirm-scanned'],
+    ['POST', '/v1/app/setup/verifications/{verificationID}/sas/start', 'app e2ee verification sas start'],
+    ['POST', '/v1/app/setup/verifications/{verificationID}/sas/confirm', 'app e2ee verification sas confirm'],
   ]
 }
 
@@ -761,7 +760,6 @@ async function runE2EECommands(instance) {
   await runCli(['app', 'e2ee', 'verification', 'qr', 'confirm-scanned', verificationID, '--json'], { instance, allowFailure: true })
   await runCli(['app', 'e2ee', 'verification', 'cancel', verificationID, '--reason', 'e2e cleanup', '--json'], { instance, allowFailure: true })
   await runCli(['app', 'e2ee', 'recovery-code', 'verify', 'invalid-e2e-test-code', '--json'], { instance, allowFailure: true })
-  await runCli(['app', 'e2ee', 'recovery-code', 'mark-backed-up', '--json'], { instance, allowFailure: true })
   await runCli(['app', 'e2ee', 'recovery-code', 'reset', 'confirm', 'invalid-e2e-test-code', '--json'], { instance, allowFailure: true })
 
   for (const command of [
@@ -773,7 +771,6 @@ async function runE2EECommands(instance) {
     'app e2ee verification qr confirm-scanned',
     'app e2ee verification cancel',
     'app e2ee recovery-code verify',
-    'app e2ee recovery-code mark-backed-up',
     'app e2ee recovery-code reset confirm',
   ]) coveredCommands.add(command)
 }

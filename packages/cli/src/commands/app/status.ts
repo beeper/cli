@@ -1,5 +1,5 @@
 import { BeeperCommand } from '../../lib/command.js'
-import type { AppStatusResponse } from '@beeper/desktop-api/resources/app/app.js'
+import type { SetupRetrieveResponse } from '@beeper/desktop-api/resources/app/setup/setup.js'
 import { appRequest } from '../../lib/app-api.js'
 import { printData } from '../../lib/output.js'
 
@@ -8,7 +8,7 @@ export default class AppStatus extends BeeperCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AppStatus)
-    const state = await appRequest<AppStatusResponse>('GET', '/v1/app/status', { baseURL: flags['base-url'], target: flags.target })
+    const state = await appRequest<SetupRetrieveResponse>('GET', '/v1/app/setup', { baseURL: flags['base-url'], target: flags.target })
     await printData(state, flags.json ? 'json' : 'human')
   }
 }

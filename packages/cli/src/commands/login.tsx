@@ -102,23 +102,23 @@ export default class Login extends BeeperCommand {
     }
 
     if (!flags.json) await showStep('Starting email sign-in', baseURL)
-    const start = await appRequest<{ request: string; type: string[] }>('POST', '/v1/app/login/start', {
+    const start = await appRequest<{ setupRequestID: string; signInMethods: string[] }>('POST', '/v1/app/setup/start', {
       baseURL,
       token: false,
     })
     const email = flags.email ?? await promptText('Email: ')
     if (!flags.json) await showStep('Sending one-time code', email)
-    await appRequest<Record<string, never>>('POST', '/v1/app/login/email', {
+    await appRequest<Record<string, never>>('POST', '/v1/app/setup/email', {
       baseURL,
       token: false,
-      body: { request: start.request, email },
+      body: { setupRequestID: start.setupRequestID, email },
     })
     const code = flags.code ?? await promptText('Code: ')
     if (!flags.json) await showStep('Verifying code')
-    let result = await appRequest<AppLoginOutput>('POST', '/v1/app/login/response', {
+    let result = await appRequest<AppLoginOutput>('POST', '/v1/app/setup/response', {
       baseURL,
       token: false,
-      body: { request: start.request, response: code },
+      body: { setupRequestID: start.setupRequestID, response: code },
     })
 
     if (isRegistrationRequired(result)) result = await this.register(baseURL, result, flags)
@@ -142,11 +142,11 @@ export default class Login extends BeeperCommand {
     const username = flags.username ?? await promptText(`${required.copy?.usernamePlaceholder ?? 'Username'}: `)
     const accepted = flags['accept-terms'] || await promptYesNo(required.copy?.terms ?? 'Accept Terms of Use and acknowledge Privacy Policy?')
     if (!accepted) throw new Error('Account creation requires --accept-terms or an interactive yes response.')
-    return appRequest<AppLoginSuccess>('POST', '/v1/app/login/register', {
+    return appRequest<AppLoginSuccess>('POST', '/v1/app/setup/register', {
       baseURL,
       token: false,
       body: {
-        request: required.request,
+        setupRequestID: required.setupRequestID,
         leadToken: required.leadToken,
         username,
         acceptTerms: true,
@@ -162,9 +162,9 @@ export default class Login extends BeeperCommand {
   ): Promise<void> {
     if (options.save) {
       await saveTargetAuth({ ...target, baseURL }, {
-        accessToken: result.desktopAPI.accessToken,
-        scope: result.desktopAPI.scope,
-        tokenType: result.desktopAPI.tokenType,
+        accessToken: result.matrix.accessToken,
+        scope: 'read write',
+        tokenType: 'Bearer',
       })
     }
 
@@ -172,7 +172,7 @@ export default class Login extends BeeperCommand {
       await printData(result, 'json')
       return
     }
-    const next = nextAppStep(result.appState, target.id)
+    const next = nextAppStep(result.session, target.id)
     await showSignedIn({
       as: result.matrix.userID,
       detail: next ?? 'E2EE ready',

@@ -23,7 +23,7 @@ export function nextAppStep(state: AppState, targetID?: string): string | undefi
 }
 
 export async function getAppState(options: { baseURL?: string; target?: string; token?: string | false } = {}): Promise<AppState> {
-  return appRequest<AppState>('GET', '/v1/app/status', options)
+  return appRequest<AppState>('GET', '/v1/app/setup', options)
 }
 
 export async function driveVerification(options: { baseURL?: string; target?: string; userID?: string; yes?: boolean } = {}): Promise<AppState> {
@@ -36,21 +36,21 @@ export async function driveVerification(options: { baseURL?: string; target?: st
     const actions = new Set(verification?.availableActions ?? [])
     const id = verification?.verificationID
 
-    if (actions.has('create')) {
-      state = (await appRequest<{ appState: AppState }>('POST', '/v1/app/e2ee/verification', {
+    if (!verification) {
+      state = (await appRequest<{ session: AppState }>('POST', '/v1/app/setup/verifications', {
         ...options,
         body: options.userID ? { userID: options.userID } : {},
-      })).appState
+      })).session
       continue
     }
 
     if (actions.has('accept') && id) {
-      state = (await appRequest<{ appState: AppState }>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(id)}/accept`, options)).appState
+      state = (await appRequest<{ session: AppState }>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/accept`, options)).session
       continue
     }
 
     if (actions.has('sas.start') && id) {
-      state = (await appRequest<{ appState: AppState }>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(id)}/sas/start`, options)).appState
+      state = (await appRequest<{ session: AppState }>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/sas/start`, options)).session
       continue
     }
 
@@ -60,12 +60,12 @@ export async function driveVerification(options: { baseURL?: string; target?: st
         process.stdout.write(`Verify that this matches on the other device:\n${sas?.emojis ?? sas?.decimals ?? '(no SAS data)'}\n`)
         if (!await promptYesNo('Do they match?')) throw new Error('Verification cancelled.')
       }
-      state = (await appRequest<{ appState: AppState }>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(id)}/sas/confirm`, options)).appState
+      state = (await appRequest<{ session: AppState }>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/sas/confirm`, options)).session
       continue
     }
 
     if (actions.has('qr.confirmScanned') && id) {
-      state = (await appRequest<{ appState: AppState }>('POST', `/v1/app/e2ee/verification/${encodeURIComponent(id)}/qr/confirm-scanned`, options)).appState
+      state = (await appRequest<{ session: AppState }>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/qr/confirm-scanned`, options)).session
       continue
     }
 

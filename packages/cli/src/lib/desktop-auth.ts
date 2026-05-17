@@ -59,9 +59,9 @@ export async function ensureDesktopToken(options: {
 }
 
 export async function getDesktopAppStatus(baseURL: string): Promise<DesktopAppStatus | undefined> {
-  const response = await fetchWithTimeout(new URL('/v1/app/status', baseURL), {}, 2_000)
+  const response = await fetchWithTimeout(new URL('/v1/app/setup', baseURL), {}, 2_000)
   if (response.status === 401 || response.status === 403 || response.status === 404) return undefined
-  if (!response.ok) throw new Error(`GET /v1/app/status failed: ${response.status} ${await response.text()}`)
+  if (!response.ok) throw new Error(`GET /v1/app/setup failed: ${response.status} ${await response.text()}`)
   return response.json() as Promise<DesktopAppStatus>
 }
 

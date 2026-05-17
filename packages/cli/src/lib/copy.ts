@@ -1,21 +1,21 @@
 export const apiCopy = {
   accounts: {
-    list: 'List Chat Accounts connected to this Beeper Desktop instance, including bridge metadata and network identity.',
+    list: 'List chat accounts connected to this Beeper Client API server, including bridge, network, user identity, and connection status.',
   },
   assets: {
-    download: 'Download a Matrix file using its mxc:// or localmxc:// URL to the device running Beeper Desktop and return the local file URL.',
-    upload: 'Upload a file to a temporary location using multipart/form-data. Returns an uploadID that can be referenced when sending a message or materializing a draft attachment.',
+    download: 'Download a file from an mxc:// or localmxc:// URL to the device running the Beeper Client API and return the local file URL.',
+    upload: 'Upload a file to a temporary location using multipart/form-data. Returns an uploadID that can be referenced when sending a message or creating a draft attachment.',
   },
   chats: {
-    archive: 'Archive or unarchive a chat. Set archived=true to move to archive, archived=false to move back to inbox',
+    archive: 'Archive or unarchive a chat. Set archived=true to move it to Archive, or archived=false to move it back to the inbox.',
     create: 'Create a direct or group chat from participant IDs. Returns the created chat.',
     list: 'List all chats sorted by last activity (most recent first). Combines all accounts into a single paginated list.',
     markRead: 'Mark a chat as read, optionally through a specific message ID.',
     markUnread: 'Mark a chat as unread, optionally from a specific message ID.',
-    notifyAnyway: 'Force a delivery notification when supported by the underlying network. Currently intended for iMessage on macOS; unsupported networks return an error.',
-    retrieve: 'Retrieve chat details including metadata, participants, and latest message',
+    notifyAnyway: 'Send a notification despite the recipient focus state when the network supports it. Currently intended for iMessage on macOS; unsupported networks return an error.',
+    retrieve: 'Retrieve chat details, including metadata, participants, and the latest message.',
     search: 'Search chats by title, network, or participant names.',
-    start: 'Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper Desktop v4.2.808+.',
+    start: 'Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper v4.2.808+.',
   },
   contacts: {
     list: 'List merged contacts for a specific account with cursor-based pagination.',
@@ -24,7 +24,7 @@ export const apiCopy = {
   messages: {
     delete: 'Delete a message by final message ID. Pending message IDs are not accepted because messages cannot be deleted while sending.',
     list: 'List all messages in a chat with cursor-based pagination. Sorted by timestamp.',
-    retrieve: 'Retrieve a message by final message ID, pendingMessageID, or Matrix event ID. Chat ID may be a Beeper chat ID or local chat ID.',
+    retrieve: 'Retrieve a message by final message ID, pendingMessageID, or Matrix event ID. chatID may be a Beeper chat ID or a local chat ID.',
     search: 'Search messages across chats.',
     send: 'Send a text message to a specific chat. Supports replying to existing messages. Returns a pending message ID.',
     update: 'Edit the text content of an existing message. Messages with attachments cannot be edited.',
@@ -34,8 +34,8 @@ export const apiCopy = {
     delete: 'Remove the reaction added by the authenticated user from an existing message.',
   },
   reminders: {
-    create: 'Set a reminder for a chat at a specific time',
-    delete: 'Clear an existing reminder from a chat',
+    create: 'Set a reminder for a chat at a specific time.',
+    delete: 'Clear an existing reminder from a chat.',
   },
 } as const
 
