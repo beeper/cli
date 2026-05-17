@@ -14,67 +14,88 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var appE2eeVerificationCreate = cli.Command{
+var bridgesLoginSessionsCreate = cli.Command{
 	Name:    "create",
-	Usage:   "Start verifying this device from another signed-in device.",
+	Usage:   "Start a temporary bridge login session to connect a new chat account or\nreconnect an existing bridge login. Omit loginID and accountID to connect a new\naccount.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:     "user-id",
-			Usage:    "User ID to verify. Defaults to the signed-in user.",
-			BodyPath: "userID",
-		},
-	},
-	Action:          handleAppE2eeVerificationCreate,
-	HideHelpCommand: true,
-}
-
-var appE2eeVerificationAccept = cli.Command{
-	Name:    "accept",
-	Usage:   "Accept an incoming device verification request.",
-	Suggest: true,
-	Flags: []cli.Flag{
-		&requestflag.Flag[string]{
-			Name:      "verification-id",
-			Usage:     "Verification ID.",
+			Name:      "bridge-id",
+			Usage:     "Bridge ID.",
 			Required:  true,
-			PathParam: "verificationID",
+			PathParam: "bridgeID",
+		},
+		&requestflag.Flag[string]{
+			Name:     "account-id",
+			Usage:    "Existing chat account ID to reconnect. Omit to connect a new account.",
+			BodyPath: "accountID",
+		},
+		&requestflag.Flag[string]{
+			Name:     "flow-id",
+			Usage:    "Optional flow ID returned by the list login flows endpoint. If omitted, Beeper chooses the default flow.",
+			BodyPath: "flowID",
+		},
+		&requestflag.Flag[string]{
+			Name:     "login-id",
+			Usage:    "Existing bridge login ID to reconnect. Omit to connect a new account.",
+			BodyPath: "loginID",
 		},
 	},
-	Action:          handleAppE2eeVerificationAccept,
+	Action:          handleBridgesLoginSessionsCreate,
 	HideHelpCommand: true,
 }
 
-var appE2eeVerificationCancel = cli.Command{
+var bridgesLoginSessionsRetrieve = cli.Command{
+	Name:    "retrieve",
+	Usage:   "Get the current state of a temporary bridge login session.",
+	Suggest: true,
+	Flags: []cli.Flag{
+		&requestflag.Flag[string]{
+			Name:      "bridge-id",
+			Usage:     "Bridge ID.",
+			Required:  true,
+			PathParam: "bridgeID",
+		},
+		&requestflag.Flag[string]{
+			Name:      "login-session-id",
+			Usage:     "Temporary bridge login session ID.",
+			Required:  true,
+			PathParam: "loginSessionID",
+		},
+	},
+	Action:          handleBridgesLoginSessionsRetrieve,
+	HideHelpCommand: true,
+}
+
+var bridgesLoginSessionsCancel = cli.Command{
 	Name:    "cancel",
-	Usage:   "Cancel an active device verification request.",
+	Usage:   "Cancel a temporary bridge login session.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:      "verification-id",
-			Usage:     "Verification ID.",
+			Name:      "bridge-id",
+			Usage:     "Bridge ID.",
 			Required:  true,
-			PathParam: "verificationID",
+			PathParam: "bridgeID",
 		},
 		&requestflag.Flag[string]{
-			Name:     "code",
-			Usage:    "Optional cancellation code.",
-			BodyPath: "code",
-		},
-		&requestflag.Flag[string]{
-			Name:     "reason",
-			Usage:    "Optional user-facing cancellation reason.",
-			BodyPath: "reason",
+			Name:      "login-session-id",
+			Usage:     "Temporary bridge login session ID.",
+			Required:  true,
+			PathParam: "loginSessionID",
 		},
 	},
-	Action:          handleAppE2eeVerificationCancel,
+	Action:          handleBridgesLoginSessionsCancel,
 	HideHelpCommand: true,
 }
 
-func handleAppE2eeVerificationCreate(ctx context.Context, cmd *cli.Command) error {
+func handleBridgesLoginSessionsCreate(ctx context.Context, cmd *cli.Command) error {
 	client := beeperdesktopapi.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-
+	if !cmd.IsSet("bridge-id") && len(unusedArgs) > 0 {
+		cmd.Set("bridge-id", unusedArgs[0])
+		unusedArgs = unusedArgs[1:]
+	}
 	if len(unusedArgs) > 0 {
 		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
 	}
@@ -90,11 +111,16 @@ func handleAppE2eeVerificationCreate(ctx context.Context, cmd *cli.Command) erro
 		return err
 	}
 
-	params := beeperdesktopapi.AppE2eeVerificationNewParams{}
+	params := beeperdesktopapi.BridgeLoginSessionNewParams{}
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.App.E2ee.Verification.New(ctx, params, options...)
+	_, err = client.Bridges.LoginSessions.New(
+		ctx,
+		cmd.Value("bridge-id").(string),
+		params,
+		options...,
+	)
 	if err != nil {
 		return err
 	}
@@ -107,16 +133,16 @@ func handleAppE2eeVerificationCreate(ctx context.Context, cmd *cli.Command) erro
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "app:e2ee:verification create",
+		Title:          "bridges:login-sessions create",
 		Transform:      transform,
 	})
 }
 
-func handleAppE2eeVerificationAccept(ctx context.Context, cmd *cli.Command) error {
+func handleBridgesLoginSessionsRetrieve(ctx context.Context, cmd *cli.Command) error {
 	client := beeperdesktopapi.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("verification-id") && len(unusedArgs) > 0 {
-		cmd.Set("verification-id", unusedArgs[0])
+	if !cmd.IsSet("login-session-id") && len(unusedArgs) > 0 {
+		cmd.Set("login-session-id", unusedArgs[0])
 		unusedArgs = unusedArgs[1:]
 	}
 	if len(unusedArgs) > 0 {
@@ -134,55 +160,15 @@ func handleAppE2eeVerificationAccept(ctx context.Context, cmd *cli.Command) erro
 		return err
 	}
 
-	var res []byte
-	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.App.E2ee.Verification.Accept(ctx, cmd.Value("verification-id").(string), options...)
-	if err != nil {
-		return err
+	params := beeperdesktopapi.BridgeLoginSessionGetParams{
+		BridgeID: cmd.Value("bridge-id").(string),
 	}
-
-	obj := gjson.ParseBytes(res)
-	format := cmd.Root().String("format")
-	explicitFormat := cmd.Root().IsSet("format")
-	transform := cmd.Root().String("transform")
-	return ShowJSON(obj, ShowJSONOpts{
-		ExplicitFormat: explicitFormat,
-		Format:         format,
-		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "app:e2ee:verification accept",
-		Transform:      transform,
-	})
-}
-
-func handleAppE2eeVerificationCancel(ctx context.Context, cmd *cli.Command) error {
-	client := beeperdesktopapi.NewClient(getDefaultRequestOptions(cmd)...)
-	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("verification-id") && len(unusedArgs) > 0 {
-		cmd.Set("verification-id", unusedArgs[0])
-		unusedArgs = unusedArgs[1:]
-	}
-	if len(unusedArgs) > 0 {
-		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
-	}
-
-	options, err := flagOptions(
-		cmd,
-		apiquery.NestedQueryFormatBrackets,
-		apiquery.ArrayQueryFormatRepeat,
-		ApplicationJSON,
-		false,
-	)
-	if err != nil {
-		return err
-	}
-
-	params := beeperdesktopapi.AppE2eeVerificationCancelParams{}
 
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.App.E2ee.Verification.Cancel(
+	_, err = client.Bridges.LoginSessions.Get(
 		ctx,
-		cmd.Value("verification-id").(string),
+		cmd.Value("login-session-id").(string),
 		params,
 		options...,
 	)
@@ -198,7 +184,58 @@ func handleAppE2eeVerificationCancel(ctx context.Context, cmd *cli.Command) erro
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "app:e2ee:verification cancel",
+		Title:          "bridges:login-sessions retrieve",
+		Transform:      transform,
+	})
+}
+
+func handleBridgesLoginSessionsCancel(ctx context.Context, cmd *cli.Command) error {
+	client := beeperdesktopapi.NewClient(getDefaultRequestOptions(cmd)...)
+	unusedArgs := cmd.Args().Slice()
+	if !cmd.IsSet("login-session-id") && len(unusedArgs) > 0 {
+		cmd.Set("login-session-id", unusedArgs[0])
+		unusedArgs = unusedArgs[1:]
+	}
+	if len(unusedArgs) > 0 {
+		return fmt.Errorf("Unexpected extra arguments: %v", unusedArgs)
+	}
+
+	options, err := flagOptions(
+		cmd,
+		apiquery.NestedQueryFormatBrackets,
+		apiquery.ArrayQueryFormatRepeat,
+		EmptyBody,
+		false,
+	)
+	if err != nil {
+		return err
+	}
+
+	params := beeperdesktopapi.BridgeLoginSessionCancelParams{
+		BridgeID: cmd.Value("bridge-id").(string),
+	}
+
+	var res []byte
+	options = append(options, option.WithResponseBodyInto(&res))
+	_, err = client.Bridges.LoginSessions.Cancel(
+		ctx,
+		cmd.Value("login-session-id").(string),
+		params,
+		options...,
+	)
+	if err != nil {
+		return err
+	}
+
+	obj := gjson.ParseBytes(res)
+	format := cmd.Root().String("format")
+	explicitFormat := cmd.Root().IsSet("format")
+	transform := cmd.Root().String("transform")
+	return ShowJSON(obj, ShowJSONOpts{
+		ExplicitFormat: explicitFormat,
+		Format:         format,
+		RawOutput:      cmd.Root().Bool("raw-output"),
+		Title:          "bridges:login-sessions cancel",
 		Transform:      transform,
 	})
 }

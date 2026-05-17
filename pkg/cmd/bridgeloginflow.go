@@ -14,31 +14,27 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var matrixRoomsEventsRetrieve = cli.Command{
-	Name:    "retrieve",
-	Usage:   "Get a single event based on `roomId/eventId`. You must have permission to\nretrieve this event e.g. by being a member in the room for this event.",
+var bridgesLoginFlowsList = cli.Command{
+	Name:    "list",
+	Usage:   "List connect and reconnect flow options for a bridge. Use a flowID when creating\na bridge login session.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
-			Name:      "room-id",
+			Name:      "bridge-id",
+			Usage:     "Bridge ID.",
 			Required:  true,
-			PathParam: "roomId",
-		},
-		&requestflag.Flag[string]{
-			Name:      "event-id",
-			Required:  true,
-			PathParam: "eventId",
+			PathParam: "bridgeID",
 		},
 	},
-	Action:          handleMatrixRoomsEventsRetrieve,
+	Action:          handleBridgesLoginFlowsList,
 	HideHelpCommand: true,
 }
 
-func handleMatrixRoomsEventsRetrieve(ctx context.Context, cmd *cli.Command) error {
+func handleBridgesLoginFlowsList(ctx context.Context, cmd *cli.Command) error {
 	client := beeperdesktopapi.NewClient(getDefaultRequestOptions(cmd)...)
 	unusedArgs := cmd.Args().Slice()
-	if !cmd.IsSet("event-id") && len(unusedArgs) > 0 {
-		cmd.Set("event-id", unusedArgs[0])
+	if !cmd.IsSet("bridge-id") && len(unusedArgs) > 0 {
+		cmd.Set("bridge-id", unusedArgs[0])
 		unusedArgs = unusedArgs[1:]
 	}
 	if len(unusedArgs) > 0 {
@@ -56,34 +52,22 @@ func handleMatrixRoomsEventsRetrieve(ctx context.Context, cmd *cli.Command) erro
 		return err
 	}
 
-	params := beeperdesktopapi.MatrixRoomEventGetParams{
-		RoomID: cmd.Value("room-id").(string),
-	}
-
 	var res []byte
 	options = append(options, option.WithResponseBodyInto(&res))
-	_, err = client.Matrix.Rooms.Events.Get(
-		ctx,
-		cmd.Value("event-id").(string),
-		params,
-		options...,
-	)
+	_, err = client.Bridges.LoginFlows.List(ctx, cmd.Value("bridge-id").(string), options...)
 	if err != nil {
 		return err
 	}
 
 	obj := gjson.ParseBytes(res)
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
 		Format:         format,
 		RawOutput:      cmd.Root().Bool("raw-output"),
-		Title:          "matrix:rooms:events retrieve",
+		Title:          "bridges:login-flows list",
 		Transform:      transform,
 	})
 }

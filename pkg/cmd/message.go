@@ -16,12 +16,12 @@ import (
 
 var messagesRetrieve = cli.Command{
 	Name:    "retrieve",
-	Usage:   "Retrieve a message by final message ID, pendingMessageID, or Matrix event ID.\nChat ID may be a Beeper chat ID or local chat ID.",
+	Usage:   "Retrieve a message by final message ID, pendingMessageID, or Matrix event ID.\nchatID may be a Beeper chat ID or a local chat ID.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -43,7 +43,7 @@ var messagesUpdate = cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -71,7 +71,7 @@ var messagesList = cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -101,7 +101,7 @@ var messagesDelete = cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -187,7 +187,7 @@ var messagesSearch = cli.Command{
 		},
 		&requestflag.Flag[string]{
 			Name:      "query",
-			Usage:     `Literal word search (non-semantic). Finds messages containing these EXACT words in any order. Use single words users actually type, not concepts or phrases. Example: use "dinner" not "dinner plans", use "sick" not "health issues". If omitted, returns results filtered only by other parameters.`,
+			Usage:     `Literal word search. Finds messages containing these words in any order. Use words the user actually typed, not inferred concepts. Example: use "dinner" rather than "dinner plans". If omitted, returns results filtered only by the other parameters.`,
 			QueryPath: "query",
 		},
 		&requestflag.Flag[string]{
@@ -211,7 +211,7 @@ var messagesSend = requestflag.WithInnerFlags(cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -227,7 +227,7 @@ var messagesSend = requestflag.WithInnerFlags(cli.Command{
 		},
 		&requestflag.Flag[string]{
 			Name:     "text",
-			Usage:    "Draft text. Plain text and Markdown are converted to Matrix HTML with the same rules used by send and edit.",
+			Usage:    "Draft text. Plain text and Markdown are converted to Beeper rich text with the same rules used by send and edit.",
 			BodyPath: "text",
 		},
 	},
@@ -307,11 +307,8 @@ func handleMessagesRetrieve(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	obj := gjson.ParseBytes(res)
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
@@ -397,11 +394,8 @@ func handleMessagesList(ctx context.Context, cmd *cli.Command) error {
 
 	params := beeperdesktopapi.MessageListParams{}
 
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	if format == "raw" {
 		var res []byte
@@ -499,11 +493,8 @@ func handleMessagesSearch(ctx context.Context, cmd *cli.Command) error {
 
 	params := beeperdesktopapi.MessageSearchParams{}
 
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	if format == "raw" {
 		var res []byte

@@ -17,12 +17,12 @@ import (
 
 var assetsDownload = cli.Command{
 	Name:    "download",
-	Usage:   "Download a Matrix file using its mxc:// or localmxc:// URL to the device running\nBeeper Desktop and return the local file URL.",
+	Usage:   "Download a file from an mxc:// or localmxc:// URL to the device running the\nBeeper Client API and return the local file URL.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:     "url",
-			Usage:    "Matrix content URL (mxc:// or localmxc://) for the file to download.",
+			Usage:    "Beeper media URL (mxc:// or localmxc://) for the file to download.",
 			Required: true,
 			BodyPath: "url",
 		},
@@ -54,7 +54,7 @@ var assetsServe = cli.Command{
 
 var assetsUpload = cli.Command{
 	Name:    "upload",
-	Usage:   "Upload a file to a temporary location using multipart/form-data. Returns an\nuploadID that can be referenced when sending a message or materializing a draft\nattachment.",
+	Usage:   "Upload a file to a temporary location using multipart/form-data. Returns an\nuploadID that can be referenced when sending a message or creating a draft\nattachment.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
@@ -81,7 +81,7 @@ var assetsUpload = cli.Command{
 
 var assetsUploadBase64 = cli.Command{
 	Name:    "upload-base64",
-	Usage:   "Upload a file using a JSON body with base64-encoded content. Returns an uploadID\nthat can be referenced when sending a message or materializing a draft\nattachment. Alternative to the multipart upload endpoint.",
+	Usage:   "Upload a file using a JSON body with base64-encoded content. Returns an uploadID\nthat can be referenced when sending a message or creating a draft attachment.\nAlternative to the multipart upload endpoint.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{

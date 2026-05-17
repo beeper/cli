@@ -43,7 +43,7 @@ var accountsContactsList = cli.Command{
 		},
 		&requestflag.Flag[string]{
 			Name:      "query",
-			Usage:     "Optional search query for blended contact lookup.",
+			Usage:     "Optional search query for contact lookup.",
 			QueryPath: "query",
 		},
 		&requestflag.Flag[int64]{
@@ -68,7 +68,7 @@ var accountsContactsSearch = cli.Command{
 		},
 		&requestflag.Flag[string]{
 			Name:      "query",
-			Usage:     "Text to search users by. Network-specific behavior.",
+			Usage:     "Text to search contacts by. Matching behavior depends on the network.",
 			Required:  true,
 			QueryPath: "query",
 		},
@@ -101,11 +101,8 @@ func handleAccountsContactsList(ctx context.Context, cmd *cli.Command) error {
 
 	params := beeperdesktopapi.AccountContactListParams{}
 
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	if format == "raw" {
 		var res []byte
@@ -185,11 +182,8 @@ func handleAccountsContactsSearch(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	obj := gjson.ParseBytes(res)
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,

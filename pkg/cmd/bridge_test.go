@@ -8,12 +8,34 @@ import (
 	"github.com/beeper/desktop-api-cli/internal/mocktest"
 )
 
+func TestBridgesRetrieve(t *testing.T) {
+	t.Run("regular flags", func(t *testing.T) {
+		mocktest.TestRunMockTestWithFlags(
+			t,
+			"--access-token", "string",
+			"bridges", "retrieve",
+			"--bridge-id", "local-whatsapp",
+		)
+	})
+}
+
 func TestBridgesList(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--access-token", "string",
 			"bridges", "list",
+		)
+	})
+}
+
+func TestBridgesRetrieveCapabilities(t *testing.T) {
+	t.Run("regular flags", func(t *testing.T) {
+		mocktest.TestRunMockTestWithFlags(
+			t,
+			"--access-token", "string",
+			"bridges", "retrieve-capabilities",
+			"--bridge-id", "local-whatsapp",
 		)
 	})
 }

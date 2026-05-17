@@ -16,7 +16,7 @@ import (
 
 var focus = cli.Command{
 	Name:    "focus",
-	Usage:   "Focus Beeper Desktop and optionally navigate to a specific chat, message, or\npre-fill plain text and an image path.",
+	Usage:   "Focus Beeper Desktop and optionally open a specific chat, jump to a message, or\npre-fill text and an image.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
@@ -26,7 +26,7 @@ var focus = cli.Command{
 		},
 		&requestflag.Flag[string]{
 			Name:     "draft-attachment-path",
-			Usage:    "Optional image path to populate in the message input field.",
+			Usage:    "Optional local image path to populate in the message input field.",
 			BodyPath: "draftAttachmentPath",
 		},
 		&requestflag.Flag[string]{
@@ -46,12 +46,12 @@ var focus = cli.Command{
 
 var search = cli.Command{
 	Name:    "search",
-	Usage:   "Returns matching chats, participant name matches in groups, and the first page\nof messages in one call. Paginate messages via search-messages. Paginate chats\nvia search-chats.",
+	Usage:   "Return matching chats, participant matches in group chats, and the first page of\nmessage results in one call. Use the dedicated chat and message search endpoints\nfor pagination.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "query",
-			Usage:     "User-typed search text. Literal word matching (non-semantic).",
+			Usage:     "User-typed search text. Uses literal word matching.",
 			Required:  true,
 			QueryPath: "query",
 		},
@@ -130,11 +130,8 @@ func handleSearch(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	obj := gjson.ParseBytes(res)
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,

@@ -8,12 +8,13 @@ import (
 	"github.com/beeper/desktop-api-cli/internal/mocktest"
 )
 
-func TestAppStatus(t *testing.T) {
+func TestBridgesLoginFlowsList(t *testing.T) {
 	t.Run("regular flags", func(t *testing.T) {
 		mocktest.TestRunMockTestWithFlags(
 			t,
 			"--access-token", "string",
-			"app", "status",
+			"bridges:login-flows", "list",
+			"--bridge-id", "local-whatsapp",
 		)
 	})
 }

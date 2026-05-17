@@ -1,5 +1,5 @@
 .prism.log
 .stdy.log
 dist/
-/beeper-desktop-cli
+/beeper-desktop
 *.exe

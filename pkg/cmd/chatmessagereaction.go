@@ -21,7 +21,7 @@ var chatsMessagesReactionsDelete = cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -49,7 +49,7 @@ var chatsMessagesReactionsAdd = cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},

@@ -25,7 +25,7 @@ var (
 
 func init() {
 	Command = &cli.Command{
-		Name:      "beeper-desktop-cli",
+		Name:      "beeper-desktop",
 		Usage:     "CLI for the beeperdesktop API",
 		Suggest:   true,
 		Version:   Version,
@@ -46,7 +46,7 @@ func init() {
 			&cli.StringFlag{
 				Name:  "format",
 				Usage: "The format for displaying response data (one of: " + strings.Join(OutputFormats, ", ") + ")",
-				Value: "json",
+				Value: "auto",
 				Validator: func(format string) error {
 					if !slices.Contains(OutputFormats, strings.ToLower(format)) {
 						return fmt.Errorf("format must be one of: %s", strings.Join(OutputFormats, ", "))
@@ -57,7 +57,7 @@ func init() {
 			&cli.StringFlag{
 				Name:  "format-error",
 				Usage: "The format for displaying error data (one of: " + strings.Join(OutputFormats, ", ") + ")",
-				Value: "json",
+				Value: "auto",
 				Validator: func(format string) error {
 					if !slices.Contains(OutputFormats, strings.ToLower(format)) {
 						return fmt.Errorf("format must be one of: %s", strings.Join(OutputFormats, ", "))
@@ -88,75 +88,11 @@ func init() {
 			&focus,
 			&search,
 			{
-				Name:     "app",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&appStatus,
-				},
-			},
-			{
-				Name:     "app:login",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&appLoginEmail,
-					&appLoginRegister,
-					&appLoginResponse,
-					&appLoginStart,
-				},
-			},
-			{
-				Name:     "app:e2ee:recovery-code",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&appE2eeRecoveryCodeMarkBackedUp,
-					&appE2eeRecoveryCodeVerify,
-				},
-			},
-			{
-				Name:     "app:e2ee:recovery-code:reset",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&appE2eeRecoveryCodeResetCreate,
-					&appE2eeRecoveryCodeResetConfirm,
-				},
-			},
-			{
-				Name:     "app:e2ee:verification",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&appE2eeVerificationCreate,
-					&appE2eeVerificationAccept,
-					&appE2eeVerificationCancel,
-				},
-			},
-			{
-				Name:     "app:e2ee:verification:qr",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&appE2eeVerificationQrConfirmScanned,
-					&appE2eeVerificationQrScan,
-				},
-			},
-			{
-				Name:     "app:e2ee:verification:sas",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&appE2eeVerificationSasConfirm,
-					&appE2eeVerificationSasStart,
-				},
-			},
-			{
 				Name:     "accounts",
 				Category: "API RESOURCE",
 				Suggest:  true,
 				Commands: []*cli.Command{
+					&accountsRetrieve,
 					&accountsList,
 				},
 			},
@@ -174,109 +110,35 @@ func init() {
 				Category: "API RESOURCE",
 				Suggest:  true,
 				Commands: []*cli.Command{
+					&bridgesRetrieve,
 					&bridgesList,
+					&bridgesRetrieveCapabilities,
 				},
 			},
 			{
-				Name:     "matrix:users",
+				Name:     "bridges:login-flows",
 				Category: "API RESOURCE",
 				Suggest:  true,
 				Commands: []*cli.Command{
-					&matrixUsersRetrieveProfile,
+					&bridgesLoginFlowsList,
 				},
 			},
 			{
-				Name:     "matrix:users:account-data",
+				Name:     "bridges:login-sessions",
 				Category: "API RESOURCE",
 				Suggest:  true,
 				Commands: []*cli.Command{
-					&matrixUsersAccountDataRetrieve,
-					&matrixUsersAccountDataUpdate,
+					&bridgesLoginSessionsCreate,
+					&bridgesLoginSessionsRetrieve,
+					&bridgesLoginSessionsCancel,
 				},
 			},
 			{
-				Name:     "matrix:rooms",
+				Name:     "bridges:login-sessions:steps",
 				Category: "API RESOURCE",
 				Suggest:  true,
 				Commands: []*cli.Command{
-					&matrixRoomsCreate,
-					&matrixRoomsJoin,
-					&matrixRoomsLeave,
-				},
-			},
-			{
-				Name:     "matrix:rooms:account-data",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&matrixRoomsAccountDataRetrieve,
-					&matrixRoomsAccountDataUpdate,
-				},
-			},
-			{
-				Name:     "matrix:rooms:state",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&matrixRoomsStateRetrieve,
-					&matrixRoomsStateList,
-				},
-			},
-			{
-				Name:     "matrix:rooms:events",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&matrixRoomsEventsRetrieve,
-				},
-			},
-			{
-				Name:     "matrix:bridges:auth",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&matrixBridgesAuthListFlows,
-					&matrixBridgesAuthListLogins,
-					&matrixBridgesAuthLogout,
-					&matrixBridgesAuthStartLogin,
-					&matrixBridgesAuthSubmitCookies,
-					&matrixBridgesAuthSubmitUserInput,
-					&matrixBridgesAuthWaitForStep,
-					&matrixBridgesAuthWhoami,
-				},
-			},
-			{
-				Name:     "matrix:bridges:contacts",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&matrixBridgesContactsList,
-				},
-			},
-			{
-				Name:     "matrix:bridges:users",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&matrixBridgesUsersResolve,
-					&matrixBridgesUsersSearch,
-				},
-			},
-			{
-				Name:     "matrix:bridges:rooms",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&matrixBridgesRoomsCreateDm,
-					&matrixBridgesRoomsCreateGroup,
-				},
-			},
-			{
-				Name:     "matrix:bridges:capabilities",
-				Category: "API RESOURCE",
-				Suggest:  true,
-				Commands: []*cli.Command{
-					&matrixBridgesCapabilitiesRetrieve,
+					&bridgesLoginSessionsStepsSubmit,
 				},
 			},
 			{
@@ -349,7 +211,7 @@ func init() {
 			{
 				Name:            "@manpages",
 				Usage:           "Generate documentation for 'man'",
-				UsageText:       "beeper-desktop-cli @manpages [-o beeper-desktop-cli.1] [--gzip]",
+				UsageText:       "beeper-desktop @manpages [-o beeper-desktop.1] [--gzip]",
 				Hidden:          true,
 				Action:          generateManpages,
 				HideHelpCommand: true,
@@ -402,7 +264,7 @@ func generateManpages(ctx context.Context, c *cli.Command) error {
 		// handle error
 	}
 	if c.Bool("text") {
-		file, err := os.Create(filepath.Join(dir, "man1", "beeper-desktop-cli.1"))
+		file, err := os.Create(filepath.Join(dir, "man1", "beeper-desktop.1"))
 		if err != nil {
 			return err
 		}
@@ -412,7 +274,7 @@ func generateManpages(ctx context.Context, c *cli.Command) error {
 		}
 	}
 	if c.Bool("gzip") {
-		file, err := os.Create(filepath.Join(dir, "man1", "beeper-desktop-cli.1.gz"))
+		file, err := os.Create(filepath.Join(dir, "man1", "beeper-desktop.1.gz"))
 		if err != nil {
 			return err
 		}

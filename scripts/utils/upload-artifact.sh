@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -exuo pipefail
 
-BINARY_NAME="beeper-desktop-cli"
+BINARY_NAME="beeper-desktop"
 DIST_DIR="dist"
 FILENAME="dist.zip"
 

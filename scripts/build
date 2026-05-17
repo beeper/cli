@@ -7,5 +7,5 @@ cd "$(dirname "$0")/.."
 # Mark the necessary Go modules as private to avoid Go's proxy
 export GOPRIVATE="${GOPRIVATE:+$GOPRIVATE,}github.com/beeper/desktop-api-go/v5,github.com/stainless-sdks/beeper-desktop-api-go/v5"
 
-echo "==> Building beeper-desktop-cli"
-go build ./cmd/beeper-desktop-cli
+echo "==> Building beeper-desktop"
+go build ./cmd/beeper-desktop

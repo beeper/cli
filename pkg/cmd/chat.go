@@ -54,12 +54,12 @@ var chatsCreate = cli.Command{
 
 var chatsRetrieve = cli.Command{
 	Name:    "retrieve",
-	Usage:   "Retrieve chat details including metadata, participants, and latest message",
+	Usage:   "Retrieve chat details, including metadata, participants, and the latest message.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -76,12 +76,12 @@ var chatsRetrieve = cli.Command{
 
 var chatsUpdate = requestflag.WithInnerFlags(cli.Command{
 	Name:    "update",
-	Usage:   "Update supported chat fields. Non-empty draft objects are accepted only when the\ncurrent draft is empty. Send draft=null to clear the draft before setting new\ndraft text or attachments.",
+	Usage:   "Update supported chat fields. Non-empty drafts are accepted only when the\ncurrent draft is empty. Send draft=null to clear the draft before setting new\ndraft text or attachments.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -137,7 +137,7 @@ var chatsUpdate = requestflag.WithInnerFlags(cli.Command{
 	"draft": {
 		&requestflag.InnerFlag[string]{
 			Name:       "draft.text",
-			Usage:      "Draft text. Plain text and Markdown are converted to Matrix HTML with the same rules used by send and edit.",
+			Usage:      "Draft text. Plain text and Markdown are converted to Beeper rich text with the same rules used by send and edit.",
 			InnerField: "text",
 		},
 		&requestflag.InnerFlag[map[string]any]{
@@ -179,12 +179,12 @@ var chatsList = cli.Command{
 
 var chatsArchive = cli.Command{
 	Name:    "archive",
-	Usage:   "Archive or unarchive a chat. Set archived=true to move to archive,\narchived=false to move back to inbox",
+	Usage:   "Archive or unarchive a chat. Set archived=true to move it to Archive, or\narchived=false to move it back to the inbox.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -206,7 +206,7 @@ var chatsMarkRead = cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -227,7 +227,7 @@ var chatsMarkUnread = cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -243,12 +243,12 @@ var chatsMarkUnread = cli.Command{
 
 var chatsNotifyAnyway = cli.Command{
 	Name:    "notify-anyway",
-	Usage:   "Force a delivery notification when supported by the underlying network.\nCurrently intended for iMessage on macOS; unsupported networks return an error.",
+	Usage:   "Send a notification despite the recipient focus state when the network supports\nit. Currently intended for iMessage on macOS; unsupported networks return an\nerror.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -264,7 +264,7 @@ var chatsSearch = cli.Command{
 	Flags: []cli.Flag{
 		&requestflag.Flag[[]string]{
 			Name:      "account-id",
-			Usage:     "Provide an array of account IDs to filter chats from specific messaging accounts only",
+			Usage:     "Limit results to specific chat accounts.",
 			QueryPath: "accountIDs",
 		},
 		&requestflag.Flag[string]{
@@ -290,12 +290,12 @@ var chatsSearch = cli.Command{
 		},
 		&requestflag.Flag[any]{
 			Name:      "last-activity-after",
-			Usage:     "Provide an ISO datetime string to only retrieve chats with last activity after this time",
+			Usage:     "Only include chats with last activity after this ISO 8601 datetime.",
 			QueryPath: "lastActivityAfter",
 		},
 		&requestflag.Flag[any]{
 			Name:      "last-activity-before",
-			Usage:     "Provide an ISO datetime string to only retrieve chats with last activity before this time",
+			Usage:     "Only include chats with last activity before this ISO 8601 datetime.",
 			QueryPath: "lastActivityBefore",
 		},
 		&requestflag.Flag[int64]{
@@ -306,7 +306,7 @@ var chatsSearch = cli.Command{
 		},
 		&requestflag.Flag[string]{
 			Name:      "query",
-			Usage:     `Literal token search (non-semantic). Use single words users type (e.g., "dinner"). When multiple words provided, ALL must match. Case-insensitive.`,
+			Usage:     `Literal chat search. Use words the user typed, such as "dinner". When multiple words are provided, all must match. Case-insensitive.`,
 			QueryPath: "query",
 		},
 		&requestflag.Flag[string]{
@@ -337,7 +337,7 @@ var chatsSearch = cli.Command{
 
 var chatsStart = requestflag.WithInnerFlags(cli.Command{
 	Name:    "start",
-	Usage:   "Resolve a user/contact and open a direct chat. Reuses and returns an existing\ndirect chat when one is found. Available in Beeper Desktop v4.2.808+.",
+	Usage:   "Resolve a user/contact and open a direct chat. Reuses and returns an existing\ndirect chat when one is found. Available in Beeper v4.2.808+.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
@@ -348,7 +348,7 @@ var chatsStart = requestflag.WithInnerFlags(cli.Command{
 		},
 		&requestflag.Flag[map[string]any]{
 			Name:     "user",
-			Usage:    "Merged user-like contact payload used to resolve the best identifier.",
+			Usage:    "Contact-like user payload used to resolve the best identifier.",
 			Required: true,
 			BodyPath: "user",
 		},
@@ -474,11 +474,8 @@ func handleChatsRetrieve(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	obj := gjson.ParseBytes(res)
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	return ShowJSON(obj, ShowJSONOpts{
 		ExplicitFormat: explicitFormat,
@@ -559,11 +556,8 @@ func handleChatsList(ctx context.Context, cmd *cli.Command) error {
 
 	params := beeperdesktopapi.ChatListParams{}
 
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	if format == "raw" {
 		var res []byte
@@ -796,11 +790,8 @@ func handleChatsSearch(ctx context.Context, cmd *cli.Command) error {
 
 	params := beeperdesktopapi.ChatSearchParams{}
 
-	format := "json"
+	format := cmd.Root().String("format")
 	explicitFormat := cmd.Root().IsSet("format")
-	if explicitFormat {
-		format = cmd.Root().String("format")
-	}
 	transform := cmd.Root().String("transform")
 	if format == "raw" {
 		var res []byte

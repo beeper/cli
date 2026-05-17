@@ -1,4 +1,4 @@
-# Beeper Desktop CLI
+# CLI for Beeper Desktop
 
 The official CLI for the [Beeper Desktop REST API](https://developers.beeper.com/desktop-api/).
 
@@ -6,18 +6,12 @@ The official CLI for the [Beeper Desktop REST API](https://developers.beeper.com
 
 ## Installation
 
-### Installing with Homebrew
-
-```sh
-brew install beeper/tap/beeper-desktop-cli
-```
-
 ### Installing with Go
 
 To test or install the CLI locally, you need [Go](https://go.dev/doc/install) version 1.22 or later installed.
 
 ```sh
-go install 'github.com/beeper/desktop-api-cli/cmd/beeper-desktop-cli@latest'
+go install 'github.com/beeper/desktop-api-cli/cmd/beeper-desktop@latest'
 ```
 
 Once you have run `go install`, the binary is placed in your Go bin directory:
@@ -48,11 +42,11 @@ After cloning the git repository for this project, you can use the
 The CLI follows a resource-based command structure:
 
 ```sh
-beeper-desktop-cli [resource] <command> [flags...]
+beeper-desktop [resource] <command> [flags...]
 ```
 
 ```sh
-beeper-desktop-cli chats search \
+beeper-desktop chats search \
   --access-token 'My Access Token' \
   --account-id matrix \
   --account-id discordgo \
@@ -66,9 +60,9 @@ For details about specific commands, use the `--help` flag.
 
 ### Environment variables
 
-| Environment variable  | Description                                                                                                     | Required | Default value |
-| --------------------- | --------------------------------------------------------------------------------------------------------------- | -------- | ------------- |
-| `BEEPER_ACCESS_TOKEN` | Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for authenticated API operations. | no       | `null`        |
+| Environment variable  | Description                                                                                                     | Required |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- | -------- |
+| `BEEPER_ACCESS_TOKEN` | Bearer access token obtained via OAuth2 PKCE flow or created in-app. Required for authenticated API operations. | yes      |
 
 ### Global flags
 
@@ -87,15 +81,15 @@ For details about specific commands, use the `--help` flag.
 To pass files to your API, you can use the `@myfile.ext` syntax:
 
 ```bash
-beeper-desktop-cli <command> --arg @abe.jpg
+beeper-desktop <command> --arg @abe.jpg
 ```
 
 Files can also be passed inside JSON or YAML blobs:
 
 ```bash
-beeper-desktop-cli <command> --arg '{image: "@abe.jpg"}'
+beeper-desktop <command> --arg '{image: "@abe.jpg"}'
 # Equivalent:
-beeper-desktop-cli <command> <<YAML
+beeper-desktop <command> <<YAML
 arg:
   image: "@abe.jpg"
 YAML
@@ -105,7 +99,7 @@ If you need to pass a string literal that begins with an `@` sign, you can
 escape the `@` sign to avoid accidentally passing a file.
 
 ```bash
-beeper-desktop-cli <command> --username '\@abe'
+beeper-desktop <command> --username '\@abe'
 ```
 
 #### Explicit encoding
@@ -119,7 +113,7 @@ base64-encoding). Note that absolute paths will begin with `@file://` or
 `@data://`, followed by a third `/` (for example, `@file:///tmp/file.txt`).
 
 ```bash
-beeper-desktop-cli <command> --arg @data://file.txt
+beeper-desktop <command> --arg @data://file.txt
 ```
 
 ## Linking different Go SDK versions

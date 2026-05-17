@@ -14,12 +14,12 @@ import (
 
 var chatsRemindersCreate = requestflag.WithInnerFlags(cli.Command{
 	Name:    "create",
-	Usage:   "Set a reminder for a chat at a specific time",
+	Usage:   "Set a reminder for a chat at a specific time.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},
@@ -49,12 +49,12 @@ var chatsRemindersCreate = requestflag.WithInnerFlags(cli.Command{
 
 var chatsRemindersDelete = cli.Command{
 	Name:    "delete",
-	Usage:   "Clear an existing reminder from a chat",
+	Usage:   "Clear an existing reminder from a chat.",
 	Suggest: true,
 	Flags: []cli.Flag{
 		&requestflag.Flag[string]{
 			Name:      "chat-id",
-			Usage:     "Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.",
+			Usage:     "Chat ID. Input routes also accept the local chat ID from this installation when available.",
 			Required:  true,
 			PathParam: "chatID",
 		},

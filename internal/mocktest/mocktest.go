@@ -79,11 +79,11 @@ func TestRunMockTestWithPipeAndFlags(t *testing.T, pipeData []byte, args ...stri
 	_, filename, _, ok := runtime.Caller(0)
 	require.True(t, ok, "Could not get current file path")
 	dirPath := filepath.Dir(filename)
-	project := filepath.Join(dirPath, "..", "..", "cmd", "beeper-desktop-cli")
+	project := filepath.Join(dirPath, "..", "..", "cmd", "beeper-desktop")
 
 	args = append([]string{"run", project, "--base-url", mockServerURL.String()}, args...)
 
-	t.Logf("Testing command: go run ./cmd/beeper-desktop-cli %s", strings.Join(args[2:], " "))
+	t.Logf("Testing command: go run ./cmd/beeper-desktop %s", strings.Join(args[2:], " "))
 
 	cmd := exec.Command("go", args...)
 	cmd.Stdin = bytes.NewReader(pipeData)
