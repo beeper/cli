@@ -143,7 +143,6 @@ future commands.
 | `app e2ee verification sas confirm` | Confirm matching emoji verification |
 | `app e2ee verification sas start` | Start emoji verification |
 | `app e2ee verification start` | Start device verification |
-| `app install` | Install Beeper Desktop |
 | `app status` | Show Beeper app login and encrypted messaging state |
 | `archive` | Archive or unarchive a chat. Set archived=true to move it to Archive, or archived=false to move it back to the inbox. |
 | `assets download` | Download a file from an mxc:// or localmxc:// URL to the device running the Beeper Client API and return the local file URL. |
@@ -166,10 +165,6 @@ future commands.
 | `current-user` | Show the authenticated Desktop API user |
 | `delete-message` | Delete a message by final message ID. Pending message IDs are not accepted because messages cannot be deleted while sending. |
 | `description` | Set or clear a group chat description |
-| `desktop profiles` | List Beeper Desktop profiles |
-| `desktop profiles delete` | Delete a Beeper Desktop profile |
-| `desktop profiles launch` | Launch a Beeper Desktop profile |
-| `desktop profiles new` | Create a Beeper Desktop profile |
 | `doctor` | Verify Desktop API reachability and authentication |
 | `draft` | Set a chat draft |
 | `edit` | Edit the text content of an existing message. Messages with attachments cannot be edited. |
@@ -202,6 +197,16 @@ future commands.
 | `plugins uninstall` | Removes a plugin from the CLI. |
 | `plugins unlink` | Removes a plugin from the CLI. |
 | `plugins update` | Update installed plugins. |
+| `profile disable` | Disable login start for a local Beeper server profile |
+| `profile enable` | Start a local Beeper server profile at login |
+| `profile list` | List local Beeper profiles |
+| `profile logs` | Print local Beeper profile logs |
+| `profile new` | Create a local Beeper profile |
+| `profile remove` | Remove a local Beeper profile |
+| `profile restart` | Restart a local Beeper profile |
+| `profile start` | Start a local Beeper profile |
+| `profile status` | Show local Beeper profile status |
+| `profile stop` | Stop a local Beeper profile |
 | `react` | Add a reaction to an existing message. |
 | `read` | Mark a chat as read, optionally through a specific message ID. |
 | `remind` | Set a reminder for a chat at a specific time. |
@@ -209,10 +214,6 @@ future commands.
 | `search` | Search chats and messages |
 | `send file` | Send a file to a chat |
 | `send text` | Send a text message to a specific chat. Supports replying to existing messages. Returns a pending message ID. |
-| `server install` | Install Beeper Server locally |
-| `server launch` | Launch a local Beeper Server target |
-| `server new` | Create a local Beeper Server target |
-| `server update` | Update the local Beeper Server install |
 | `setup` | Set up a Beeper target |
 | `shell` | Run an interactive Beeper CLI shell |
 | `start-chat` | Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper v4.2.808+. |
@@ -519,22 +520,6 @@ Flags:
 | --- | --- | --- |
 | `-t, --target=<value>` | option | Beeper target |
 | `--user-id=<value>` | option | User ID to verify. Defaults to the signed-in user. |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper app install`
-Install Beeper Desktop
-
-```sh
-beeper app install
-```
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--channel=<stable|nightly>` | option | Desktop release channel Default: stable |
-| `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
@@ -984,88 +969,6 @@ Flags:
 | --- | --- | --- |
 | `--clear` | boolean | Clear the current description |
 | `--pick=<value>` | option | Pick the Nth chat when the input is ambiguous |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper desktop profiles`
-List Beeper Desktop profiles
-
-```sh
-beeper desktop profiles
-```
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper desktop profiles delete`
-Delete a Beeper Desktop profile
-
-```sh
-beeper desktop profiles delete <profile>
-```
-
-Arguments:
-
-| Name | Required | Description |
-| --- | --- | --- |
-| `profile` | yes |  |
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--force` | boolean | Delete local profile data. Requires the profile name. |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper desktop profiles launch`
-Launch a Beeper Desktop profile
-
-```sh
-beeper desktop profiles launch <profile>
-```
-
-Arguments:
-
-| Name | Required | Description |
-| --- | --- | --- |
-| `profile` | yes |  |
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper desktop profiles new`
-Create a Beeper Desktop profile
-
-```sh
-beeper desktop profiles new <name>
-```
-
-Arguments:
-
-| Name | Required | Description |
-| --- | --- | --- |
-| `name` | yes |  |
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--default` | boolean | Make this the default target |
-| `--port=<value>` | option |  |
-| `--server-env=<value>` | option | Default: production |
 | `-t, --target=<value>` | option | Beeper target |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
@@ -1735,6 +1638,215 @@ Flags:
 | `-h, --help` | boolean | Show CLI help. |
 | `-v, --verbose` | boolean |  |
 
+### `beeper profile disable`
+Disable login start for a local Beeper server profile
+
+```sh
+beeper profile disable <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile enable`
+Start a local Beeper server profile at login
+
+```sh
+beeper profile enable <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile list`
+List local Beeper profiles
+
+```sh
+beeper profile list
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile logs`
+Print local Beeper profile logs
+
+```sh
+beeper profile logs <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile new`
+Create a local Beeper profile
+
+```sh
+beeper profile new <type> [name]
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `type` | yes |  |
+| `name` | no |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--default` | boolean | Make this the default target |
+| `--port=<value>` | option |  |
+| `--server-env=<production|staging>` | option | Default: production |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile remove`
+Remove a local Beeper profile
+
+```sh
+beeper profile remove <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--force` | boolean | Delete local profile data |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile restart`
+Restart a local Beeper profile
+
+```sh
+beeper profile restart <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile start`
+Start a local Beeper profile
+
+```sh
+beeper profile start <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile status`
+Show local Beeper profile status
+
+```sh
+beeper profile status <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
+### `beeper profile stop`
+Stop a local Beeper profile
+
+```sh
+beeper profile stop <profile>
+```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `profile` | yes |  |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-t, --target=<value>` | option | Beeper target |
+
+Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
+
 ### `beeper react`
 Add a reaction to an existing message.
 
@@ -1903,85 +2015,6 @@ Flags:
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
-### `beeper server install`
-Install Beeper Server locally
-
-```sh
-beeper server install
-```
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--channel=<stable|nightly>` | option | Server release channel Default: stable |
-| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper server launch`
-Launch a local Beeper Server target
-
-```sh
-beeper server launch [target]
-```
-
-Arguments:
-
-| Name | Required | Description |
-| --- | --- | --- |
-| `target` | no |  |
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper server new`
-Create a local Beeper Server target
-
-```sh
-beeper server new [name]
-```
-
-Arguments:
-
-| Name | Required | Description |
-| --- | --- | --- |
-| `name` | no |  |
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--default` | boolean | Make this the default target |
-| `--launch` | boolean | Launch the server after creating it |
-| `--port=<value>` | option |  |
-| `--server-env=<value>` | option | Default: production |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper server update`
-Update the local Beeper Server install
-
-```sh
-beeper server update
-```
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--check` | boolean | Only check for updates; do not install |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
 ### `beeper setup`
 Set up a Beeper target
 
@@ -1993,16 +2026,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--connect=<value>` | option | Connect to an existing Beeper client URL |
-| `--desktop-profile=<value>` | option | Create a local Beeper Desktop profile |
-| `--launch` | boolean | Launch local profiles/servers |
 | `--login` | boolean | Print the login command after setup |
-| `--name=<value>` | option | Target name for --connect |
-| `--port=<value>` | option |  |
-| `--server=<value>` | option | Create a local Beeper Server target |
-| `--server-env=<value>` | option | Default: production |
-| `-t, --target=<value>` | option | Beeper target |
-| `--type=<desktop|server>` | option | Type for --connect Default: desktop |
+| `-t, --target=<value>` | option | Target to use by default |
 
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 

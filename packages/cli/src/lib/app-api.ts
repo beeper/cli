@@ -1,23 +1,38 @@
 import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import { getAccessToken, resolveTarget, updateTargetCache } from './targets.js'
-import type { ResetCreateResponse } from '@beeper/desktop-api/resources/app/setup/recovery-key/reset.js'
-import type {
-  SetupRegisterResponse,
-  SetupResponseResponse,
-  SetupRetrieveResponse,
-} from '@beeper/desktop-api/resources/app/setup/setup.js'
+import type { AppState } from './app-state.js'
 
-export type AppStateSnapshot = SetupRetrieveResponse
-export type AppLoginSuccess = SetupRegisterResponse
-export type AppRegistrationRequired = Extract<SetupResponseResponse, { registrationRequired: true }>
-export type AppLoginOutput = SetupResponseResponse
-
-export type AppMutationResponse = {
-  appState: AppStateSnapshot
+export type AppLoginSuccess = {
+  session?: AppState
+  appState?: AppState
+  matrix: { accessToken: string; deviceID?: string; homeserver?: string; userID?: string }
+  [key: string]: unknown
 }
 
-export type AppRecoveryCodeResetBeginResponse = ResetCreateResponse
+export type AppRegistrationRequired = {
+  registrationRequired: true
+  setupRequestID: string
+  leadToken: string
+  copy?: {
+    terms?: string
+    title?: string
+    usernamePlaceholder?: string
+    [key: string]: unknown
+  }
+  usernameSuggestions?: string[]
+  [key: string]: unknown
+}
+
+export type AppLoginOutput = AppLoginSuccess | AppRegistrationRequired
+
+export type AppMutationResponse = {
+  appState: AppState
+}
+
+export type AppRecoveryCodeResetBeginResponse = AppMutationResponse & {
+  recoveryCode?: string
+}
 
 export async function appRequest<T>(
   method: 'GET' | 'POST',

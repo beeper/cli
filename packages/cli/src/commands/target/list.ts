@@ -16,6 +16,7 @@ export default class TargetList extends BeeperCommand {
       id: target.id,
       type: target.type,
       name: target.name ?? target.id,
+      managed: target.managed,
       url: target.baseURL,
       profile: target.id === 'desktop' ? undefined : target.profile,
       dataDir: target.dataDir,

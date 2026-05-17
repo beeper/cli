@@ -1,7 +1,6 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../../../../lib/command.js'
-import type { SASConfirmResponse } from '@beeper/desktop-api/resources/app/setup/verifications/sas.js'
-import { appRequest } from '../../../../../lib/app-api.js'
+import { appRequest, type AppMutationResponse } from '../../../../../lib/app-api.js'
 import { printData } from '../../../../../lib/output.js'
 
 export default class AppE2EEVerificationSASConfirm extends BeeperCommand {
@@ -13,7 +12,7 @@ export default class AppE2EEVerificationSASConfirm extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AppE2EEVerificationSASConfirm)
     ensureWritable(flags)
-    const result = await appRequest<SASConfirmResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(args.txnID)}/sas/confirm`, {
+    const result = await appRequest<AppMutationResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(args.txnID)}/sas/confirm`, {
       baseURL: flags['base-url'],
       target: flags.target,
     })

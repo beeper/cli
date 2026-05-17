@@ -1,7 +1,6 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../../../lib/command.js'
-import type { VerificationCreateResponse } from '@beeper/desktop-api/resources/app/setup/verifications/verifications.js'
-import { appRequest } from '../../../../lib/app-api.js'
+import { appRequest, type AppMutationResponse } from '../../../../lib/app-api.js'
 import { printData } from '../../../../lib/output.js'
 
 export default class AppE2EEVerificationStart extends BeeperCommand {
@@ -13,7 +12,7 @@ export default class AppE2EEVerificationStart extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(AppE2EEVerificationStart)
     ensureWritable(flags)
-    const result = await appRequest<VerificationCreateResponse>('POST', '/v1/app/setup/verifications', {
+    const result = await appRequest<AppMutationResponse>('POST', '/v1/app/setup/verifications', {
       baseURL: flags['base-url'],
       target: flags.target,
       body: flags['user-id'] ? { userID: flags['user-id'] } : {},

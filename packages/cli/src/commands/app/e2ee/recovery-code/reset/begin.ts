@@ -3,8 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { stdin as input, stderr as output } from 'node:process'
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../../../../lib/command.js'
-import type { ResetCreateResponse } from '@beeper/desktop-api/resources/app/setup/recovery-key/reset.js'
-import { appRequest } from '../../../../../lib/app-api.js'
+import { appRequest, type AppRecoveryCodeResetBeginResponse } from '../../../../../lib/app-api.js'
 import { printData } from '../../../../../lib/output.js'
 
 export default class AppE2EERecoveryCodeResetBegin extends BeeperCommand {
@@ -17,7 +16,7 @@ export default class AppE2EERecoveryCodeResetBegin extends BeeperCommand {
     const { flags } = await this.parse(AppE2EERecoveryCodeResetBegin)
     ensureWritable(flags)
     const recoveryCode = flags['recovery-code'] ?? (!flags.json && input.isTTY ? await promptSecret('Existing recovery key (optional): ') : undefined)
-    const result = await appRequest<ResetCreateResponse>('POST', '/v1/app/setup/verification/recovery-key/reset', {
+    const result = await appRequest<AppRecoveryCodeResetBeginResponse>('POST', '/v1/app/setup/verification/recovery-key/reset', {
       baseURL: flags['base-url'],
       target: flags.target,
       body: recoveryCode ? { recoveryCode } : {},

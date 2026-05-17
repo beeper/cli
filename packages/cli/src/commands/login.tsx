@@ -172,9 +172,10 @@ export default class Login extends BeeperCommand {
       await printData(result, 'json')
       return
     }
-    const next = nextAppStep(result.session, target.id)
+    const state = result.session ?? result.appState
+    const next = state ? nextAppStep(state, target.id) : undefined
     await showSignedIn({
-      as: result.matrix.userID,
+      as: result.matrix.userID ?? result.matrix.deviceID ?? 'signed in',
       detail: next ?? 'E2EE ready',
       saved: options.save,
     })

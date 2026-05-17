@@ -53,9 +53,16 @@ for (const command of [
   ['install', '--help'],
   ['install', 'desktop', '--help'],
   ['install', 'server', '--help'],
-  ['app', 'install', '--help'],
-  ['server', 'install', '--help'],
-  ['server', 'update', '--help'],
+  ['profile', 'list', '--help'],
+  ['profile', 'new', '--help'],
+  ['profile', 'start', '--help'],
+  ['profile', 'stop', '--help'],
+  ['profile', 'restart', '--help'],
+  ['profile', 'status', '--help'],
+  ['profile', 'logs', '--help'],
+  ['profile', 'enable', '--help'],
+  ['profile', 'disable', '--help'],
+  ['profile', 'remove', '--help'],
   ['update', '--help'],
   ['contacts', 'list', '--help'],
   ['pin', '--help'],
@@ -94,6 +101,9 @@ assert(commandsJSON.some(item => item.command === 'chat'), 'commands --json shou
 assert(commandsJSON.some(item => item.command === 'send text'), 'commands --json should include send text')
 assert(commandsJSON.some(item => item.command === 'send file'), 'commands --json should include send file')
 assert(!commandsJSON.some(item => ['thread', 'threads', 'tail', 'whoami'].includes(item.command)), 'commands --json must not include compatibility aliases')
+assert(!commandsJSON.some(item => item.command === 'app install'), 'commands --json must not include app install alias')
+assert(!commandsJSON.some(item => item.command.startsWith('server ')), 'commands --json must not include server lifecycle aliases')
+assert(!commandsJSON.some(item => item.command.startsWith('desktop profiles')), 'commands --json must not include desktop profile aliases')
 assert(!commandsJSON.some(item => item.command === 'serve'), 'commands --json must not include serve')
 assert(!commandsJSON.some(item => item.command.includes('base64')), 'commands --json must not include base64 asset variants')
 

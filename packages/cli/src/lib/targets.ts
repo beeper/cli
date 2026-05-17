@@ -1,9 +1,7 @@
-import { spawn } from 'node:child_process'
 import { constants as fsConstants } from 'node:fs'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { randomUUID } from 'node:crypto'
 
 export type StoredAuth = {
   accessToken: string
@@ -19,6 +17,7 @@ export type Target = {
   name?: string
   baseURL: string
   auth?: StoredAuth
+  managed?: boolean
   dataDir?: string
   profile?: string
   serverEnv?: string
@@ -42,15 +41,13 @@ export const configPath = () => join(beeperDir(), 'config.json')
 export const cachePath = () => join(beeperDir(), 'cache.json')
 export const targetsDir = () => join(beeperDir(), 'targets')
 export const pluginsDir = () => join(beeperDir(), 'plugins')
-export const desktopDataDir = (serverEnv: string, id: string) => join(beeperDir(), 'data-dirs', 'local-desktop-profiles', serverEnv, id)
-export const serverDataDir = (serverEnv: string, id: string) => join(beeperDir(), 'data-dirs', 'local-servers', serverEnv, id)
+export const profileDataDir = (type: Target['type'], id: string) => join(beeperDir(), 'profiles', type, id)
 
 export async function ensureBeeperDirs(): Promise<void> {
   await Promise.all([
     mkdir(targetsDir(), { recursive: true }),
     mkdir(pluginsDir(), { recursive: true }),
-    mkdir(join(beeperDir(), 'data-dirs', 'local-desktop-profiles'), { recursive: true }),
-    mkdir(join(beeperDir(), 'data-dirs', 'local-servers'), { recursive: true }),
+    mkdir(join(beeperDir(), 'profiles'), { recursive: true }),
   ])
 }
 
@@ -158,15 +155,16 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   return { id: 'desktop', type: 'desktop', name: 'Desktop', baseURL: process.env.BEEPER_DESKTOP_BASE_URL || process.env.BEEPER_BASE_URL || config.baseURL || defaultBaseURL, auth: config.auth }
 }
 
-export async function createDesktopProfile(id: string, options: { serverEnv?: string; port?: number } = {}): Promise<Target> {
+export async function createProfileTarget(type: Target['type'], id: string, options: { serverEnv?: string; port?: number } = {}): Promise<Target> {
   const serverEnv = options.serverEnv ?? 'production'
   const port = options.port ?? await nextPort()
   const target: Target = {
     id,
-    type: 'desktop',
+    type,
     name: id,
     baseURL: `http://127.0.0.1:${port}`,
-    dataDir: desktopDataDir(serverEnv, id),
+    managed: true,
+    dataDir: profileDataDir(type, id),
     profile: id,
     serverEnv,
     port,
@@ -174,52 +172,6 @@ export async function createDesktopProfile(id: string, options: { serverEnv?: st
   await mkdir(target.dataDir!, { recursive: true })
   await writeTarget(target)
   return target
-}
-
-export async function createServerTarget(id: string, options: { serverEnv?: string; port?: number } = {}): Promise<Target> {
-  const serverEnv = options.serverEnv ?? 'production'
-  const port = options.port ?? await nextPort()
-  const target: Target = {
-    id,
-    type: 'server',
-    name: id,
-    baseURL: `http://127.0.0.1:${port}`,
-    dataDir: serverDataDir(serverEnv, newID('srv')),
-    serverEnv,
-    port,
-  }
-  await mkdir(target.dataDir!, { recursive: true })
-  await writeTarget(target)
-  return target
-}
-
-export async function launchDesktopProfile(target: Target): Promise<void> {
-  if (target.type !== 'desktop') throw new Error(`Target "${target.id}" is not a Desktop profile.`)
-  if (!target.dataDir) throw new Error(`Target "${target.id}" is the default Beeper Desktop profile; launch it from the app.`)
-  const installations = await import('./installations.js').then(module => module.readInstallations()).catch(() => ({ desktop: undefined }))
-  const args = installations.desktop?.path
-    ? ['-n', installations.desktop.path, '--args']
-    : ['-n', '-a', 'Beeper', '--args']
-  if (target.port) args.push(`--pas-port=${target.port}`)
-  if (target.serverEnv) args.push(`--server-env=${target.serverEnv}`)
-  spawnDetached('open', args, {
-    ALLOW_MULTIPLE_INSTANCES: 'true',
-    BEEPER_PROFILE: target.profile ?? target.id,
-    BEEPER_USER_DATA_DIR: target.dataDir,
-  })
-}
-
-export async function launchServerTarget(target: Target): Promise<void> {
-  if (target.type !== 'server') throw new Error(`Target "${target.id}" is not a Server target.`)
-  if (!target.dataDir) throw new Error(`Target "${target.id}" does not have a local server data dir.`)
-  const installations = await import('./installations.js').then(module => module.readInstallations()).catch(() => ({ server: undefined }))
-  const args = [
-    '--host=127.0.0.1',
-    `--port=${target.port ?? new URL(target.baseURL).port}`,
-    `--data-dir=${target.dataDir}`,
-  ]
-  if (target.serverEnv) args.push(`--server-env=${target.serverEnv}`)
-  spawnDetached(process.env.BEEPER_SERVER_BIN || installations.server?.path || 'beeper-server', args, { BEEPER_SERVER_DATA_DIR: target.dataDir })
 }
 
 export async function getAccessToken(target?: Target): Promise<string | undefined> {
@@ -249,18 +201,4 @@ export async function pathExists(path: string): Promise<boolean> {
   } catch {
     return false
   }
-}
-
-export function newID(prefix: string): string {
-  return `${prefix}_${randomUUID().replaceAll('-', '').slice(0, 12)}`
-}
-
-function spawnDetached(command: string, args: string[], env: Record<string, string>): void {
-  const child = spawn(command, args, {
-    detached: true,
-    stdio: 'ignore',
-    env: { ...process.env, ...env },
-  })
-  child.on('error', error => process.stderr.write(`Failed to launch ${command}: ${error.message}\n`))
-  child.unref()
 }

@@ -93,16 +93,13 @@
       "target": {
         "description": "Manage Beeper targets."
       },
-      "desktop": {
-        "description": "Manage Beeper Desktop."
-      },
-      "server": {
-        "description": "Manage Beeper Server."
+      "profile": {
+        "description": "Manage local Beeper profiles."
       }
     }
   },
   "dependencies": {
-    "@beeper/desktop-api": "workspace:*",
+    "@beeper/desktop-api": "github:beeper/desktop-api-js#next",
     "@oclif/core": "^4.11.2",
     "@oclif/plugin-autocomplete": "^3.2.49",
     "@oclif/plugin-help": "^6.2.48",

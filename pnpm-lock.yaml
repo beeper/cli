@@ -30,8 +30,8 @@ importers:
   packages/cli:
     dependencies:
       '@beeper/desktop-api':
-        specifier: workspace:*
-        version: link:../desktop-api
+        specifier: github:beeper/desktop-api-js#next
+        version: https://codeload.github.com/beeper/desktop-api-js/tar.gz/b9c1714410139c2139b597338cd002d785653e85
       '@oclif/core':
         specifier: ^4.11.2
         version: 4.11.3
@@ -349,6 +349,10 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+
+  '@beeper/desktop-api@https://codeload.github.com/beeper/desktop-api-js/tar.gz/b9c1714410139c2139b597338cd002d785653e85':
+    resolution: {tarball: https://codeload.github.com/beeper/desktop-api-js/tar.gz/b9c1714410139c2139b597338cd002d785653e85}
+    version: 5.0.0
 
   '@braidai/lang@1.1.2':
     resolution: {integrity: sha512-qBcknbBufNHlui137Hft8xauQMTZDKdophmLFv05r2eNmdIv/MlPuP4TdUknHG68UdWLgVZwgxVe735HzJNIwA==}
@@ -3834,6 +3838,8 @@ snapshots:
       '@babel/helper-validator-identifier': 8.0.0-rc.3
 
   '@bcoe/v8-coverage@0.2.3': {}
+
+  '@beeper/desktop-api@https://codeload.github.com/beeper/desktop-api-js/tar.gz/b9c1714410139c2139b597338cd002d785653e85': {}
 
   '@braidai/lang@1.1.2': {}
 
