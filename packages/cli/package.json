@@ -102,7 +102,7 @@
     }
   },
   "dependencies": {
-    "@beeper/desktop-api": "^5.0.0",
+    "@beeper/desktop-api": "workspace:*",
     "@oclif/core": "^4.11.2",
     "@oclif/plugin-autocomplete": "^3.2.49",
     "@oclif/plugin-help": "^6.2.48",

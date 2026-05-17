@@ -5,7 +5,6 @@ export const commandManifest = [
   { command: 'accounts add', description: 'Add a Beeper account' },
   { command: 'api get', description: 'Make an authenticated raw GET request' },
   { command: 'api post', description: 'Make an authenticated raw POST request' },
-  { command: 'app e2ee recovery-code mark-backed-up', description: 'Mark the recovery key as saved' },
   { command: 'app e2ee recovery-code reset begin', description: 'Create a new recovery key' },
   { command: 'app e2ee recovery-code reset confirm', description: 'Confirm a newly created recovery key' },
   { command: 'app e2ee recovery-code verify', description: 'Unlock encrypted messages with a recovery key' },

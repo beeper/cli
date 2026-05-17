@@ -129,7 +129,7 @@ future commands.
 
 | Command | Summary |
 | --- | --- |
-| `accounts` | List Chat Accounts connected to this Beeper Desktop instance, including bridge metadata and network identity. |
+| `accounts` | List chat accounts connected to this Beeper Client API server, including bridge, network, user identity, and connection status. |
 | `accounts add` | Add a Beeper account |
 | `accounts add.d` |  |
 | `accounts.d` |  |
@@ -137,8 +137,6 @@ future commands.
 | `api get.d` |  |
 | `api post` | Call a raw Desktop API POST path with a JSON body |
 | `api post.d` |  |
-| `app e2ee recovery-code mark-backed-up` | Mark the recovery key as saved |
-| `app e2ee recovery-code mark-backed-up.d` |  |
 | `app e2ee recovery-code reset begin` | Create a new recovery key |
 | `app e2ee recovery-code reset begin.d` |  |
 | `app e2ee recovery-code reset confirm` | Confirm a newly created recovery key |
@@ -161,18 +159,18 @@ future commands.
 | `app e2ee verification start.d` |  |
 | `app status` | Show Beeper app login and encrypted messaging state |
 | `app status.d` |  |
-| `archive` | Archive or unarchive a chat. Set archived=true to move to archive, archived=false to move back to inbox |
+| `archive` | Archive or unarchive a chat. Set archived=true to move it to Archive, or archived=false to move it back to the inbox. |
 | `archive.d` |  |
-| `assets download` | Download a Matrix file using its mxc:// or localmxc:// URL to the device running Beeper Desktop and return the local file URL. |
+| `assets download` | Download a file from an mxc:// or localmxc:// URL to the device running the Beeper Client API and return the local file URL. |
 | `assets download.d` |  |
-| `assets upload` | Upload a file to a temporary location using multipart/form-data. Returns an uploadID that can be referenced when sending a message or materializing a draft attachment. |
+| `assets upload` | Upload a file to a temporary location using multipart/form-data. Returns an uploadID that can be referenced when sending a message or creating a draft attachment. |
 | `assets upload.d` |  |
 | `auth status` | Show local auth status and token metadata |
 | `auth status.d` |  |
 | `autocomplete` | Display autocomplete installation instructions. |
 | `avatar` | Set or clear a group chat avatar |
 | `avatar.d` |  |
-| `chat` | Retrieve chat details including metadata, participants, and latest message |
+| `chat` | Retrieve chat details, including metadata, participants, and the latest message. |
 | `chat.d` |  |
 | `chats` | List all chats sorted by last activity (most recent first). Combines all accounts into a single paginated list. |
 | `chats index.d` |  |
@@ -231,7 +229,7 @@ future commands.
 | `logout.d` |  |
 | `low-priority` | Move a chat to Low Priority |
 | `low-priority.d` |  |
-| `message` | Retrieve a message by final message ID, pendingMessageID, or Matrix event ID. Chat ID may be a Beeper chat ID or local chat ID. |
+| `message` | Retrieve a message by final message ID, pendingMessageID, or Matrix event ID. chatID may be a Beeper chat ID or a local chat ID. |
 | `message-expiry` | Set or clear disappearing-message expiry |
 | `message-expiry.d` |  |
 | `message.d` |  |
@@ -241,7 +239,7 @@ future commands.
 | `messages search.d` |  |
 | `mute` | Mute a chat |
 | `mute.d` |  |
-| `notify-anyway` | Force a delivery notification when supported by the underlying network. Currently intended for iMessage on macOS; unsupported networks return an error. |
+| `notify-anyway` | Send a notification despite the recipient focus state when the network supports it. Currently intended for iMessage on macOS; unsupported networks return an error. |
 | `notify-anyway.d` |  |
 | `pin` | Pin a chat |
 | `pin.d` |  |
@@ -259,7 +257,7 @@ future commands.
 | `react.d` |  |
 | `read` | Mark a chat as read, optionally through a specific message ID. |
 | `read.d` |  |
-| `remind` | Set a reminder for a chat at a specific time |
+| `remind` | Set a reminder for a chat at a specific time. |
 | `remind.d` |  |
 | `rpc` | Run newline-delimited JSON command RPC |
 | `rpc.d` |  |
@@ -277,7 +275,7 @@ future commands.
 | `setup.d` |  |
 | `shell` | Run an interactive Beeper CLI shell |
 | `shell.d` |  |
-| `start-chat` | Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper Desktop v4.2.808+. |
+| `start-chat` | Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper v4.2.808+. |
 | `start-chat.d` |  |
 | `status` | Check Beeper Desktop API status |
 | `status.d` |  |
@@ -293,7 +291,7 @@ future commands.
 | `target use.d` |  |
 | `title` | Set a custom chat title |
 | `title.d` |  |
-| `unarchive` | Archive or unarchive a chat. Set archived=true to move to archive, archived=false to move back to inbox |
+| `unarchive` | Archive or unarchive a chat. Set archived=true to move it to Archive, or archived=false to move it back to the inbox. |
 | `unarchive.d` |  |
 | `unmute` | Unmute a chat |
 | `unmute.d` |  |
@@ -303,7 +301,7 @@ future commands.
 | `unreact.d` |  |
 | `unread` | Mark a chat as unread, optionally from a specific message ID. |
 | `unread.d` |  |
-| `unremind` | Clear an existing reminder from a chat |
+| `unremind` | Clear an existing reminder from a chat. |
 | `unremind.d` |  |
 | `verify` | Verify this Beeper target for encrypted messages |
 | `verify.d` |  |
@@ -313,7 +311,7 @@ future commands.
 ## Command Reference
 
 ### `beeper accounts`
-List Chat Accounts connected to this Beeper Desktop instance, including bridge metadata and network identity.
+List chat accounts connected to this Beeper Client API server, including bridge, network, user identity, and connection status.
 
 ```sh
 beeper accounts
@@ -443,35 +441,6 @@ Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ```sh
 beeper api post.d
-```
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper app e2ee recovery-code mark-backed-up`
-Mark the recovery key as saved
-
-```sh
-beeper app e2ee recovery-code mark-backed-up
-```
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `-t, --target=<value>` | option | Beeper target |
-
-Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
-
-### `beeper app e2ee recovery-code mark-backed-up.d`
-
-```sh
-beeper app e2ee recovery-code mark-backed-up.d
 ```
 
 Flags:
@@ -854,7 +823,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper archive`
-Archive or unarchive a chat. Set archived=true to move to archive, archived=false to move back to inbox
+Archive or unarchive a chat. Set archived=true to move it to Archive, or archived=false to move it back to the inbox.
 
 ```sh
 beeper archive <chat>
@@ -890,7 +859,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper assets download`
-Download a Matrix file using its mxc:// or localmxc:// URL to the device running Beeper Desktop and return the local file URL.
+Download a file from an mxc:// or localmxc:// URL to the device running the Beeper Client API and return the local file URL.
 
 ```sh
 beeper assets download <url>
@@ -925,7 +894,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper assets upload`
-Upload a file to a temporary location using multipart/form-data. Returns an uploadID that can be referenced when sending a message or materializing a draft attachment.
+Upload a file to a temporary location using multipart/form-data. Returns an uploadID that can be referenced when sending a message or creating a draft attachment.
 
 ```sh
 beeper assets upload <file>
@@ -1048,7 +1017,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper chat`
-Retrieve chat details including metadata, participants, and latest message
+Retrieve chat details, including metadata, participants, and the latest message.
 
 ```sh
 beeper chat <chat>
@@ -2081,7 +2050,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper message`
-Retrieve a message by final message ID, pendingMessageID, or Matrix event ID. Chat ID may be a Beeper chat ID or local chat ID.
+Retrieve a message by final message ID, pendingMessageID, or Matrix event ID. chatID may be a Beeper chat ID or a local chat ID.
 
 ```sh
 beeper message <chat> <message>
@@ -2277,7 +2246,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper notify-anyway`
-Force a delivery notification when supported by the underlying network. Currently intended for iMessage on macOS; unsupported networks return an error.
+Send a notification despite the recipient focus state when the network supports it. Currently intended for iMessage on macOS; unsupported networks return an error.
 
 ```sh
 beeper notify-anyway <chat>
@@ -2621,7 +2590,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper remind`
-Set a reminder for a chat at a specific time
+Set a reminder for a chat at a specific time.
 
 ```sh
 beeper remind <chat> <when>
@@ -2952,7 +2921,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper start-chat`
-Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper Desktop v4.2.808+.
+Resolve a user/contact and open a direct chat. Reuses and returns an existing direct chat when one is found. Available in Beeper v4.2.808+.
 
 ```sh
 beeper start-chat [query]
@@ -3233,7 +3202,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper unarchive`
-Archive or unarchive a chat. Set archived=true to move to archive, archived=false to move back to inbox
+Archive or unarchive a chat. Set archived=true to move it to Archive, or archived=false to move it back to the inbox.
 
 ```sh
 beeper unarchive <chat>
@@ -3416,7 +3385,7 @@ Flags:
 Global flags: `--base-url`, `--debug`, `--events`, `--json`, `--read-only`.
 
 ### `beeper unremind`
-Clear an existing reminder from a chat
+Clear an existing reminder from a chat.
 
 ```sh
 beeper unremind <chat>

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import {readFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {join, resolve} from 'node:path';
 
@@ -54,7 +55,9 @@ function getPath(object, path) {
 }
 
 async function sdkMethodDescription(relativePath, method) {
-  const source = await readFile(join(root, 'node_modules', '@beeper', 'desktop-api', relativePath), 'utf8');
+  const packageRoot = join(root, 'node_modules', '@beeper', 'desktop-api');
+  const sourcePath = join(packageRoot, relativePath);
+  const source = await readFile(existsSync(sourcePath) ? sourcePath : join(packageRoot, 'dist', relativePath), 'utf8');
   const methodMatch = source.match(new RegExp(String.raw`^\s*${method}\(`, 'm'));
   const methodIndex = methodMatch?.index ?? -1;
   if (methodIndex === -1) throw new Error(`Could not find SDK method ${relativePath}#${method}`);
