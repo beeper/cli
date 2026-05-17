@@ -209,6 +209,72 @@ func init() {
 				},
 			},
 			{
+				Name:     "app",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appSession,
+				},
+			},
+			{
+				Name:     "app:login",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appLoginEmail,
+					&appLoginRegister,
+					&appLoginResponse,
+					&appLoginStart,
+				},
+			},
+			{
+				Name:     "app:login:verification:recovery-key",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appLoginVerificationRecoveryKeyVerify,
+				},
+			},
+			{
+				Name:     "app:login:verification:recovery-key:reset",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appLoginVerificationRecoveryKeyResetCreate,
+					&appLoginVerificationRecoveryKeyResetConfirm,
+				},
+			},
+			{
+				Name:     "app:verifications",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appVerificationsCreate,
+					&appVerificationsRetrieve,
+					&appVerificationsList,
+					&appVerificationsAccept,
+					&appVerificationsCancel,
+				},
+			},
+			{
+				Name:     "app:verifications:qr",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appVerificationsQrConfirmScanned,
+					&appVerificationsQrScan,
+				},
+			},
+			{
+				Name:     "app:verifications:sas",
+				Category: "API RESOURCE",
+				Suggest:  true,
+				Commands: []*cli.Command{
+					&appVerificationsSASConfirm,
+					&appVerificationsSASStart,
+				},
+			},
+			{
 				Name:            "@manpages",
 				Usage:           "Generate documentation for 'man'",
 				UsageText:       "beeper-desktop @manpages [-o beeper-desktop.1] [--gzip]",
