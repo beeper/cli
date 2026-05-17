@@ -80,7 +80,7 @@ async function phasePlan() {
   report.targets = targets
   const commands = [
     'pnpm --dir packages/cli build',
-    `BEEPER_E2E_PHASES=targets,start,login,readiness,verify,messaging,cleanup BEEPER_E2E_RUN_ID=${runID} node packages/cli/test/e2e-staging.mjs`,
+    `BEEPER_E2E_PHASES=targets,install-server,start,login,readiness,verify,messaging,cleanup BEEPER_E2E_RUN_ID=${runID} node packages/cli/test/e2e-staging.mjs`,
     `BEEPER_CLI_CONFIG_DIR=${configDir} node packages/cli/bin/run.js targets list --json`,
   ]
   report.commands.push(...commands.map(command => ({ phase: 'plan', command })))

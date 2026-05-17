@@ -55,14 +55,11 @@
       "api": {
         "description": "Call raw Desktop API endpoints."
       },
-      "app": {
-        "description": "Manage app login and encrypted messaging setup."
-      },
       "accounts": {
         "description": "Manage Beeper accounts."
       },
       "auth": {
-        "description": "Authenticate with local Beeper Desktop."
+        "description": "Inspect and clear stored authentication."
       },
       "chats": {
         "description": "List and search chats."

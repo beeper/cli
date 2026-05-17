@@ -52,7 +52,7 @@ export async function connectedAccountSummary(target: Target, auth?: StoredAuth)
 
 async function localDesktopDataDirs(): Promise<string[]> {
   const candidates = new Set<string>()
-  if (process.env.BEEPER_USER_DATA_DIR) candidates.add(process.env.BEEPER_USER_DATA_DIR)
+  if (process.env.BEEPER_USER_DATA_DIR) return [process.env.BEEPER_USER_DATA_DIR]
   if (process.platform === 'darwin') {
     const appSupport = join(homedir(), 'Library', 'Application Support')
     candidates.add(join(appSupport, 'BeeperTexts'))

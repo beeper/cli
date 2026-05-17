@@ -2,15 +2,14 @@ import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable, writeEvent } from '../lib/command.js'
 import { evaluateReadiness } from '../lib/app-state.js'
 import { ensureDesktopToken, findLocalDesktop } from '../lib/desktop-auth.js'
-import { promptYesNo } from '../lib/app-api.js'
+import { promptYesNo, promptYesNoDefaultYes } from '../lib/app-api.js'
 import { installDesktop, installServer, type InstallChannel } from '../lib/installations.js'
-import { connectedAccountSummary, findLocalDesktopSession } from '../lib/local-desktop.js'
+import { connectedAccountSummary, findLocalDesktopSession, type LocalDesktopSession } from '../lib/local-desktop.js'
 import { loginWithPKCE } from '../lib/oauth.js'
 import { launchDesktopApp, startProfile } from '../lib/profiles.js'
 import {
   builtInDesktopTargetID,
   createProfileTarget,
-  listTargets,
   readConfig,
   readTarget,
   saveTargetAuth,
@@ -67,10 +66,29 @@ export default class Setup extends BeeperCommand {
 
   private async setupDefault(target: Target, flags: SetupFlags): Promise<void> {
     if (target.type === 'desktop') {
-      const local = await tryLocalDesktop(target, flags)
+      const local = await prepareLocalDesktopSetup(target, flags).catch(() => undefined)
       if (local) {
-        await this.printSetupResult(local, flags)
-        return
+        if (flags.yes) {
+          await this.printSetupResult(await commitLocalDesktopSetup(local), flags)
+          return
+        }
+        if (flags.json || !process.stdin.isTTY) {
+          await printData({
+            target: publicTarget(local.target),
+            readiness: local.readiness,
+            localDesktop: localDesktopPreview(local),
+            availableActions: [
+              `beeper setup${target.id === builtInDesktopTargetID ? '' : ` -t ${target.id}`} --local`,
+              `beeper setup${target.id === builtInDesktopTargetID ? '' : ` -t ${target.id}`} --oauth`,
+            ],
+          }, flags.json ? 'json' : 'human')
+          return
+        }
+        printLocalDesktopPreview(local)
+        if (await promptYesNoDefaultYes('Use this Desktop session for CLI access?')) {
+          await this.printSetupResult(await commitLocalDesktopSetup(local), flags)
+          return
+        }
       }
     }
 
@@ -181,6 +199,13 @@ type SetupResult = {
   target: ReturnType<typeof publicTarget>
 }
 
+type PreparedLocalDesktopSetup = {
+  accounts: string[]
+  readiness: Awaited<ReturnType<typeof evaluateReadiness>>
+  session: LocalDesktopSession
+  target: Target
+}
+
 async function setupTarget(flags: SetupFlags): Promise<Target> {
   if (flags['base-url']) return { id: 'custom', type: 'desktop', baseURL: flags['base-url'] }
   if (flags.target) {
@@ -209,15 +234,11 @@ async function setupTarget(flags: SetupFlags): Promise<Target> {
   return target
 }
 
-async function tryLocalDesktop(target: Target, flags: SetupFlags): Promise<SetupResult | undefined> {
-  try {
-    return await setupLocalDesktop(target, flags)
-  } catch {
-    return undefined
-  }
+async function setupLocalDesktop(target: Target, flags: SetupFlags): Promise<SetupResult> {
+  return commitLocalDesktopSetup(await prepareLocalDesktopSetup(target, flags))
 }
 
-async function setupLocalDesktop(target: Target, flags: SetupFlags): Promise<SetupResult> {
+async function prepareLocalDesktopSetup(target: Target, flags: SetupFlags): Promise<PreparedLocalDesktopSetup> {
   if (flags.events) writeEvent('setup_step', { step: 'local-desktop', target: target.id })
   const desktop = await findLocalDesktop({ baseURL: target.baseURL, scan: target.id === builtInDesktopTargetID, timeoutMs: 500 }).catch(() => undefined)
   const resolvedTarget: Target = {
@@ -229,12 +250,21 @@ async function setupLocalDesktop(target: Target, flags: SetupFlags): Promise<Set
     managed: target.managed ?? false,
   }
   const session = await findLocalDesktopSession(resolvedTarget)
-  await writeTarget(resolvedTarget)
-  await saveTargetAuth(resolvedTarget, session.auth)
-  await updateConfig(config => ({ ...config, defaultTarget: config.defaultTarget ?? resolvedTarget.id }))
   const readiness = await evaluateReadiness({ baseURL: resolvedTarget.baseURL, target: resolvedTarget.id, token: session.auth.accessToken })
   const accounts = await connectedAccountSummary(resolvedTarget, session.auth).catch(() => [])
-  return { accounts, authSource: session.auth.source, readiness, target: publicTarget({ ...resolvedTarget, auth: session.auth }) }
+  return { accounts, readiness, session, target: resolvedTarget }
+}
+
+async function commitLocalDesktopSetup(prepared: PreparedLocalDesktopSetup): Promise<SetupResult> {
+  await writeTarget(prepared.target)
+  await saveTargetAuth(prepared.target, prepared.session.auth)
+  await updateConfig(config => ({ ...config, defaultTarget: config.defaultTarget ?? prepared.target.id }))
+  return {
+    accounts: prepared.accounts,
+    authSource: prepared.session.auth.source,
+    readiness: prepared.readiness,
+    target: publicTarget({ ...prepared.target, auth: prepared.session.auth }),
+  }
 }
 
 async function setupOAuthTarget(target: Target, flags: SetupFlags, source?: AuthSource): Promise<SetupResult> {
@@ -271,6 +301,23 @@ async function setupOAuthTarget(target: Target, flags: SetupFlags, source?: Auth
 function publicTarget(target: Target): Omit<Target, 'auth'> & { auth?: { source?: AuthSource; tokenType?: 'Bearer' } } {
   const { auth, ...rest } = target
   return { ...rest, auth: auth ? { source: auth.source, tokenType: auth.tokenType } : undefined }
+}
+
+function localDesktopPreview(prepared: PreparedLocalDesktopSetup): Record<string, unknown> {
+  return {
+    authSource: prepared.session.auth.source,
+    baseURL: prepared.target.baseURL,
+    dataDir: prepared.session.dataDir,
+    signedInAs: prepared.session.userID,
+    connectedAccounts: prepared.accounts,
+  }
+}
+
+function printLocalDesktopPreview(prepared: PreparedLocalDesktopSetup): void {
+  process.stdout.write('Found Beeper Desktop on this device.\n\n')
+  if (prepared.session.userID) process.stdout.write(`Signed in as: ${prepared.session.userID}\n`)
+  if (prepared.accounts.length) process.stdout.write(`Connected accounts: ${prepared.accounts.join(', ')}\n`)
+  process.stdout.write('\n')
 }
 
 function remoteName(url: string): string {

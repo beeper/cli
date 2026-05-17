@@ -51,6 +51,11 @@ export async function promptYesNo(label: string): Promise<boolean> {
   return value === 'y' || value === 'yes'
 }
 
+export async function promptYesNoDefaultYes(label: string): Promise<boolean> {
+  const value = (await promptText(`${label} [Y/n] `)).toLowerCase()
+  return value === '' || value === 'y' || value === 'yes'
+}
+
 export function isRegistrationRequired(output: AppLoginOutput): output is AppRegistrationRequired {
   return 'registrationRequired' in output && output.registrationRequired === true
 }
