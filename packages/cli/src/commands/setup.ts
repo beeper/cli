@@ -32,6 +32,20 @@ export default class Setup extends BeeperCommand {
     const { flags } = await this.parse(Setup)
     ensureWritable(flags)
 
+    if (flags.target) {
+      const target = flags.target === 'desktop'
+        ? { id: 'desktop', type: 'desktop' as const, name: 'Desktop', baseURL: 'http://127.0.0.1:23373' }
+        : await readTarget(flags.target)
+      if (!target) throw new Error(`Unknown Beeper target "${flags.target}". Run \`beeper target list\`.`)
+      await updateConfig(config => ({ ...config, defaultTarget: target.id === 'desktop' ? undefined : target.id, baseURL: target.id === 'desktop' ? target.baseURL : config.baseURL }))
+      await printSuccess({
+        message: `Ready target: ${target.name ?? target.id}`,
+        detail: flags.login ? `Next: beeper login -t ${target.id}` : target.baseURL,
+        data: target,
+      }, flags.json ? 'json' : 'human')
+      return
+    }
+
     let target = await this.pickSetup(flags)
     await updateConfig(config => ({ ...config, defaultTarget: target.id === 'desktop' ? undefined : target.id, baseURL: target.id === 'desktop' ? target.baseURL : config.baseURL }))
 

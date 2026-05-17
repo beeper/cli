@@ -196,7 +196,10 @@ export async function createServerTarget(id: string, options: { serverEnv?: stri
 export async function launchDesktopProfile(target: Target): Promise<void> {
   if (target.type !== 'desktop') throw new Error(`Target "${target.id}" is not a Desktop profile.`)
   if (!target.dataDir) throw new Error(`Target "${target.id}" is the default Beeper Desktop profile; launch it from the app.`)
-  const args = ['-a', 'Beeper', '--args']
+  const installations = await import('./installations.js').then(module => module.readInstallations()).catch(() => ({ desktop: undefined }))
+  const args = installations.desktop?.path
+    ? ['-n', installations.desktop.path, '--args']
+    : ['-n', '-a', 'Beeper', '--args']
   if (target.port) args.push(`--pas-port=${target.port}`)
   if (target.serverEnv) args.push(`--server-env=${target.serverEnv}`)
   spawnDetached('open', args, {
@@ -209,13 +212,14 @@ export async function launchDesktopProfile(target: Target): Promise<void> {
 export async function launchServerTarget(target: Target): Promise<void> {
   if (target.type !== 'server') throw new Error(`Target "${target.id}" is not a Server target.`)
   if (!target.dataDir) throw new Error(`Target "${target.id}" does not have a local server data dir.`)
+  const installations = await import('./installations.js').then(module => module.readInstallations()).catch(() => ({ server: undefined }))
   const args = [
     '--host=127.0.0.1',
     `--port=${target.port ?? new URL(target.baseURL).port}`,
     `--data-dir=${target.dataDir}`,
   ]
   if (target.serverEnv) args.push(`--server-env=${target.serverEnv}`)
-  spawnDetached(process.env.BEEPER_SERVER_BIN || 'beeper-server', args, { BEEPER_SERVER_DATA_DIR: target.dataDir })
+  spawnDetached(process.env.BEEPER_SERVER_BIN || installations.server?.path || 'beeper-server', args, { BEEPER_SERVER_DATA_DIR: target.dataDir })
 }
 
 export async function getAccessToken(target?: Target): Promise<string | undefined> {

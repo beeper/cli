@@ -9,6 +9,7 @@ import { commandManifest } from '../dist/lib/manifest.js'
 import { exportBeeperData } from '../dist/lib/export/index.js'
 import { ensureDesktopToken, findLocalDesktop } from '../dist/lib/desktop-auth.js'
 import { resolveAccountID, resolveAccountIDs, resolveChatID } from '../dist/lib/resolve.js'
+import { downloadURLFor, feedURLFor, normalizeInstallRequest } from '../dist/lib/installations.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const run = (...args) => spawnSync(process.execPath, ['./bin/run.js', ...args], {
@@ -38,6 +39,7 @@ assert.match(help, /\bchat\b/, 'help should expose canonical chat command')
 assert.match(help, /\bchats\b/, 'help should expose canonical chats command')
 assert.doesNotMatch(help, /\bthread\b|\bthreads\b|\btail\b|\bwhoami\b/, 'help must not expose compatibility aliases')
 assert.doesNotMatch(help, /\bfailed-sends\b|\bscheduled\b|\blocal\s+stats\b/, 'help must not expose stale local DB commands')
+assert.doesNotMatch(help, /\.d\b/, 'help must not expose TypeScript declaration files as commands')
 
 for (const command of [
   ['chat', '--help'],
@@ -46,7 +48,15 @@ for (const command of [
   ['send', 'file', '--help'],
   ['watch', '--help'],
   ['current-user', '--help'],
+  ['env', '--help'],
   ['export', '--help'],
+  ['install', '--help'],
+  ['install', 'desktop', '--help'],
+  ['install', 'server', '--help'],
+  ['app', 'install', '--help'],
+  ['server', 'install', '--help'],
+  ['server', 'update', '--help'],
+  ['update', '--help'],
   ['contacts', 'list', '--help'],
   ['pin', '--help'],
   ['unpin', '--help'],
@@ -73,6 +83,10 @@ assert.match(ok('chats', '--help'), /--account=<value>\.\.\./, 'chats should acc
 assert.match(ok('export', '--help'), /--out/, 'export should expose output directory selection')
 assert.match(ok('export', '--help'), /--no-attachments/, 'export should expose attachment control')
 assert.match(ok('login', '--help'), /--server-url/, 'login should expose --server-url')
+assert.match(ok('env'), /export PATH='\/tmp\/beeper-cli-test\/bin':\$PATH/, 'env should print PATH setup')
+assert.match(ok('env', '--shell', 'fish'), /fish_add_path '\/tmp\/beeper-cli-test\/bin'/, 'env should print fish setup')
+assert.match(ok('install', 'server', '--help'), /--server-env/, 'install server should expose --server-env')
+assert.match(ok('setup', '--help'), /--target/, 'setup should expose target selection')
 
 const commandsJSON = JSON.parse(ok('commands', '--json'))
 assert.equal(commandsJSON.length, commandManifest.length, 'commands --json should expose the full manifest')
@@ -82,6 +96,15 @@ assert(commandsJSON.some(item => item.command === 'send file'), 'commands --json
 assert(!commandsJSON.some(item => ['thread', 'threads', 'tail', 'whoami'].includes(item.command)), 'commands --json must not include compatibility aliases')
 assert(!commandsJSON.some(item => item.command === 'serve'), 'commands --json must not include serve')
 assert(!commandsJSON.some(item => item.command.includes('base64')), 'commands --json must not include base64 asset variants')
+
+const stagingServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'staging', channel: 'stable', platform: 'darwin', arch: 'arm64' })
+assert.equal(stagingServerRequest.channel, 'nightly')
+assert.equal(stagingServerRequest.bundleID, 'com.automattic.beeper.server.nightly')
+assert.equal(feedURLFor(stagingServerRequest), 'https://api.beeper-staging.com/desktop/update-feed.json?bundleID=com.automattic.beeper.server.nightly&platform=darwin&channel=nightly&arch=arm64')
+assert.equal(downloadURLFor(stagingServerRequest), 'https://api.beeper-staging.com/desktop/download/macos/arm64/stable/com.automattic.beeper.server.nightly')
+
+const desktopNightlyRequest = normalizeInstallRequest({ kind: 'desktop', channel: 'nightly', platform: 'darwin', arch: 'arm64' })
+assert.equal(downloadURLFor(desktopNightlyRequest), 'https://api.beeper.com/desktop/download/macos/arm64/nightly/com.automattic.beeper.desktop.nightly')
 
 const configDir = '/tmp/beeper-cli-test-config'
 rmSync(configDir, { recursive: true, force: true })
@@ -152,6 +175,26 @@ const accountsOutput = await withMockAPI(async baseURL => {
 })
 assert.match(accountsOutput, /iMessage/)
 assert.doesNotMatch(accountsOutput, /No accounts connected/)
+
+await withMockInfo(async baseURL => {
+  const dir = '/tmp/beeper-cli-target-version-test'
+  rmSync(dir, { recursive: true, force: true })
+  let result = spawnSync(process.execPath, ['./bin/run.js', 'target', 'add', 'mock-desktop', baseURL], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, BEEPER_CLI_CONFIG_DIR: dir },
+  })
+  assert.equal(result.status, 0, result.stderr)
+  result = await runAsync(['./bin/run.js', 'target', 'list', '--json'], {
+    cwd: root,
+    env: { ...process.env, BEEPER_CLI_CONFIG_DIR: dir },
+  })
+  assert.equal(result.status, 0, result.stderr)
+  const rows = JSON.parse(result.stdout)
+  const row = rows.find(item => item.id === 'mock-desktop')
+  assert.equal(row.version, '4.2.0')
+  assert.equal(row.bundleID, 'com.automattic.beeper.desktop')
+})
 
 const fakeClient = {
   accounts: {
@@ -326,6 +369,35 @@ function withMockAPI(callback) {
       res.end(JSON.stringify([
         { accountID: 'imessage-main', bridge: { id: 'local-imessage', type: 'imessage' }, network: 'iMessage', user: { displayName: 'Main' } },
       ]))
+      return
+    }
+    res.writeHead(404).end('Not found')
+  })
+
+  return new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', async () => {
+      const address = server.address()
+      try {
+        const result = await callback(`http://127.0.0.1:${address.port}`)
+        server.close(() => resolve(result))
+      } catch (error) {
+        server.close(() => reject(error))
+      }
+    })
+  })
+}
+
+function withMockInfo(callback) {
+  const server = createServer((req, res) => {
+    if (req.url === '/v1/info') {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({
+        app: {
+          name: 'Beeper',
+          version: '4.2.0',
+          bundle_id: 'com.automattic.beeper.desktop',
+        },
+      }))
       return
     }
     res.writeHead(404).end('Not found')

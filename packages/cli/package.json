@@ -40,7 +40,7 @@
       "strategy": "pattern",
       "target": "./dist/commands",
       "globPatterns": [
-        "**/*.{js,ts,tsx}"
+        "**/!(*.d).{js,ts,tsx}"
       ]
     },
     "bin": "beeper",
