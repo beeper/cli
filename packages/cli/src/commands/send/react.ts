@@ -6,7 +6,6 @@ import { resolveChatID } from '../../lib/resolve.js'
 
 export default class SendReact extends BeeperCommand {
   static override summary = 'Send a reaction to a message (alias of messages react)'
-  static override aliases = ['react']
   static override flags = {
     to: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
     id: Flags.string({ required: true, description: 'Message ID to react to' }),

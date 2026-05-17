@@ -131,8 +131,8 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 | **Targets** | \`targets list\` · \`targets add desktop\` · \`targets add server\` · \`targets add remote\` · \`targets use\` · \`targets status\` · \`targets logs\` |
 | **Accounts** | \`accounts list\` · \`accounts add\` · \`accounts show\` · \`accounts use\` · \`accounts remove\` |
 | **Messaging** | \`chats list\` · \`messages list\` · \`messages search\` · \`messages export\` · \`send text\` · \`send file\` · \`send react\` · \`presence\` · \`media download\` |
-| **Chat state** | \`chats archive\` · \`chats pin\` · \`chats mute\` · \`chats priority\` · \`chats remind\` · \`chats rename\` · \`chats draft\` · \`chats label\` · \`chats focus\` |
-| **Contacts + labels** | \`contacts list\` · \`contacts search\` · \`contacts show\` · \`labels list\` · \`labels show\` |
+| **Chat state** | \`chats archive\` · \`chats pin\` · \`chats mute\` · \`chats priority\` · \`chats remind\` · \`chats rename\` · \`chats draft\` · \`chats focus\` |
+| **Contacts** | \`contacts list\` · \`contacts search\` · \`contacts show\` |
 | **Automation** | \`watch\` · \`watch --webhook\` · \`rpc\` · \`man\` · \`api get\` · \`api post\` |
 | **Maintenance** | \`update\` · \`config\` · \`completion\` · \`docs\` · \`version\` |
 

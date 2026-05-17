@@ -75,9 +75,6 @@
       "contacts": {
         "description": "List, search, and inspect contacts"
       },
-      "labels": {
-        "description": "List, create, and manage Beeper chat labels"
-      },
       "media": {
         "description": "Download message media"
       },

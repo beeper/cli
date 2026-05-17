@@ -108,8 +108,8 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 | **Targets** | `targets list` · `targets add desktop` · `targets add server` · `targets add remote` · `targets use` · `targets status` · `targets logs` |
 | **Accounts** | `accounts list` · `accounts add` · `accounts show` · `accounts use` · `accounts remove` |
 | **Messaging** | `chats list` · `messages list` · `messages search` · `messages export` · `send text` · `send file` · `send react` · `presence` · `media download` |
-| **Chat state** | `chats archive` · `chats pin` · `chats mute` · `chats priority` · `chats remind` · `chats rename` · `chats draft` · `chats label` · `chats focus` |
-| **Contacts + labels** | `contacts list` · `contacts search` · `contacts show` · `labels list` · `labels show` |
+| **Chat state** | `chats archive` · `chats pin` · `chats mute` · `chats priority` · `chats remind` · `chats rename` · `chats draft` · `chats focus` |
+| **Contacts** | `contacts list` · `contacts search` · `contacts show` |
 | **Automation** | `watch` · `watch --webhook` · `rpc` · `man` · `api get` · `api post` |
 | **Maintenance** | `update` · `config` · `completion` · `docs` · `version` |
 
@@ -269,7 +269,6 @@ explicit writes, and names based on what people are trying to do.
 | `chats remind` | Set a chat reminder |
 | `chats unremind` | Clear a chat reminder |
 | `chats focus` | Focus Beeper Desktop on a chat |
-| `chats label` | Add or remove a label on a chat |
 | `messages list` | List chat messages |
 | `messages search` | Search messages across chats |
 | `messages show` | Show one message |
@@ -282,12 +281,12 @@ explicit writes, and names based on what people are trying to do.
 | `send text` | Send text |
 | `send file` | Send a file |
 | `send react` | Send a reaction to a message (alias of messages react) |
+| `send sticker` | Send a sticker |
+| `send voice` | Send a voice note |
 | `presence` | Send a typing (or paused) indicator to a chat |
 | `contacts list` | List contacts |
 | `contacts search` | Search contacts |
 | `contacts show` | Show contact details |
-| `labels list` | List Beeper chat labels |
-| `labels show` | Show details for one label |
 | `media download` | Download message media |
 | `export` | Export accounts, chats, messages, Markdown transcripts, and attachments |
 | `watch` | Stream Desktop API WebSocket events |
@@ -1315,7 +1314,6 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--duration=<value>` | option | Mute duration, such as 8h |
 | `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
 
 Examples:
@@ -1631,33 +1629,6 @@ Examples:
 
 ```sh
 beeper chats focus --chat "Family"
-```
-
-Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
-
-### `beeper chats label`
-Add or remove a label on a chat
-
-```sh
-beeper chats label
-```
-
-Requires server-side support for /v1/chats/{chatID}/labels/{labelID}.
-
-Flags:
-
-| Flag | Type | Description |
-| --- | --- | --- |
-| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--label=<value>` | option | Label ID to add or remove Required. |
-| `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
-| `--remove` | boolean | Remove the label instead of adding it |
-
-Examples:
-
-```sh
-beeper chats label --chat "Family" --label personal
-beeper chats label --chat "Family" --label personal --remove
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -1989,6 +1960,68 @@ beeper send react --to "Family" --id <messageID> --reaction "🎉"
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
+### `beeper send sticker`
+Send a sticker
+
+```sh
+beeper send sticker
+```
+
+Uploads the file and sends as a sticker message. Defaults --mime to image/webp.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--file=<value>` | option | Sticker file (typically 512x512 WebP) Required. |
+| `--filename=<value>` | option | Override the displayed filename |
+| `--mime=<value>` | option | MIME type for the sticker (default: image/webp) Default: image/webp |
+| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--reply-to=<value>` | option | Send as a reply to this message ID |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
+| `--wait-timeout=<value>` | option | Maximum wait time in ms when --wait is set Default: 30000 |
+
+Examples:
+
+```sh
+beeper send sticker --to "Family" --file ./hi.webp
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
+
+### `beeper send voice`
+Send a voice note
+
+```sh
+beeper send voice
+```
+
+Uploads the audio file and sends as a voice note. Defaults --mime to audio/ogg.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--duration=<value>` | option | Voice note duration in seconds (overrides upload-detected duration) |
+| `--file=<value>` | option | Voice note audio file (OGG/Opus recommended) Required. |
+| `--filename=<value>` | option | Override the displayed filename |
+| `--mime=<value>` | option | MIME type for the voice note (default: audio/ogg) Default: audio/ogg |
+| `--pick=<value>` | option | Pick the Nth chat when --to is ambiguous |
+| `--reply-to=<value>` | option | Send as a reply to this message ID |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
+| `--wait-timeout=<value>` | option | Maximum wait time in ms when --wait is set Default: 30000 |
+
+Examples:
+
+```sh
+beeper send voice --to "Family" --file ./note.ogg
+beeper send voice --to "Family" --file ./note.ogg --duration 12
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper presence`
 Send a typing (or paused) indicator to a chat
 
@@ -2093,47 +2126,6 @@ Examples:
 
 ```sh
 beeper contacts show "Alice" --account whatsapp
-```
-
-Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
-
-### `beeper labels list`
-List Beeper chat labels
-
-```sh
-beeper labels list
-```
-
-Requires server-side support for /v1/labels.
-
-Examples:
-
-```sh
-beeper labels list
-beeper labels list --json
-```
-
-Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
-
-### `beeper labels show`
-Show details for one label
-
-```sh
-beeper labels show <id>
-```
-
-Requires server-side support for /v1/labels/{id}.
-
-Arguments:
-
-| Name | Required | Description |
-| --- | --- | --- |
-| `id` | yes | Label ID |
-
-Examples:
-
-```sh
-beeper labels show personal
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.

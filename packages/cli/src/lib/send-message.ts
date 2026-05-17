@@ -1,6 +1,8 @@
 import { createReadStream } from 'node:fs'
 import { waitForMessage } from './wait.js'
 
+export type AttachmentType = 'sticker' | 'voice-note'
+
 export async function sendMessage(client: any, options: {
   chatID: string
   file?: string
@@ -10,6 +12,8 @@ export async function sendMessage(client: any, options: {
   text: string
   mentions?: string[]
   noPreview?: boolean
+  attachmentType?: AttachmentType
+  duration?: number
   wait?: boolean
   waitTimeoutMs?: number
 }): Promise<unknown> {
@@ -27,9 +31,10 @@ export async function sendMessage(client: any, options: {
     attachment: uploaded?.uploadID
       ? {
         uploadID: uploaded.uploadID,
-        duration: uploaded.duration,
+        type: options.attachmentType,
+        duration: options.duration ?? uploaded.duration,
         fileName: uploaded.fileName,
-        mimeType: uploaded.mimeType,
+        mimeType: options.mimeType ?? uploaded.mimeType,
         size: uploaded.width && uploaded.height ? { height: uploaded.height, width: uploaded.width } : undefined,
       }
       : undefined,

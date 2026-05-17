@@ -84,7 +84,6 @@ const expectedCommands = [
   'chats remind',
   'chats unremind',
   'chats focus',
-  'chats label',
   'messages list',
   'messages search',
   'messages show',
@@ -97,12 +96,12 @@ const expectedCommands = [
   'send text',
   'send file',
   'send react',
+  'send sticker',
+  'send voice',
   'presence',
   'contacts list',
   'contacts search',
   'contacts show',
-  'labels list',
-  'labels show',
   'media download',
   'export',
   'watch',
@@ -148,7 +147,7 @@ assert.match(ok('send', 'text', '--help'), /--message/, 'send text should use --
 assert.match(ok('send', 'file', '--help'), /--file/, 'send file should use --file')
 assert.match(ok('send', 'file', '--help'), /--caption/, 'send file should use --caption')
 assert.match(ok('messages', 'list', '--help'), /--chat/, 'messages list should use --chat')
-assert.match(ok('chats', 'mute', '--help'), /--duration/, 'chats mute should expose duration')
+assert.doesNotMatch(ok('chats', 'mute', '--help'), /--duration/, 'chats mute must not expose duration until API supports it')
 assert.match(ok('chats', 'list', '--help'), /--account=<value>\.\.\./, 'account filters must stay local')
 assert.doesNotMatch(ok('status', '--help'), /--account/, '--account must not be global')
 const setupHelp = ok('setup', '--help')

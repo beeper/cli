@@ -327,19 +327,12 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper chats focus --chat "Family"'],
   },
   {
-    command: 'chats label',
-    description: 'Add or remove a label on a chat',
-    examples: [
-      'beeper chats label --chat "Family" --label personal',
-      'beeper chats label --chat "Family" --label personal --remove',
-    ],
-  },
-  {
     command: 'messages list',
     description: 'List chat messages',
     examples: [
       'beeper messages list --chat "Family" --limit 50',
       'beeper messages list --chat "Family" --before-cursor "<messageID>" --limit 100',
+      'beeper messages list --chat "Family" --sender me --asc',
     ],
   },
   {
@@ -409,6 +402,19 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper send react --to "Family" --id <messageID> --reaction "🎉"'],
   },
   {
+    command: 'send sticker',
+    description: 'Send a sticker',
+    examples: ['beeper send sticker --to "Family" --file ./hi.webp'],
+  },
+  {
+    command: 'send voice',
+    description: 'Send a voice note',
+    examples: [
+      'beeper send voice --to "Family" --file ./note.ogg',
+      'beeper send voice --to "Family" --file ./note.ogg --duration 12',
+    ],
+  },
+  {
     command: 'presence',
     description: 'Send a typing (or paused) indicator to a chat',
     examples: ['beeper presence --chat "Family"', 'beeper presence --chat "Family" --state paused'],
@@ -427,16 +433,6 @@ export const commandManifest: ManifestCommand[] = [
     command: 'contacts show',
     description: 'Show contact details',
     examples: ['beeper contacts show "Alice" --account whatsapp'],
-  },
-  {
-    command: 'labels list',
-    description: 'List Beeper chat labels',
-    examples: ['beeper labels list', 'beeper labels list --json'],
-  },
-  {
-    command: 'labels show',
-    description: 'Show details for one label',
-    examples: ['beeper labels show personal'],
   },
   {
     command: 'media download',
