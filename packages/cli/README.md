@@ -1645,17 +1645,20 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--after-cursor=<value>` | option | Paginate messages newer than this message ID |
+| `--asc` | boolean | Order oldest first (default: newest first) |
 | `--before-cursor=<value>` | option | Paginate messages older than this message ID |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--ids` | boolean | Print only message IDs |
 | `--limit=<value>` | option | Maximum messages to print Default: 50 |
 | `--pick=<value>` | option | Pick the Nth chat when --chat is ambiguous |
+| `--sender=<value>` | option | Filter by sender: me, others, or a specific user ID (client-side) |
 
 Examples:
 
 ```sh
 beeper messages list --chat "Family" --limit 50
 beeper messages list --chat "Family" --before-cursor "<messageID>" --limit 100
+beeper messages list --chat "Family" --sender me --asc
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
