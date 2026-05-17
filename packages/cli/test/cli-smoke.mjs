@@ -234,7 +234,7 @@ const fakeClient = {
 assert.equal(await resolveAccountID(fakeClient, 'imessage'), 'imessage-main')
 assert.deepEqual(await resolveAccountIDs(fakeClient, ['main'], { allowMultiplePerInput: true }), ['imessage-main', 'telegram-main'])
 await assert.rejects(() => resolveAccountID(fakeClient, 'main'), /Ambiguous account/)
-assert.equal(await resolveChatID(fakeClient, '!exact:beeper.com'), 'local-family')
+assert.equal(await resolveChatID(fakeClient, '!exact:beeper.com'), '!exact:beeper.com')
 assert.equal(await resolveChatID(fakeClient, 'local-family'), 'local-family')
 assert.equal(await resolveChatID(fakeClient, 'Family Work'), 'local-family-work')
 assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), 'local-family-work')

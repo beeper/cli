@@ -43,6 +43,7 @@ export type Config = {
 const defaultPort = 23_373
 const defaultBaseURL = `http://127.0.0.1:${defaultPort}`
 export const builtInDesktopTargetID = 'desktop'
+export const customTargetID = 'custom'
 
 export function beeperDir(): string {
   return process.env.BEEPER_CLI_CONFIG_DIR ?? join(homedir(), '.beeper')
@@ -140,7 +141,7 @@ export async function removeTarget(id: string): Promise<void> {
 }
 
 export async function saveTargetAuth(target: Target, auth: StoredAuth): Promise<void> {
-  if (target.id === 'custom') {
+  if (target.id === customTargetID) {
     await updateConfig(config => ({ ...config, baseURL: target.baseURL, auth }))
     return
   }
@@ -148,7 +149,7 @@ export async function saveTargetAuth(target: Target, auth: StoredAuth): Promise<
 }
 
 export async function clearTargetAuth(target: Target): Promise<void> {
-  if (target.id === 'custom') {
+  if (target.id === customTargetID) {
     await updateConfig(config => ({ ...config, auth: undefined }))
     return
   }
@@ -157,7 +158,7 @@ export async function clearTargetAuth(target: Target): Promise<void> {
 }
 
 export async function resolveTarget(options: { target?: string; baseURL?: string } = {}): Promise<Target> {
-  if (options.baseURL) return { id: 'custom', type: 'desktop', baseURL: options.baseURL }
+  if (options.baseURL) return { id: customTargetID, type: 'desktop', baseURL: options.baseURL }
   const envTarget = process.env.BEEPER_TARGET
   const config = await readConfig()
   const targetID = options.target ?? envTarget ?? config.defaultTarget

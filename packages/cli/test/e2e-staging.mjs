@@ -97,8 +97,9 @@ async function phasePlan() {
 }
 
 async function phaseTargets() {
-  report.targets = plannedTargets()
-  for (const target of plannedTargets()) {
+  const targets = plannedTargets()
+  report.targets = targets
+  for (const target of targets) {
     const args = target.kind === 'desktop'
       ? ['targets', 'create', 'desktop', target.name, '--server-env', 'staging', '--port', String(target.port), '--json']
       : ['targets', 'create', 'server', target.name, '--server-env', 'staging', '--port', String(target.port), '--json']
@@ -489,33 +490,32 @@ function recordLoginBlock(target, args, result) {
 }
 
 async function loginServerViaSetupAPI(target) {
-  const start = runCli(['api', 'post', '/v1/app/setup/start', '--target', target.name, '--no-auth', '--json'], { allowFailure: true })
-  recordCommand('login', ['api', 'post', '/v1/app/setup/start', '--target', target.name, '--no-auth', '--json'], start)
-  if (start.status !== 0) {
-    recordLoginBlock(target, ['api', 'post', '/v1/app/setup/start', '--target', target.name, '--no-auth', '--json'], start)
-    return false
+  const setupApi = (path, body) => {
+    const args = ['api', 'post', path, '--target', target.name, '--no-auth']
+    if (body !== undefined) args.push('--body', body)
+    args.push('--json')
+    return args
   }
+  const runStep = (args) => {
+    const result = runCli(args, { allowFailure: true })
+    recordCommand('login', args, result)
+    if (result.status !== 0) recordLoginBlock(target, args, result)
+    return result
+  }
+
+  const start = runStep(setupApi('/v1/app/setup/start'))
+  if (start.status !== 0) return false
   const setupRequestID = parseEnvelope(start.stdout)?.data?.setupRequestID
   if (!setupRequestID) {
     recordFailure('login', target, `setup start did not return setupRequestID for ${target.name}`)
     return false
   }
 
-  const emailBody = JSON.stringify({ setupRequestID, email: target.email })
-  const email = runCli(['api', 'post', '/v1/app/setup/email', '--target', target.name, '--no-auth', '--body', emailBody, '--json'], { allowFailure: true })
-  recordCommand('login', ['api', 'post', '/v1/app/setup/email', '--target', target.name, '--no-auth', '--body', emailBody, '--json'], email)
-  if (email.status !== 0) {
-    recordLoginBlock(target, ['api', 'post', '/v1/app/setup/email', '--target', target.name, '--no-auth', '--body', emailBody, '--json'], email)
-    return false
-  }
+  const email = runStep(setupApi('/v1/app/setup/email', JSON.stringify({ setupRequestID, email: target.email })))
+  if (email.status !== 0) return false
 
-  const responseBody = JSON.stringify({ setupRequestID, response: otp })
-  const response = runCli(['api', 'post', '/v1/app/setup/response', '--target', target.name, '--no-auth', '--body', responseBody, '--json'], { allowFailure: true })
-  recordCommand('login', ['api', 'post', '/v1/app/setup/response', '--target', target.name, '--no-auth', '--body', responseBody, '--json'], response)
-  if (response.status !== 0) {
-    recordLoginBlock(target, ['api', 'post', '/v1/app/setup/response', '--target', target.name, '--no-auth', '--body', responseBody, '--json'], response)
-    return false
-  }
+  const response = runStep(setupApi('/v1/app/setup/response', JSON.stringify({ setupRequestID, response: otp })))
+  if (response.status !== 0) return false
 
   let data = parseEnvelope(response.stdout)?.data
   if (data?.registrationRequired) {
@@ -525,12 +525,8 @@ async function loginServerViaSetupAPI(target) {
       setupRequestID: data.setupRequestID ?? setupRequestID,
       username: usernameForEmail(target.email) ?? data.usernameSuggestions?.[0],
     })
-    const register = runCli(['api', 'post', '/v1/app/setup/register', '--target', target.name, '--no-auth', '--body', registerBody, '--json'], { allowFailure: true })
-    recordCommand('login', ['api', 'post', '/v1/app/setup/register', '--target', target.name, '--no-auth', '--body', registerBody, '--json'], register)
-    if (register.status !== 0) {
-      recordLoginBlock(target, ['api', 'post', '/v1/app/setup/register', '--target', target.name, '--no-auth', '--body', registerBody, '--json'], register)
-      return false
-    }
+    const register = runStep(setupApi('/v1/app/setup/register', registerBody))
+    if (register.status !== 0) return false
     data = parseEnvelope(register.stdout)?.data
   }
 

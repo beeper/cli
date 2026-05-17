@@ -10,6 +10,7 @@ import { launchDesktopApp, startProfile } from '../lib/profiles.js'
 import {
   builtInDesktopTargetID,
   createProfileTarget,
+  customTargetID,
   readConfig,
   readTarget,
   saveTargetAuth,
@@ -65,6 +66,7 @@ export default class Setup extends BeeperCommand {
   }
 
   private async setupDefault(target: Target, flags: SetupFlags): Promise<void> {
+    const setupCmd = setupCommand(target)
     if (target.type === 'desktop') {
       const local = await prepareLocalDesktopSetup(target, flags).catch(() => undefined)
       if (local) {
@@ -77,10 +79,7 @@ export default class Setup extends BeeperCommand {
             target: publicTarget(local.target),
             readiness: local.readiness,
             localDesktop: localDesktopPreview(local),
-            availableActions: [
-              `beeper setup${target.id === builtInDesktopTargetID ? '' : ` -t ${target.id}`} --local`,
-              `beeper setup${target.id === builtInDesktopTargetID ? '' : ` -t ${target.id}`} --oauth`,
-            ],
+            availableActions: [`${setupCmd} --local`, `${setupCmd} --oauth`],
           }, flags.json ? 'json' : 'human')
           return
         }
@@ -100,7 +99,7 @@ export default class Setup extends BeeperCommand {
         await launchDesktopApp(target)
         await printSuccess({
           message: 'Launched Beeper Desktop',
-          detail: `Run \`beeper setup${target.id === builtInDesktopTargetID ? '' : ` -t ${target.id}`}\` again after it finishes starting.`,
+          detail: `Run \`${setupCmd}\` again after it finishes starting.`,
           data: { target: publicTarget(target), readiness },
         }, flags.json ? 'json' : 'human')
         return
@@ -207,7 +206,7 @@ type PreparedLocalDesktopSetup = {
 }
 
 async function setupTarget(flags: SetupFlags): Promise<Target> {
-  if (flags['base-url']) return { id: 'custom', type: 'desktop', baseURL: flags['base-url'] }
+  if (flags['base-url']) return { id: customTargetID, type: 'desktop', baseURL: flags['base-url'] }
   if (flags.target) {
     const target = await readTarget(flags.target)
     if (!target) throw new Error(`Unknown Beeper target "${flags.target}". Run \`beeper targets list\`.`)
@@ -243,15 +242,17 @@ async function prepareLocalDesktopSetup(target: Target, flags: SetupFlags): Prom
   const desktop = await findLocalDesktop({ baseURL: target.baseURL, scan: target.id === builtInDesktopTargetID, timeoutMs: 500 }).catch(() => undefined)
   const resolvedTarget: Target = {
     ...target,
-    id: target.id === 'custom' ? builtInDesktopTargetID : target.id,
+    id: target.id === customTargetID ? builtInDesktopTargetID : target.id,
     type: 'desktop',
     name: target.name ?? 'Beeper Desktop',
     baseURL: desktop?.baseURL ?? target.baseURL,
     managed: target.managed ?? false,
   }
   const session = await findLocalDesktopSession(resolvedTarget)
-  const readiness = await evaluateReadiness({ baseURL: resolvedTarget.baseURL, target: resolvedTarget.id, token: session.auth.accessToken })
-  const accounts = await connectedAccountSummary(resolvedTarget, session.auth).catch(() => [])
+  const [readiness, accounts] = await Promise.all([
+    evaluateReadiness({ baseURL: resolvedTarget.baseURL, target: resolvedTarget.id, token: session.auth.accessToken }),
+    connectedAccountSummary(resolvedTarget, session.auth).catch(() => []),
+  ])
   return { accounts, readiness, session, target: resolvedTarget }
 }
 
@@ -293,8 +294,10 @@ async function setupOAuthTarget(target: Target, flags: SetupFlags, source?: Auth
     }
   await writeTarget(target)
   await saveTargetAuth(target, auth)
-  const readiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id, token: auth.accessToken })
-  const accounts = await connectedAccountSummary(target, auth).catch(() => [])
+  const [readiness, accounts] = await Promise.all([
+    evaluateReadiness({ baseURL: target.baseURL, target: target.id, token: auth.accessToken }),
+    connectedAccountSummary(target, auth).catch(() => []),
+  ])
   return { accounts, authSource, readiness, target: publicTarget({ ...target, auth }) }
 }
 
@@ -318,6 +321,10 @@ function printLocalDesktopPreview(prepared: PreparedLocalDesktopSetup): void {
   if (prepared.session.userID) process.stdout.write(`Signed in as: ${prepared.session.userID}\n`)
   if (prepared.accounts.length) process.stdout.write(`Connected accounts: ${prepared.accounts.join(', ')}\n`)
   process.stdout.write('\n')
+}
+
+function setupCommand(target: Target): string {
+  return target.id === builtInDesktopTargetID ? 'beeper setup' : `beeper setup -t ${target.id}`
 }
 
 function remoteName(url: string): string {

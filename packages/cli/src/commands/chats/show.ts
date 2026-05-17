@@ -1,6 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
+import { shouldFallbackToMatrix } from '../../lib/matrix-direct.js'
 import { printData } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
@@ -10,11 +11,11 @@ export default class ChatsShow extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsShow)
     const client = await createClient(flags)
-    const chatID = flags.chat.startsWith('!') ? flags.chat : await resolveChatID(client, flags.chat, { pick: flags.pick })
+    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     try {
       await printData(await client.chats.retrieve(chatID, { maxParticipantCount: flags['max-participants'] }), flags.json ? 'json' : 'human')
     } catch (error) {
-      if (!chatID.startsWith('!') || !/getChat|Chat not found/i.test(error instanceof Error ? error.message : String(error))) throw error
+      if (!shouldFallbackToMatrix(chatID, error)) throw error
       await printData({
         accountID: 'matrix',
         id: chatID,

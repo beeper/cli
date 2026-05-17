@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { listMatrixMessages } from '../../lib/matrix-direct.js'
+import { listMatrixMessages, shouldFallbackToMatrix } from '../../lib/matrix-direct.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
@@ -11,13 +11,13 @@ export default class MessagesList extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesList)
     const client = await createClient(flags)
-    const chatID = flags.chat.startsWith('!') ? flags.chat : await resolveChatID(client, flags.chat, { pick: flags.pick })
+    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     if (flags.before && flags.after) throw new Error('Use only one of --before or --after')
     let items: unknown[]
     try {
       items = await collectPage(client.messages.list(chatID, { cursor: flags.before ?? flags.after, direction: flags.before ? 'before' : flags.after ? 'after' : undefined }), flags.limit)
     } catch (error) {
-      if (!chatID.startsWith('!') || !/getChat|listMessages|Chat not found/i.test(error instanceof Error ? error.message : String(error))) throw error
+      if (!shouldFallbackToMatrix(chatID, error)) throw error
       items = await listMatrixMessages(flags, chatID, flags.limit)
     }
     if (flags.ids) printIDs(items)

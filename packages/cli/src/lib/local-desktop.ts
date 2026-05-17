@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { access, readdir } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -71,7 +71,6 @@ async function localDesktopDataDirs(): Promise<string[]> {
 
 async function readBeeperState(dataDir: string): Promise<Record<string, unknown>> {
   const dbPath = join(dataDir, 'index.db')
-  await access(dbPath)
   const { stdout } = await execFileAsync('sqlite3', [
     '-json',
     dbPath,

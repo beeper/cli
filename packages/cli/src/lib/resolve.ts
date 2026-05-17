@@ -42,6 +42,7 @@ export async function listAccountIDs(client: any): Promise<string[]> {
 }
 
 export async function resolveChatID(client: any, input: string, options: ChatResolutionOptions = {}): Promise<string> {
+  if (input.startsWith('!')) return input
   const exact = await retrieveChat(client, input)
   if (exact) return chatInputID(exact)
 
