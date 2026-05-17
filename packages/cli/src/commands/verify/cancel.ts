@@ -1,6 +1,6 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { appRequest } from '../../lib/app-api.js'
+import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
 export default class VerifyCancel extends BeeperCommand {
   static override summary = 'Cancel device verification'
@@ -8,8 +8,7 @@ export default class VerifyCancel extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(VerifyCancel)
     ensureWritable(flags)
-    const id = flags.id
-    const path = `/v1/app/setup/verifications/:id/cancel`.replace(':id', encodeURIComponent(id ?? 'active'))
-    await printData(await appRequest('POST', path, { baseURL: flags['base-url'], target: flags.target, body: {} }), flags.json ? 'json' : 'human')
+    const client = await createClient(flags)
+    await printData(await client.app.verifications.cancel(flags.id ?? 'active', {}), flags.json ? 'json' : 'human')
   }
 }

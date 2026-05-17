@@ -13,6 +13,8 @@ export default class TargetsStatus extends BeeperCommand {
     const { args, flags } = await this.parse(TargetsStatus)
     const target = args.name ? await readTarget(args.name) : await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
-    await printData({ target, ...(await targetLiveStatus(target)) }, flags.json ? 'json' : 'human')
+    const status = await targetLiveStatus(target)
+    await printData({ target, ...status }, flags.json ? 'json' : 'human')
+    if (!status.reachable) this.exit(1)
   }
 }

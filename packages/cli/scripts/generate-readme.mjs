@@ -20,27 +20,31 @@ const commandList = commands.map(command => {
 
 const commandSections = commands.map(command => commandSection(command)).join('\n\n');
 
-const readme = `# Beeper CLI
+const readme = `# Beeper CLI - Beeper from your terminal
 
-Command-line access to Beeper Desktop and Beeper Server targets.
+A scriptable Beeper client for people and agents. It talks to a local Beeper
+Desktop API or a configured Beeper Server target, then gives you setup,
+account management, chat search, message reading, sending, media downloads,
+exports, diagnostics, and raw API access from the command line.
 
-## Inspiration
+> Requires a running Beeper Desktop API or a configured Beeper Server target.
 
-This CLI is shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI
-that gets the command-line product shape right. The Beeper CLI borrows the same
-basic taste: workflow-first commands, human-readable output by default, exact
-\`--json\` for scripts, \`--events\` for long-running automation, \`--read-only\`
-for safe agent/tool use, and command names that optimize for what people are
-trying to do rather than for raw API resource names.
+Command manual: \`beeper man\`
 
-When in doubt, the model is simple: make the default output pleasant to read,
-make machine output boring and stable, keep write commands explicit, and expose
-one obvious command for each job. The public object is a target; local runtime
-profiles are implementation details.
+## Features
+
+- **Setup + readiness** - \`setup\`, \`status\`, \`doctor\`, and verification commands guide a target from login through encrypted-message readiness.
+- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper targets with one selected default.
+- **Accounts** - list connected networks, add accounts, switch defaults, inspect details, and remove accounts.
+- **Chats + contacts** - list, search, start, archive, pin, mute, mark, rename, and inspect chats across accounts.
+- **Messages + media** - list, search, show, edit, delete, react, send text/files, and download message media.
+- **Exports** - write accounts, chats, messages, Markdown transcripts, HTML transcripts, and attachments to disk.
+- **Automation** - \`--json\` everywhere, NDJSON \`--events\`, \`rpc\` over stdin/stdout, and \`man --json\` for tool manifests.
+- **Safety** - \`--read-only\` rejects mutating commands, while raw API access remains explicit under \`api get\` and \`api post\`.
 
 ## Install
 
-Beeper CLI is distributed through Homebrew as a built release archive:
+### Homebrew
 
 \`\`\`sh
 brew install beeper/tap/beeper-cli
@@ -48,32 +52,51 @@ brew install beeper/tap/beeper-cli
 
 The installed command is \`beeper\`.
 
-## Local Development
+### Build from source
+
+Install dependencies before running these commands.
 
 \`\`\`sh
-npm install
-npm run build
-node ./bin/run.js --help
+pnpm --filter beeper-cli build
+pnpm --filter beeper-cli dev -- --help
 \`\`\`
 
-Run commands directly from TypeScript:
+For local CLI development inside \`packages/cli\`:
 
 \`\`\`sh
-npm run dev -- --help
+pnpm dev -- --help
 \`\`\`
 
 Regenerate this README after command, flag, or argument changes:
 
 \`\`\`sh
-npm run readme
+pnpm readme
 \`\`\`
 
-## Setup
+## Quick start
 
 \`\`\`sh
+# 1. Prepare the selected target
 beeper setup
+
+# 2. Check readiness
 beeper status
-beeper auth status
+beeper doctor
+
+# 3. Inspect accounts and chats
+beeper accounts list
+beeper chats list
+
+# 4. Read and search messages
+beeper messages list --chat "Family" --limit 50
+beeper messages search "flight"
+
+# 5. Send
+beeper send text --to "Family" --message "on my way"
+beeper send file --to "Family" --file ./photo.jpg --caption "from today"
+
+# 6. Export
+beeper export --out ./beeper-export
 \`\`\`
 
 \`beeper setup\` makes the selected target ready. It is safe to run again: the
@@ -86,22 +109,38 @@ For non-interactive use, pass a token through the environment:
 BEEPER_ACCESS_TOKEN=... beeper chats --json
 \`\`\`
 
-## Common Workflows
+## Documentation
 
-\`\`\`sh
-beeper doctor
-beeper status
-beeper targets list
-beeper accounts list
-beeper chats list
-beeper messages list --chat "Family" --limit 50
-beeper send text --to "Family" --message "on my way"
-beeper send file --to "Family" --file ./photo.jpg --caption "from today"
-beeper export --out ./beeper-export
-beeper api get /v1/info
-\`\`\`
+| Area | Commands |
+| --- | --- |
+| **Setup** | \`setup\` · \`doctor\` · \`status\` · \`auth status\` · \`verify\` |
+| **Targets** | \`targets list\` · \`targets use\` · \`targets status\` · \`targets logs\` |
+| **Accounts** | \`accounts list\` · \`accounts add\` · \`accounts show\` · \`accounts remove\` |
+| **Messaging** | \`chats list\` · \`messages list\` · \`send text\` · \`send file\` · \`media download\` |
+| **Contacts** | \`contacts list\` · \`contacts search\` · \`contacts show\` |
+| **Automation** | \`watch\` · \`rpc\` · \`man\` · \`api get\` · \`api post\` |
+| **Maintenance** | \`install desktop\` · \`install server\` · \`update\` · \`config\` · \`completion\` |
 
-## Input Resolution
+Use \`beeper docs\` to open the CLI docs and \`beeper man\` to print the local
+command manual.
+
+## Configuration
+
+Default Desktop API target: \`http://127.0.0.1:23373\`.
+
+**Global flags:** \`--base-url\`, \`--target\`, \`--json\`, \`--events\`,
+\`--full\`, \`--timeout\`, \`--read-only\`, \`--debug\`, \`--yes\`.
+
+**Environment overrides:**
+
+| Variable | Effect |
+| --- | --- |
+| \`BEEPER_ACCESS_TOKEN\` | Bearer token. Overrides stored OAuth login. |
+| \`BEEPER_DESKTOP_BASE_URL\` | Beeper Desktop API base URL. Defaults to \`http://127.0.0.1:23373\`. |
+| \`BEEPER_BASE_URL\` | SDK-compatible base URL fallback. |
+| \`BEEPER_CLI_CONFIG_DIR\` | Override config directory for testing or isolated profiles. |
+
+## Addressing
 
 - Chat arguments accept Beeper chat IDs, local chat IDs, exact titles, or search text.
 - Ambiguous chat matches return numbered choices; pass \`--pick N\` to select one.
@@ -110,7 +149,7 @@ beeper api get /v1/info
 - \`contacts search\` and \`chats start\` can search across all accounts when \`--account\` is omitted.
 - \`contacts list\` accepts the same account selectors as other account-scoped commands.
 
-## Output
+## Output and scripting
 
 Most commands support:
 
@@ -125,14 +164,22 @@ Most commands support:
 \`man --json\` prints a compact command manifest for tools and agents.
 \`rpc\` runs newline-delimited JSON command RPC over stdin/stdout.
 
-## Environment
+## Raw API access
 
-| Environment variable | Description |
-| --- | --- |
-| \`BEEPER_ACCESS_TOKEN\` | Bearer token. Overrides stored OAuth login. |
-| \`BEEPER_DESKTOP_BASE_URL\` | Beeper Desktop API base URL. Defaults to \`http://127.0.0.1:23373\`. |
-| \`BEEPER_BASE_URL\` | SDK-compatible base URL fallback. |
-| \`BEEPER_CLI_CONFIG_DIR\` | Override config directory for testing or isolated profiles. |
+Raw Desktop API calls live under \`api\`, so scripts can reach a new endpoint
+before a workflow command exists:
+
+\`\`\`sh
+beeper api get /v1/info
+beeper api post /v1/messages/{chatID}/send --body '{"text":"hello"}'
+\`\`\`
+
+## Inspiration
+
+This CLI is shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI
+that gets the command-line product shape right. Beeper CLI borrows the same
+taste: workflow-first commands, readable default output, boring machine output,
+explicit writes, and names based on what people are trying to do.
 
 ## Command Summary
 

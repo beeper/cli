@@ -1,6 +1,6 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { appRequest } from '../../lib/app-api.js'
+import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
 export default class VerifyRecoveryKey extends BeeperCommand {
   static override summary = 'Unlock encrypted messages with a recovery key'
@@ -8,8 +8,7 @@ export default class VerifyRecoveryKey extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(VerifyRecoveryKey)
     ensureWritable(flags)
-    const id = flags.id
-    const path = `/v1/app/setup/recovery-key/verify`.replace(':id', encodeURIComponent(id ?? 'active'))
-    await printData(await appRequest('POST', path, { baseURL: flags['base-url'], target: flags.target, body: { recoveryKey: flags.code } }), flags.json ? 'json' : 'human')
+    const client = await createClient(flags)
+    await printData(await client.app.login.verification.recoveryKey.verify({ recoveryKey: flags.code ?? '' }), flags.json ? 'json' : 'human')
   }
 }
