@@ -11,7 +11,7 @@ export default class TargetsStatus extends BeeperCommand {
   static override args = { name: Args.string({ required: false, description: 'Target name. Defaults to the selected target.' }) }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsStatus)
-    const target = args.name ? await readTarget(args.name) : await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
+    const target = await resolveTarget({ target: args.name ?? flags.target, baseURL: flags['base-url'] })
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
     const status = await targetLiveStatus(target)
     await printData({ target, ...status }, flags.json ? 'json' : 'human')

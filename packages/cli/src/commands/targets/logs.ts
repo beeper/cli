@@ -15,7 +15,7 @@ export default class TargetsLogs extends BeeperCommand {
   }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsLogs)
-    const target = args.name ? await readTarget(args.name) : await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
+    const target = await resolveTarget({ target: args.name ?? flags.target, baseURL: flags['base-url'] })
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
     if (target.type === 'remote' || target.id === customTargetID) throw new Error(`Target "${target.id}" is remote and has no local logs.`)
     if (target.type === 'server') {

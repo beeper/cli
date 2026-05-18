@@ -10,7 +10,7 @@ export default class TargetsStart extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsStart)
     ensureWritable(flags)
-    const target = args.name ? await readTarget(args.name) : await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
+    const target = await resolveTarget({ target: args.name ?? flags.target, baseURL: flags['base-url'] })
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
     if (target.type === 'desktop' && target.id !== customTargetID) {
       const result = await launchDesktopApp(target.managed ? target : undefined)

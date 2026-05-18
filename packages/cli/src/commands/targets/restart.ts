@@ -10,7 +10,7 @@ export default class TargetsRestart extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsRestart)
     ensureWritable(flags)
-    const target = args.name ? await readTarget(args.name) : await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
+    const target = await resolveTarget({ target: args.name ?? flags.target, baseURL: flags['base-url'] })
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
     assertServerProfile(target)
     await stopProfile(target).catch(() => undefined)

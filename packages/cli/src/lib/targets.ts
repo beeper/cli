@@ -166,6 +166,7 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   const targetID = options.target ?? envTarget ?? config.defaultTarget
   if (targetID) {
     const target = await readTarget(targetID)
+    if (!target && targetID === builtInDesktopTargetID) return builtInDesktopTarget(config)
     if (!target) throw notFound(`Unknown Beeper target "${targetID}". Run \`beeper targets list\`.`)
     return withConfigAuth(target, config)
   }
@@ -173,7 +174,17 @@ export async function resolveTarget(options: { target?: string; baseURL?: string
   if (targets.length === 1 && targets[0]) return withConfigAuth(targets[0], config)
   const desktopTarget = await readTarget(builtInDesktopTargetID)
   if (desktopTarget) return withConfigAuth(desktopTarget, config)
-  return { id: builtInDesktopTargetID, type: 'desktop', name: 'Beeper Desktop', baseURL: process.env.BEEPER_DESKTOP_BASE_URL || config.baseURL || defaultBaseURL, auth: config.auth }
+  return builtInDesktopTarget(config)
+}
+
+function builtInDesktopTarget(config: Config): Target {
+  return {
+    id: builtInDesktopTargetID,
+    type: 'desktop',
+    name: 'Beeper Desktop',
+    baseURL: process.env.BEEPER_DESKTOP_BASE_URL || config.baseURL || defaultBaseURL,
+    auth: config.auth,
+  }
 }
 
 function withConfigAuth(target: Target, config: Config): Target {
