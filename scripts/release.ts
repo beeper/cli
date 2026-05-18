@@ -15,11 +15,13 @@ if (!version || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
 await setPackageVersion('packages/cli/package.json', version)
 await setPackageVersion('packages/npm/package.json', version)
 
-await run('bun', ['--filter', '@beeper/cli', 'run', 'readme'], {
+await run('bun', ['run', 'readme'], {
+  cwd: join(root, 'packages/cli'),
   env: { ...process.env, PACKAGE_VERSION: version, TAG: `v${version}` },
 })
 
-await run('bun', ['--filter', '@beeper/cli', 'run', 'release:local'], {
+await run('bun', ['run', 'release:local'], {
+  cwd: join(root, 'packages/cli'),
   env: { ...process.env, PACKAGE_VERSION: version, TAG: `v${version}` },
 })
 
@@ -33,7 +35,7 @@ async function setPackageVersion(path, nextVersion) {
 
 async function run(command, args, options = {}) {
   const child = Bun.spawn([command, ...args], {
-    cwd: root,
+    cwd: options.cwd || root,
     env: options.env || process.env,
     stdin: 'inherit',
     stdout: 'inherit',
