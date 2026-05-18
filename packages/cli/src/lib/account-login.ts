@@ -56,7 +56,7 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
 
     if (step.type === 'display_and_wait') {
       await promptText('Press Enter after completing this step.')
-      session = await client.bridges.loginSessions.retrieve(session.loginSessionID, { bridgeID })
+      session = await client.bridges.loginSessions.steps.submit(step.stepID, { bridgeID, loginSessionID: session.loginSessionID, type: 'display_and_wait' })
       continue
     }
 
