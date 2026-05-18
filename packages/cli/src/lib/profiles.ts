@@ -74,6 +74,7 @@ export async function launchDesktopApp(target?: Target): Promise<{ id: string; s
 export async function findDesktopAppPath(): Promise<string | undefined> {
   const installations = await readInstallations().catch(() => ({ desktop: undefined }))
   if (installations.desktop?.path && await isBeeperDesktopApp(installations.desktop.path)) return installations.desktop.path
+
   if (process.platform === 'darwin') {
     for (const path of [
       '/Applications/Beeper.app',
@@ -82,6 +83,7 @@ export async function findDesktopAppPath(): Promise<string | undefined> {
       if (await isBeeperDesktopApp(path)) return path
     }
   }
+
   if (process.platform === 'win32') {
     const localAppData = process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local')
     const candidates = [
@@ -92,9 +94,13 @@ export async function findDesktopAppPath(): Promise<string | undefined> {
       if (await pathExists(path)) return path
     }
   }
-  for (const path of ['/usr/bin/beeper', '/usr/local/bin/beeper']) {
-    if (await pathExists(path)) return path
+
+  if (process.platform === 'linux') {
+    for (const path of ['/usr/bin/beeper', '/usr/local/bin/beeper']) {
+      if (await pathExists(path)) return path
+    }
   }
+
   return undefined
 }
 
