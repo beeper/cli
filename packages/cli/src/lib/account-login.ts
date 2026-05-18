@@ -29,6 +29,8 @@ export function printAccountLoginStep(session: AccountLoginStep): void {
     output.write(`display: ${step.display.type}\n`)
     if (step.display.type === 'qr') output.write(`${step.display.data}\n`)
     if (step.display.type === 'emoji') output.write(`image: ${step.display.imageURL}\n`)
+    const display = step.display as { type: string; data?: string }
+    if (display.type === 'code' && display.data) output.write(`${display.data}\n`)
   } else if (step.type === 'user_input') {
     for (const field of step.fields) {
       const details = [field.type, field.placeholder].filter(Boolean).join(' | ')
@@ -55,7 +57,8 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
     if (!step || !('stepID' in step)) throw new Error('Account login session did not include a current step.')
 
     if (step.type === 'display_and_wait') {
-      await promptText('Press Enter after completing this step.')
+      if (options.nonInteractive) return session
+      output.write('waiting for this step to complete...\n')
       session = await client.bridges.loginSessions.steps.submit(step.stepID, { bridgeID, loginSessionID: session.loginSessionID, type: 'display_and_wait' })
       continue
     }
