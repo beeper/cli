@@ -17,7 +17,8 @@ const arch = normalizeArch(process.arch)
 const extension = platform === 'windows' ? '.exe' : ''
 const executableName = `beeper-${platform}-${arch}${extension}`
 const releaseTag = process.env.BEEPER_CLI_RELEASE_TAG || `v${version}`
-const releaseBaseURL = (process.env.BEEPER_CLI_RELEASE_BASE_URL || `https://github.com/beeper/desktop-api-cli/releases/download/${releaseTag}`).replace(/\/$/, '')
+const releaseRepository = process.env.GITHUB_REPOSITORY || 'beeper/cli'
+const releaseBaseURL = (process.env.BEEPER_CLI_RELEASE_BASE_URL || `https://github.com/${releaseRepository}/releases/download/${releaseTag}`).replace(/\/$/, '')
 const cacheRoot = process.env.BEEPER_CLI_BINARY_CACHE_DIR || join(homedir(), '.cache', 'beeper-cli')
 const cacheDir = join(cacheRoot, version, `${platform}-${arch}`)
 const cachedExecutable = join(cacheDir, platform === 'windows' ? 'beeper.exe' : 'beeper')
