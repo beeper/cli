@@ -102,16 +102,16 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 
 ## Documentation
 
-| Area | Commands |
-| --- | --- |
-| **Setup** | `setup` · `setup install desktop` · `setup install server` · `status` · `doctor` · `auth status` · `auth verify` |
-| **Targets** | `targets list` · `targets add desktop` · `targets add server` · `targets add remote` · `targets use` · `targets status` · `targets logs` |
-| **Accounts** | `accounts list` · `accounts add` · `accounts show` · `accounts use` · `accounts remove` |
-| **Messaging** | `chats list` · `messages list` · `messages search` · `messages export` · `send text` · `send file` · `send react` · `presence` · `media download` |
-| **Chat state** | `chats archive` · `chats pin` · `chats mute` · `chats priority` · `chats remind` · `chats rename` · `chats draft` · `chats focus` |
-| **Contacts** | `contacts list` · `contacts search` · `contacts show` |
-| **Automation** | `watch` · `watch --webhook` · `rpc` · `man` · `api get` · `api post` |
-| **Maintenance** | `update` · `config` · `completion` · `docs` · `version` |
+| Topic | Page | Commands |
+| --- | --- | --- |
+| **Setup** | [setup](docs/setup.md) · [auth](docs/auth.md) | `setup` · `setup install desktop` · `setup install server` · `status` · `doctor` · `auth status` · `auth verify` |
+| **Targets** | [targets](docs/targets.md) | `targets list` · `targets add desktop` · `targets add server` · `targets add remote` · `targets use` · `targets status` · `targets logs` |
+| **Accounts** | [accounts](docs/accounts.md) | `accounts list` · `accounts add` · `accounts show` · `accounts use` · `accounts remove` |
+| **Chats** | [chats](docs/chats.md) | `chats list` · `chats search` · `chats show` · `chats start` · `chats archive` · `chats pin` · `chats mute` · `chats priority` · `chats remind` · `chats rename` · `chats draft` · `chats focus` |
+| **Messages** | [messages](docs/messages.md) · [send](docs/send.md) · [presence](docs/presence.md) | `messages list` · `messages search` · `messages export` · `send text` · `send file` · `send sticker` · `send voice` · `send react` · `presence` |
+| **Contacts + media** | [contacts](docs/contacts.md) · [media](docs/media.md) · [export](docs/export.md) | `contacts list` · `contacts search` · `media download` · `export` |
+| **Automation** | [watch](docs/watch.md) · [rpc](docs/rpc.md) · [api](docs/api.md) | `watch` · `watch --webhook` · `rpc` · `man` · `api get` · `api post` · `api request` |
+| **Maintenance** | [config](docs/config.md) · [update](docs/update.md) | `update` · `config` · `completion` · `docs` · `version` |
 
 Use `beeper docs` to open the CLI docs and `beeper man` to print the local
 command manual.
