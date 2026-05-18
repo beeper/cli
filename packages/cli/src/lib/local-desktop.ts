@@ -44,7 +44,37 @@ export async function findLocalDesktopSession(target?: Target): Promise<LocalDes
 }
 
 export function localDesktopReadiness(session: LocalDesktopSession): Readiness {
-  const state = session.firstSyncDone === false ? 'needs-first-sync' : 'ready'
+  const secrets = recordValue(session.state.secrets)
+  const e2ee = {
+    initialized: booleanValue(session.state.initialized) ?? false,
+    secretStorage: booleanValue(session.state.secret_storage) ?? false,
+    crossSigning: booleanValue(session.state.cross_signing) ?? false,
+    verified: booleanValue(session.state.verified) ?? false,
+    secrets: {
+      masterKey: booleanValue(secrets?.master_key) ?? false,
+      selfSigningKey: booleanValue(secrets?.self_signing_key) ?? false,
+      userSigningKey: booleanValue(secrets?.user_signing_key) ?? false,
+      megolmBackupKey: booleanValue(secrets?.megolm_backup_key) ?? false,
+      recoveryKey: booleanValue(secrets?.recovery_code) ?? false,
+    },
+    keyBackup: booleanValue(session.state.key_backup) ?? false,
+    firstSyncDone: session.firstSyncDone ?? false,
+    hasBackedUpRecoveryKey: booleanValue(session.state.has_backed_up_code) ?? false,
+  }
+  const ready = e2ee.firstSyncDone
+    && e2ee.initialized
+    && e2ee.secretStorage
+    && e2ee.crossSigning
+    && e2ee.verified
+    && e2ee.keyBackup
+    && e2ee.hasBackedUpRecoveryKey
+    && e2ee.secrets.masterKey
+    && e2ee.secrets.selfSigningKey
+    && e2ee.secrets.userSigningKey
+    && e2ee.secrets.megolmBackupKey
+    && e2ee.secrets.recoveryKey
+  const state = ready ? 'ready' : 'needs-first-sync'
+
   return {
     state,
     app: {
@@ -54,25 +84,10 @@ export function localDesktopReadiness(session: LocalDesktopSession): Readiness {
         deviceID: session.deviceID ?? '',
         homeserver: session.homeserver ?? '',
       },
-      e2ee: {
-        initialized: booleanValue(session.state.initialized) ?? false,
-        secretStorage: booleanValue(session.state.secret_storage) ?? false,
-        crossSigning: booleanValue(session.state.cross_signing) ?? false,
-        verified: booleanValue(session.state.verified) ?? false,
-        secrets: {
-          masterKey: booleanValue(recordValue(session.state.secrets)?.master_key) ?? false,
-          selfSigningKey: booleanValue(recordValue(session.state.secrets)?.self_signing_key) ?? false,
-          userSigningKey: booleanValue(recordValue(session.state.secrets)?.user_signing_key) ?? false,
-          megolmBackupKey: booleanValue(recordValue(session.state.secrets)?.megolm_backup_key) ?? false,
-          recoveryKey: booleanValue(recordValue(session.state.secrets)?.recovery_code) ?? false,
-        },
-        keyBackup: booleanValue(session.state.key_backup) ?? false,
-        firstSyncDone: session.firstSyncDone ?? false,
-        hasBackedUpRecoveryKey: booleanValue(session.state.has_backed_up_code) ?? false,
-      },
+      e2ee,
     },
     actions: state === 'ready' ? ['chats list', 'messages list', 'send text'] : ['setup', 'status'],
-    message: state === 'ready' ? undefined : 'Waiting for local Desktop first sync.',
+    message: state === 'ready' ? undefined : 'Waiting for local Desktop first sync and encryption setup.',
   }
 }
 
