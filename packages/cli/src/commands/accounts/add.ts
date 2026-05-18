@@ -98,7 +98,7 @@ async function chooseAccountType(items: AccountType[]): Promise<string> {
   try {
     for (;;) {
       const answer = (await rl.question('Select a bridge: ')).trim()
-      const selected = Number.parseInt(answer, 10)
+      const selected = /^\d+$/.test(answer) ? Number.parseInt(answer, 10) : Number.NaN
       if (Number.isInteger(selected) && selected >= 1 && selected <= available.length) return available[selected - 1]!.id
       const byID = available.find(account => account.id === answer)
       if (byID) return byID.id
