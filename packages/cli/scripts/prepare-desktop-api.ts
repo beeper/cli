@@ -28,7 +28,9 @@ await patchRootPackageJson()
 
 async function patchReadableStreamShim() {
   const source = await readFile(shimPath, 'utf8')
-  const patched = source.replace(/\n    start\(\) \{\},/, '')
+  const patched = source
+    .replace(/\n    start\(\) \{\},/, '')
+    .replace(/\n  \}\);\n\}\n\n\/\*\*\n \* Most browsers/, '\n  } as any);\n}\n\n/**\n * Most browsers')
   if (source !== patched) await writeFile(shimPath, patched)
 }
 

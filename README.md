@@ -1,28 +1,32 @@
-# Beeper CLI - Beeper from your terminal
+# 💬 beeper — Beeper CLI: connect, search, send
 
-A scriptable Beeper client for people and agents. It controls Beeper Desktop
-or Beeper Server through a selected target, then gives you setup, verification,
-bridge discovery, account management, chat search, message reading, sending,
-media downloads, exports, diagnostics, and raw API access from the command line.
+A scriptable Beeper client for humans and agents. Drives Beeper Desktop on this
+machine by default, with first-class paths for self-hosting Beeper Server and
+for talking to remote Desktop or Server targets — then gives you account
+management, chat search, message reading, sending, media downloads, exports,
+diagnostics, and raw API access from the command line.
 
-> Requires a running Beeper Desktop API or a configured Beeper Server target.
+> Third-party-friendly: speaks the Beeper Desktop API. Pairs over the local
+> loopback by default; remote targets authorize over OAuth (PKCE) or with a
+> bearer token you provide.
 
-Command manual: `beeper man`
+Command manual: `beeper man` · CLI docs: `beeper docs`
 
 ## Features
 
-- **Setup + readiness** - `setup`, `verify`, `status`, and `doctor` guide a target from login through encrypted-message readiness.
-- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper API targets with one selected default. A target is an endpoint profile: local Server, local Desktop, Desktop API, or a profile that combines Desktop/Server runtime state.
-- **Bridges + accounts** - list bridge connectors, inspect login flows and capabilities, connect accounts, switch defaults, inspect details, and remove accounts.
-- **Chats + contacts + labels** - list, search, start, archive, pin, mute, mark, rename, label, focus, and inspect chats across accounts.
-- **Messages + media + presence** - list, search, show, edit, delete, react, send text/files/reactions, send typing indicators, and download message media.
-- **Exports** - `export` for full chats/transcripts/attachments and `messages export` for one-chat JSON.
-- **Automation** - `--json` everywhere, NDJSON `--events`, `watch` (WS + outbound webhooks with HMAC), `rpc` over stdin/stdout, `man --json` for tool manifests.
-- **Safety** - `--read-only` rejects mutating commands; raw API access stays explicit under `api get` and `api post`.
+- **One CLI, three targets** — local Beeper Desktop on this machine (default), a managed local Beeper Server you install via the CLI, or a remote Beeper Desktop/Server you authorize over OAuth/PKCE or with a bearer token.
+- **Guided setup** — `beeper setup` discovers a Desktop on this device and adopts its session; `--server --install`, `--desktop --install`, `--oauth`, and `--remote URL` cover every other path.
+- **Runtime installers** — `install desktop` and `install server` install and manage the local Beeper runtimes; `targets start/stop/restart/logs/enable` runs them.
+- **Bridges + accounts** — list bridge connectors, walk login flows, connect accounts (WhatsApp, Telegram, Discord, iMessage, …), switch defaults, and remove accounts.
+- **Chats, messages, contacts** — list, search, start, archive, pin, mute, rename, focus, read, edit, delete, react, send text/files/reactions/stickers/voice, send typing indicators, download media.
+- **Verification + readiness** — `verify`, `verify status`, SAS/QR flows, recovery-key unlock, and `status`/`doctor` to reach an encrypted-ready target.
+- **Exports** — `export` for full chats/transcripts/attachments and `messages export` for one-chat JSON.
+- **Automation** — `--json` everywhere, NDJSON `--events`, `watch` (WS + outbound webhooks with HMAC), `rpc` over stdin/stdout, `man --json` for tool manifests.
+- **Safety** — `--read-only` rejects mutating commands; raw API access stays explicit under `api get`, `api post`, and `api request`.
 
 ## Install
 
-### Homebrew
+### Homebrew (recommended)
 
 ```sh
 brew install beeper/tap/beeper-cli
@@ -41,9 +45,10 @@ The package name is `beeper-cli`; the installed command is `beeper`.
 
 ### Build from source
 
-Install dependencies before running these commands.
+This repo is a Bun workspace. From the repo root:
 
 ```sh
+bun install
 bun --filter beeper-cli run build
 bun --filter beeper-cli run dev -- --help
 ```
@@ -62,20 +67,23 @@ bun run readme
 
 ## Quick start
 
+The happy path: you already run Beeper Desktop on this machine. `beeper setup`
+will find it, adopt its session, and you're ready.
+
 ```sh
-# 1. Prepare the selected target
+# 1. Adopt the local Beeper Desktop session (or pick another target)
 beeper setup
 
 # 2. Check readiness
 beeper status
 beeper doctor
 
-# 3. Inspect accounts and chats
-beeper accounts list
+# 3. Inspect bridges and connected chat accounts
 beeper bridges list
-beeper chats list
+beeper accounts list
 
-# 4. Read and search messages
+# 4. Read and search
+beeper chats list
 beeper messages list --chat 10313 --limit 50
 beeper messages search "flight"
 
@@ -87,29 +95,77 @@ beeper send file --to 8951 --file ./photo.jpg --caption "from today"
 beeper export --out ./beeper-export
 ```
 
-`beeper setup` makes the selected target ready. By default it looks for Beeper
-Desktop on this device and offers to use the existing Desktop session. Use
-`setup --local` for the direct Desktop-session path, `setup --oauth` for the
-browser-authorized path, `setup --remote URL` for a remote Desktop or Server,
-and `setup --server --install` or `setup --desktop --install` to orchestrate
-installation and target setup. To install runtimes directly: `install desktop`
-and `install server`.
+Recipients accept a numeric local chat ID, a full Beeper/Matrix chat ID, an
+iMessage chat ID, an exact title, or search text. Ambiguous matches prompt in a
+TTY; pass `--pick N` in scripts.
 
-`install desktop` and `install server` install runtimes directly.
-`setup --desktop --install` and `setup --server --install` are one-shot
-setup paths that install when needed, then configure the target.
+## Connecting a target
 
-For non-interactive use, pass a token through the environment:
+A *target* is the endpoint `beeper` talks to. You pick one of four paths
+depending on where Beeper lives.
+
+### 1. Local Beeper Desktop (default, recommended)
+
+If Beeper Desktop is already installed and signed in on this machine, no
+configuration is required — `beeper setup` discovers it on the loopback Desktop
+API (`http://127.0.0.1:23373`) and adopts the existing session.
 
 ```sh
-BEEPER_ACCESS_TOKEN=... beeper chats --json
+beeper setup            # auto-detect; offers to use the running Desktop
+beeper setup --local    # force the direct local-Desktop path
 ```
+
+If Beeper Desktop is not installed, install it and configure the target in one
+step, or install it directly:
+
+```sh
+beeper setup --desktop --install
+beeper install desktop                  # install only
+beeper install desktop --channel nightly
+```
+
+### 2. Local Beeper Server (self-hosted, managed by the CLI)
+
+For a long-running headless setup on this machine, install and adopt a local
+Beeper Server. The CLI manages the process (`targets start/stop/logs/enable`).
+
+```sh
+beeper setup --server --install
+beeper install server
+beeper install server --server-env staging
+```
+
+### 3. Remote Desktop or Server via OAuth (PKCE)
+
+For a Beeper Desktop or Server running on another machine, authorize the CLI
+through a browser-based OAuth/PKCE flow.
+
+```sh
+beeper setup --oauth                                # PKCE against the default Beeper auth
+beeper setup --remote https://desktop.example.com   # remote URL, OAuth as needed
+beeper targets add remote work https://desktop.example.com --default
+```
+
+### 4. Bearer token (non-interactive / CI)
+
+For agents, CI, and scripts, hand the CLI a bearer token directly — no
+browser, no interactive prompts.
+
+```sh
+BEEPER_ACCESS_TOKEN=... beeper chats list --json
+BEEPER_ACCESS_TOKEN=... BEEPER_DESKTOP_BASE_URL=https://desktop.example.com \
+  beeper messages list --chat 10313 --json
+```
+
+Once connected, `beeper accounts add` walks each chat-network bridge through
+its own login (QR, code, OAuth, cookie — whatever the bridge requires) so your
+WhatsApp, Telegram, Discord, iMessage, and other accounts show up.
 
 ## Documentation
 
 | Topic | Page | Commands |
 | --- | --- | --- |
-| **Setup** | [setup](docs/setup.md) · [auth](docs/auth.md) | `setup` · `install desktop` · `install server` · `verify` · `status` · `doctor` · `auth status` |
+| **Setup + install** | [setup](docs/setup.md) · [auth](docs/auth.md) | `setup` · `install desktop` · `install server` · `verify` · `status` · `doctor` · `auth status` |
 | **Targets** | [targets](docs/targets.md) | `targets list` · `targets add desktop` · `targets add server` · `targets add remote` · `targets use` · `targets status` · `targets logs` |
 | **Bridges + accounts** | [accounts](docs/accounts.md) | `bridges list` · `bridges show` · `accounts list` · `accounts add` · `accounts show` · `accounts use` · `accounts remove` |
 | **Chats** | [chats](docs/chats.md) | `chats list` · `chats search` · `chats show` · `chats start` · `chats archive` · `chats pin` · `chats mute` · `chats priority` · `chats remind` · `chats rename` · `chats draft` · `chats focus` |
@@ -121,37 +177,10 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 Use `beeper docs` to open the CLI docs and `beeper man` to print the local
 command manual.
 
-## Plugins
-
-Beeper CLI supports optional oclif plugins. List recommended Beeper plugins:
-
-```sh
-beeper plugins available
-```
-
-Install a published plugin:
-
-```sh
-beeper plugins install @beeper/cli-plugin-cloudflare
-```
-
-For plugin development, import from `beeper-cli/plugin-sdk` and expose oclif
-commands from your package. Link a local plugin while working on it:
-
-```sh
-beeper plugins link ./packages/cli-plugin-cloudflare
-beeper targets tunnel --help
-```
-
-First-party optional plugins:
-
-| Package | Adds |
-| --- | --- |
-| `@beeper/cli-plugin-cloudflare` | `targets tunnel` for exposing a selected Beeper target through Cloudflare Tunnel. |
-
 ## Configuration
 
-Default Desktop API target: `http://127.0.0.1:23373`.
+Default Desktop API target: `http://127.0.0.1:23373`. CLI configuration is
+stored under your user config dir; print it with `beeper config path`.
 
 **Global flags:** `--base-url`, `--target`, `--json`, `--events`,
 `--full`, `--timeout`, `--read-only`, `--debug`, `--yes`, `--quiet`.
@@ -160,9 +189,9 @@ Default Desktop API target: `http://127.0.0.1:23373`.
 
 | Variable | Effect |
 | --- | --- |
-| `BEEPER_ACCESS_TOKEN` | Bearer token. Overrides stored OAuth login. |
-| `BEEPER_DESKTOP_BASE_URL` | Beeper Desktop API base URL. Defaults to `http://127.0.0.1:23373`. |
-| `BEEPER_READONLY` | `1`/`true`/`yes`/`on` enables read-only mode. |
+| `BEEPER_ACCESS_TOKEN` | Bearer token for the selected target. Overrides stored OAuth login. |
+| `BEEPER_DESKTOP_BASE_URL` | Desktop/Server API base URL. Defaults to `http://127.0.0.1:23373`. |
+| `BEEPER_READONLY` | `1`/`true`/`yes`/`on` enables read-only mode globally. |
 | `BEEPER_CLI_CONFIG_DIR` | Override config directory for testing or isolated profiles. |
 
 ## Exit codes
@@ -172,7 +201,7 @@ Default Desktop API target: `http://127.0.0.1:23373`.
 | `0` | Success. |
 | `1` | Generic runtime error. |
 | `2` | Usage error (parsing, validation, missing required flag/arg, read-only refusal). |
-| `3` | Auth required (no stored token; sign in to Beeper Desktop or set `BEEPER_ACCESS_TOKEN`). |
+| `3` | Auth required (no stored token; sign in or set `BEEPER_ACCESS_TOKEN`). |
 | `4` | Target/account not ready (`doctor` reports this when readiness is not `ready`). |
 | `5` | Selector matched nothing (unknown target, account, chat, contact). |
 | `6` | Ambiguous selector (multiple matches; pass an exact ID or `--pick N`). |
@@ -207,19 +236,48 @@ Most commands support:
 
 ## Raw API access
 
-Raw Desktop API calls live under `api`, so scripts can reach a new endpoint
-before a workflow command exists:
+Raw Desktop/Server API calls live under `api`, so scripts can reach a new
+endpoint before a workflow command exists:
 
 ```sh
 beeper api get /v1/info
 beeper api post /v1/messages/{chatID}/send --body '{"text":"hello"}'
+beeper api request DELETE /v1/chats/abc/messages/def/reactions --body '{"reactionKey":"👍"}'
 ```
+
+## Plugins
+
+Beeper CLI supports optional oclif plugins. List recommended Beeper plugins:
+
+```sh
+beeper plugins available
+```
+
+Install a published plugin:
+
+```sh
+beeper plugins install @beeper/cli-plugin-cloudflare
+```
+
+For plugin development, import from `beeper-cli/plugin-sdk` and expose oclif
+commands from your package. Link a local plugin while working on it:
+
+```sh
+beeper plugins link ./packages/cli-plugin-cloudflare
+beeper targets tunnel --help
+```
+
+First-party optional plugins:
+
+| Package | Adds |
+| --- | --- |
+| `@beeper/cli-plugin-cloudflare` | `targets tunnel` for exposing a selected Beeper target through Cloudflare Tunnel. |
 
 ## Inspiration
 
-This CLI is shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI
-that gets the command-line product shape right. Beeper CLI borrows the same
-taste: workflow-first commands, readable default output, boring machine output,
+Shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI that gets
+the command-line product shape right. Beeper CLI borrows the same taste:
+workflow-first commands, readable default output, boring machine output,
 explicit writes, and names based on what people are trying to do.
 
 ## Command Summary
@@ -238,12 +296,12 @@ explicit writes, and names based on what people are trying to do.
 | `targets use` | Set the default target |
 | `targets show` | Show target details |
 | `targets status` | Check endpoint and process reachability for a target |
-| `targets start` | Start a managed target |
-| `targets stop` | Stop a managed target |
-| `targets restart` | Restart a managed target |
-| `targets logs` | Print managed target logs |
-| `targets enable` | Enable managed target startup at login |
-| `targets disable` | Disable managed target startup at login |
+| `targets start` | Start a local Server target or open Beeper Desktop |
+| `targets stop` | Stop a local Beeper Server target |
+| `targets restart` | Restart a local Beeper Server target |
+| `targets logs` | Print logs for a local Beeper Desktop or Server install |
+| `targets enable` | Enable a local Beeper Server target at login |
+| `targets disable` | Disable a local Beeper Server target at login |
 | `targets remove` | Remove a target |
 | `targets tunnel` | Expose a local Desktop API over a public Cloudflare tunnel |
 | `auth status` | Show stored auth for the selected target |
@@ -335,6 +393,19 @@ Make the selected target ready for messaging
 beeper setup
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--channel=<stable|nightly>` | option | Install release channel Default: stable |
+| `--desktop` | boolean | Set up a local Beeper Desktop target |
+| `--install` | boolean | Allow installing missing managed runtime |
+| `--local` | boolean | Use the local Beeper Desktop session on this device |
+| `--oauth` | boolean | Authorize the target with browser OAuth/PKCE |
+| `--remote=<value>` | option | Connect to a remote Beeper Desktop or Server URL |
+| `--server` | boolean | Set up a local Beeper Server target |
+| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
+
 Examples:
 
 ```sh
@@ -345,12 +416,20 @@ beeper setup --remote https://desktop.example.com
 beeper setup --desktop --install
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper install desktop`
 Install Beeper Desktop locally
 
 ```sh
 beeper install desktop
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--channel=<stable|nightly>` | option | Desktop release channel Default: stable |
 
 Examples:
 
@@ -359,6 +438,8 @@ beeper install desktop
 beeper install desktop --channel nightly
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper install server`
 Install Beeper Server locally
 
@@ -366,12 +447,21 @@ Install Beeper Server locally
 beeper install server
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--channel=<stable|nightly>` | option | Server release channel Default: stable |
+| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
+
 Examples:
 
 ```sh
 beeper install server
 beeper install server --server-env staging
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets list`
 List configured Beeper targets
@@ -387,12 +477,23 @@ beeper targets list
 beeper targets list --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper bridges list`
 List bridges that can connect chat accounts
 
 ```sh
 beeper bridges list
 ```
+
+`bridges list` is the scriptable bridge catalog. Use `accounts add` without an argument for the guided account connection flow.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--available` | boolean | Only bridges available to add (--no-available to exclude) |
+| `--provider=<local|cloud|self-hosted>` | option | Limit to bridge provider |
 
 Examples:
 
@@ -401,12 +502,20 @@ beeper bridges list
 beeper bridges list --provider local --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper bridges show`
 Show bridge details, login flows, and connected accounts
 
 ```sh
-beeper bridges show
+beeper bridges show <bridge>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `bridge` | yes | Bridge ID, display name, network, or type |
 
 Examples:
 
@@ -415,12 +524,28 @@ beeper bridges show local-whatsapp
 beeper bridges show telegram
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets add desktop`
 Add a managed Beeper Desktop target
 
 ```sh
-beeper targets add desktop
+beeper targets add desktop [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name (default: "desktop") |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--default` | boolean | Set this target as the default after creation |
+| `--port=<value>` | option | TCP port the managed Desktop will expose its API on |
+| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Examples:
 
@@ -428,12 +553,28 @@ Examples:
 beeper targets add desktop work --default
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets add server`
 Add a managed Beeper Server target
 
 ```sh
-beeper targets add server
+beeper targets add server [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name (default: "server") |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--default` | boolean | Set this target as the default after creation |
+| `--port=<value>` | option | TCP port the managed Server will expose its API on |
+| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Examples:
 
@@ -441,12 +582,27 @@ Examples:
 beeper targets add server prod --server-env production --default
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets add remote`
 Add a remote Beeper Desktop or Server target
 
 ```sh
-beeper targets add remote
+beeper targets add remote <name> <url>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | yes | Local name for the target |
+| `url` | yes | Base URL of the remote Desktop or Server API |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--default` | boolean | Set this target as the default after creation |
 
 Examples:
 
@@ -454,12 +610,20 @@ Examples:
 beeper targets add remote work https://desktop.example.com --default
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets use`
 Set the default target
 
 ```sh
-beeper targets use
+beeper targets use <name>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | yes | Target name |
 
 Examples:
 
@@ -467,12 +631,20 @@ Examples:
 beeper targets use work
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets show`
 Show target details
 
 ```sh
-beeper targets show
+beeper targets show [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -481,12 +653,20 @@ beeper targets show
 beeper targets show work
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets status`
 Check endpoint and process reachability for a target
 
 ```sh
-beeper targets status
+beeper targets status [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -495,12 +675,20 @@ beeper targets status
 beeper targets status work --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets start`
-Start a managed target
+Start a local Server target or open Beeper Desktop
 
 ```sh
-beeper targets start
+beeper targets start [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -508,12 +696,20 @@ Examples:
 beeper targets start work
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets stop`
-Stop a managed target
+Stop a local Beeper Server target
 
 ```sh
-beeper targets stop
+beeper targets stop [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -521,12 +717,20 @@ Examples:
 beeper targets stop work
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets restart`
-Restart a managed target
+Restart a local Beeper Server target
 
 ```sh
-beeper targets restart
+beeper targets restart [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -534,12 +738,28 @@ Examples:
 beeper targets restart work
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets logs`
-Print managed target logs
+Print logs for a local Beeper Desktop or Server install
 
 ```sh
-beeper targets logs
+beeper targets logs [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name. Defaults to the selected target. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--all` | boolean | Print all matching log files instead of only recent files |
+| `--files=<value>` | option | Desktop log files to print, newest first Default: 5 |
+| `--lines=<value>` | option | Lines to print from each log file Default: 200 |
 
 Examples:
 
@@ -547,12 +767,20 @@ Examples:
 beeper targets logs work
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets enable`
-Enable managed target startup at login
+Enable a local Beeper Server target at login
 
 ```sh
-beeper targets enable
+beeper targets enable [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -560,12 +788,20 @@ Examples:
 beeper targets enable work
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets disable`
-Disable managed target startup at login
+Disable a local Beeper Server target at login
 
 ```sh
-beeper targets disable
+beeper targets disable [name]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | no | Target name. Defaults to the selected target. |
 
 Examples:
 
@@ -573,18 +809,28 @@ Examples:
 beeper targets disable work
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper targets remove`
 Remove a target
 
 ```sh
-beeper targets remove
+beeper targets remove <name>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `name` | yes | Target name |
 
 Examples:
 
 ```sh
 beeper targets remove work
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets tunnel`
 Expose a local Desktop API over a public Cloudflare tunnel
@@ -615,6 +861,8 @@ beeper auth status
 beeper auth status --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper auth logout`
 Clear stored authentication
 
@@ -628,6 +876,8 @@ Examples:
 beeper auth logout
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper verify`
 Finish setup verification or verify another device
 
@@ -635,12 +885,20 @@ Finish setup verification or verify another device
 beeper verify
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--user=<value>` | option | User ID to verify against (defaults to your own account) |
+
 Examples:
 
 ```sh
 beeper verify
 beeper verify --user @alice:beeper.com
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify status`
 Show encryption and device-verification readiness
@@ -655,6 +913,8 @@ Examples:
 beeper verify status --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper verify approve`
 Approve a pending device verification request
 
@@ -662,11 +922,19 @@ Approve a pending device verification request
 beeper verify approve
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+
 Examples:
 
 ```sh
 beeper verify approve --id active
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify recovery-key`
 Unlock encrypted messages with a recovery key
@@ -675,11 +943,19 @@ Unlock encrypted messages with a recovery key
 beeper verify recovery-key
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--key=<value>` | option | Recovery key string Required. |
+
 Examples:
 
 ```sh
 beeper verify recovery-key --key ABCD-EFGH-IJKL
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify reset-recovery-key`
 Create a new encrypted-messages recovery key
@@ -694,6 +970,8 @@ Examples:
 beeper verify reset-recovery-key
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper verify cancel`
 Cancel an in-progress device verification
 
@@ -701,11 +979,19 @@ Cancel an in-progress device verification
 beeper verify cancel
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+
 Examples:
 
 ```sh
 beeper verify cancel
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify list`
 List active verification work
@@ -720,6 +1006,8 @@ Examples:
 beeper verify list
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper verify start`
 Start a device verification request
 
@@ -727,11 +1015,19 @@ Start a device verification request
 beeper verify start
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--user=<value>` | option | User ID to verify with (defaults to your own account) |
+
 Examples:
 
 ```sh
 beeper verify start --user @alice:beeper.com
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify show`
 Show the current active verification request
@@ -746,6 +1042,8 @@ Examples:
 beeper verify show --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper verify sas`
 Start emoji verification
 
@@ -753,11 +1051,19 @@ Start emoji verification
 beeper verify sas
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+
 Examples:
 
 ```sh
 beeper verify sas
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify sas-confirm`
 Confirm matching emoji verification
@@ -766,11 +1072,19 @@ Confirm matching emoji verification
 beeper verify sas-confirm
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+
 Examples:
 
 ```sh
 beeper verify sas-confirm
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify qr-scan`
 Submit a scanned QR-code verification payload
@@ -779,11 +1093,20 @@ Submit a scanned QR-code verification payload
 beeper verify qr-scan
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+| `--payload=<value>` | option | Raw QR-code data scanned from the other device Required. |
+
 Examples:
 
 ```sh
 beeper verify qr-scan --payload "..."
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify qr-confirm`
 Confirm that the other device scanned your QR code
@@ -792,11 +1115,19 @@ Confirm that the other device scanned your QR code
 beeper verify qr-confirm
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+
 Examples:
 
 ```sh
 beeper verify qr-confirm
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper accounts list`
 List connected accounts
@@ -805,6 +1136,13 @@ List connected accounts
 beeper accounts list
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>...` | option | Filter by account selector |
+| `--ids` | boolean | Print only account IDs |
+
 Examples:
 
 ```sh
@@ -812,12 +1150,36 @@ beeper accounts list
 beeper accounts list --account whatsapp --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper accounts add`
 Connect a chat account by bridge
 
 ```sh
-beeper accounts add
+beeper accounts add [bridge]
 ```
+
+`accounts add` without an argument opens the guided bridge chooser. Pass a bridge ID when you already know which chat network connector to use.
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `bridge` | no | Bridge ID, network, or type to connect. Omit to list available bridges. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--cookie=<value>...` | option | Cookie value for non-interactive login, in name=value form. Repeat for multiple cookies. |
+| `--field=<value>...` | option | Field value for non-interactive login, in id=value form. Repeat for multiple fields. |
+| `--flow=<value>` | option | Login flow ID. If omitted, Desktop chooses the default flow. |
+| `--guided` | boolean | Prompt through login steps until completion |
+| `--login-id=<value>` | option | Existing login ID to re-login as |
+| `--non-interactive` | boolean | Do not prompt; require --flow, --field, and --cookie values when needed. |
+| `--webview` | boolean | Use Bun.WebView to collect cookie login fields when a cookie step is returned. |
+| `--webview-backend=<auto|chrome|webkit>` | option | Bun.WebView backend for cookie login steps. Default: chrome |
+| `--webview-timeout=<value>` | option | Seconds to wait for Bun.WebView cookie collection. Default: 120 |
 
 Examples:
 
@@ -825,14 +1187,23 @@ Examples:
 beeper accounts add
 beeper accounts add local-whatsapp
 beeper accounts add discord --non-interactive --cookie sessiontoken=...
+beeper accounts add discord --webview --webview-backend chrome
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper accounts show`
 Show account details
 
 ```sh
-beeper accounts show
+beeper accounts show <account>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `account` | yes | Account selector (ID, network, bridge, or user identity) |
 
 Examples:
 
@@ -840,12 +1211,20 @@ Examples:
 beeper accounts show whatsapp-main
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper accounts remove`
 Remove an account
 
 ```sh
-beeper accounts remove
+beeper accounts remove <account>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `account` | yes | Account selector (ID, network, bridge, or user identity) |
 
 Examples:
 
@@ -853,12 +1232,22 @@ Examples:
 beeper accounts remove whatsapp-main
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper accounts use`
 Select a default account for account-scoped commands
 
 ```sh
-beeper accounts use
+beeper accounts use <account>
 ```
+
+Persists the choice in CLI config. Account-scoped commands that take --account fall back to this default when --account is omitted. Use `beeper accounts use ""` (or `beeper config set defaultAccount ""`) to clear.
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `account` | yes | Account selector (ID, network, bridge, user identity), or "" to clear. |
 
 Examples:
 
@@ -866,12 +1255,27 @@ Examples:
 beeper accounts use whatsapp-main
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper chats list`
 List chats
 
 ```sh
 beeper chats list
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
+| `--archived` | boolean | Only archived chats (--no-archived to exclude) |
+| `--ids` | boolean | Print preferred chat selectors, using numeric local chat IDs when available |
+| `--limit=<value>` | option | Maximum chats to print Default: 20 |
+| `--low-priority` | boolean | Only Low Priority chats (--no-low-priority to exclude) |
+| `--muted` | boolean | Only muted chats (--no-muted to exclude) |
+| `--pinned` | boolean | Only pinned chats (--no-pinned to exclude) |
+| `--unread` | boolean | Only chats with unread messages (--no-unread to exclude) |
 
 Examples:
 
@@ -881,18 +1285,36 @@ beeper chats list --pinned --limit 50
 beeper chats list --unread --no-muted --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper chats search`
 Search chats
 
 ```sh
-beeper chats search
+beeper chats search <query>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `query` | yes | Search query (title, participant, or network) |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
+| `--ids` | boolean | Print preferred chat selectors, using numeric local chat IDs when available |
+| `--limit=<value>` | option | Maximum chats to print Default: 20 |
 
 Examples:
 
 ```sh
 beeper chats search Family
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats show`
 Show chat details
@@ -901,6 +1323,14 @@ Show chat details
 beeper chats show
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--max-participants=<value>` | option | Limit number of participants returned in chat details |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
@@ -908,12 +1338,27 @@ beeper chats show --chat 10313
 beeper chats show --chat '!plUOsWkvMmJmJPVAjS:beeper.com'
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper chats start`
 Start a chat
 
 ```sh
-beeper chats start
+beeper chats start <user>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `user` | yes | User ID, phone number, email, or display name |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>` | option | Account selector. Defaults to the single available account or the matrix account. |
+| `--title=<value>` | option | Optional initial title for a new group chat |
 
 Examples:
 
@@ -922,6 +1367,8 @@ beeper chats start +15551234567
 beeper chats start @alice:beeper.com --title "Alice"
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper chats archive`
 Archive a chat
 
@@ -929,11 +1376,20 @@ Archive a chat
 beeper chats archive
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats archive --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats unarchive`
 Unarchive a chat
@@ -942,11 +1398,20 @@ Unarchive a chat
 beeper chats unarchive
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats unarchive --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats pin`
 Pin a chat
@@ -955,11 +1420,20 @@ Pin a chat
 beeper chats pin
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats pin --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats unpin`
 Unpin a chat
@@ -968,11 +1442,20 @@ Unpin a chat
 beeper chats unpin
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats unpin --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats mute`
 Mute a chat
@@ -981,11 +1464,20 @@ Mute a chat
 beeper chats mute
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats mute --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats unmute`
 Unmute a chat
@@ -994,11 +1486,20 @@ Unmute a chat
 beeper chats unmute
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats unmute --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats mark-read`
 Mark a chat as read
@@ -1007,11 +1508,21 @@ Mark a chat as read
 beeper chats mark-read
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--message=<value>` | option | Mark read at (or unread starting from) this message ID |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats mark-read --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats mark-unread`
 Mark a chat as unread
@@ -1020,11 +1531,21 @@ Mark a chat as unread
 beeper chats mark-unread
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--message=<value>` | option | Mark read at (or unread starting from) this message ID |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats mark-unread --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats priority`
 Move a chat to the Inbox or Low Priority
@@ -1033,12 +1554,22 @@ Move a chat to the Inbox or Low Priority
 beeper chats priority
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--level=<inbox|low>` | option | Destination: inbox (default mailbox) or low (Low Priority) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats priority --chat 10313 --level inbox
 beeper chats priority --chat '!plUOsWkvMmJmJPVAjS:beeper.com' --level low
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats notify-anyway`
 Send an iMessage Notify Anyway alert
@@ -1047,11 +1578,20 @@ Send an iMessage Notify Anyway alert
 beeper chats notify-anyway
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats notify-anyway --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats rename`
 Rename a chat
@@ -1060,11 +1600,21 @@ Rename a chat
 beeper chats rename
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--title=<value>` | option | New chat title Required. |
+
 Examples:
 
 ```sh
 beeper chats rename --chat 10313 --title "Family"
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats description`
 Set a chat description
@@ -1073,12 +1623,23 @@ Set a chat description
 beeper chats description
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--clear` | boolean | Clear the existing description instead of setting one |
+| `--description=<value>` | option | New chat description |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats description --chat 10313 --description "Engineering chat"
 beeper chats description --chat 10313 --clear
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats avatar`
 Set a chat avatar
@@ -1087,11 +1648,22 @@ Set a chat avatar
 beeper chats avatar
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--clear` | boolean | Clear the existing avatar instead of setting a new one |
+| `--file=<value>` | option | Image file to upload as the new avatar |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats avatar --chat 10313 --file ./team.png
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats draft`
 Set or clear a chat draft
@@ -1100,12 +1672,26 @@ Set or clear a chat draft
 beeper chats draft
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--clear` | boolean | Clear the existing draft instead of setting one |
+| `--file=<value>` | option | Attachment file to upload with the draft |
+| `--filename=<value>` | option | Override the displayed filename of the attachment |
+| `--mime=<value>` | option | Override MIME type detection for the attachment |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--text=<value>` | option | Draft text. Omit and pass --clear to remove the draft. |
+
 Examples:
 
 ```sh
 beeper chats draft --chat 10313 --text "on my way"
 beeper chats draft --chat 10313 --clear
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats disappear`
 Set disappearing-message expiry
@@ -1114,11 +1700,21 @@ Set disappearing-message expiry
 beeper chats disappear
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--seconds=<value>` | option | Timer in seconds, or "off" to disable Required. |
+
 Examples:
 
 ```sh
 beeper chats disappear --chat 10313 --seconds 86400
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats remind`
 Set a chat reminder
@@ -1127,12 +1723,23 @@ Set a chat reminder
 beeper chats remind
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--dismiss-on-message` | boolean | Dismiss the reminder automatically when a new message arrives |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--when=<value>` | option | ISO timestamp when the reminder should trigger Required. |
+
 Examples:
 
 ```sh
 beeper chats remind --chat 10313 --when 2026-06-01T09:00:00Z
 beeper chats remind --chat 10313 --when 2026-06-01T09:00:00Z --dismiss-on-message
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats unremind`
 Clear a chat reminder
@@ -1141,11 +1748,20 @@ Clear a chat reminder
 beeper chats unremind
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats unremind --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats focus`
 Focus Beeper Desktop on a chat
@@ -1154,11 +1770,23 @@ Focus Beeper Desktop on a chat
 beeper chats focus
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--attachment=<value>` | option | Prefill the chat composer with this attachment file path |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--draft=<value>` | option | Prefill the chat composer with this draft text |
+| `--message=<value>` | option | Scroll Desktop to this message ID after focusing |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper chats focus --chat 10313
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper messages list`
 List chat messages
@@ -1166,6 +1794,19 @@ List chat messages
 ```sh
 beeper messages list
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--after-cursor=<value>` | option | Paginate messages newer than this message ID |
+| `--asc` | boolean | Order oldest first (default: newest first) |
+| `--before-cursor=<value>` | option | Paginate messages older than this message ID |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--ids` | boolean | Print only message IDs |
+| `--limit=<value>` | option | Maximum messages to print Default: 50 |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--sender=<value>` | option | Filter by sender: me, others, or a specific user ID (client-side) |
 
 Examples:
 
@@ -1175,12 +1816,36 @@ beeper messages list --chat 10313 --before-cursor "<messageID>" --limit 100
 beeper messages list --chat 10313 --sender me --asc
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper messages search`
 Search messages across chats
 
 ```sh
-beeper messages search
+beeper messages search [query]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `query` | no | Search text (literal word match) |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>...` | option | Limit to an account selector. Repeat for multiple. |
+| `--after=<value>` | option | Only messages at or after this ISO timestamp |
+| `--before=<value>` | option | Only messages at or before this ISO timestamp |
+| `--chat=<value>...` | option | Limit to a chat selector. Repeat for multiple. |
+| `--chat-type=<group|single>` | option | Only group chats or direct messages |
+| `--exclude-low-priority` | boolean | Exclude low-priority chats |
+| `--ids` | boolean | Print only message IDs |
+| `--include-muted` | boolean | Include muted chats |
+| `--limit=<value>` | option | Maximum results Default: 50 |
+| `--media=<any|video|image|link|file>...` | option | Filter by media type. Repeat for multiple. |
+| `--sender=<value>` | option | me, others, or a user ID |
 
 Examples:
 
@@ -1190,6 +1855,8 @@ beeper messages search --chat 10313 --sender me --media image
 beeper messages search "flight" --after 2026-01-01 --before 2026-02-01
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper messages show`
 Show one message
 
@@ -1197,11 +1864,21 @@ Show one message
 beeper messages show
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--id=<value>` | option | Message ID, pendingMessageID, or Matrix event ID Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper messages show --chat 10313 --id <messageID>
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper messages context`
 Show message context
@@ -1210,11 +1887,23 @@ Show message context
 beeper messages context
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--after=<value>` | option | Number of messages to include after the target Default: 10 |
+| `--before=<value>` | option | Number of messages to include before the target Default: 10 |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--id=<value>` | option | Target message ID to center the window on Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper messages context --chat 10313 --id <messageID> --before 5 --after 5
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper messages edit`
 Edit a message
@@ -1223,11 +1912,22 @@ Edit a message
 beeper messages edit
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--id=<value>` | option | Message ID to edit (must be one of your own messages with no attachments) Required. |
+| `--message=<value>` | option | New message text Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper messages edit --chat 10313 --id <messageID> --message "fixed"
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper messages delete`
 Delete a message
@@ -1236,11 +1936,22 @@ Delete a message
 beeper messages delete
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--for-everyone` | boolean | Delete for everyone when the network supports it (otherwise deletes only for you) |
+| `--id=<value>` | option | Message ID to delete (final message ID; pending IDs are rejected) Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+
 Examples:
 
 ```sh
 beeper messages delete --chat 10313 --id <messageID> --for-everyone
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper messages export`
 Export one chat to JSON
@@ -1248,6 +1959,22 @@ Export one chat to JSON
 ```sh
 beeper messages export
 ```
+
+Lightweight per-chat JSON export. For a full export with transcripts, attachments, and multiple chats, use `beeper export`.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--after=<value>` | option | Only messages at or after this ISO timestamp (client-side filter) |
+| `--after-cursor=<value>` | option | Paginate messages newer than this message ID |
+| `--asc` | boolean | Order oldest first (default: newest first) |
+| `--before=<value>` | option | Only messages at or before this ISO timestamp (client-side filter) |
+| `--before-cursor=<value>` | option | Paginate messages older than this message ID |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--limit=<value>` | option | Maximum messages to export |
+| `-o, --output=<value>` | option | Output path; - writes JSON to stdout Default: - |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1257,6 +1984,8 @@ beeper messages export --chat 8951 --after 2026-01-01T00:00:00Z --output -
 beeper messages export --chat '!plUOsWkvMmJmJPVAjS:beeper.com' --before-cursor "<messageID>" --limit 500
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper send text`
 Send a text message
 
@@ -1264,12 +1993,30 @@ Send a text message
 beeper send text
 ```
 
+Returns when Desktop accepts the send request. Pass `--wait` to wait until the message leaves the pending state or fails.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--mention=<value>...` | option | User ID to @-mention (repeatable) |
+| `--message=<value>` | option | Message text to send Required. |
+| `--no-preview` | boolean | Disable automatic link preview for URLs in the message |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--reply-to=<value>` | option | Send as a reply to this message ID |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
+| `--wait-timeout=<value>` | option | Maximum wait time in ms when --wait is set Default: 30000 |
+
 Examples:
 
 ```sh
 beeper send text --to 10313 --message "on my way"
+beeper send text --to 8951 --message "hi"
 beeper send text --to "Family" --message "hi" --pick 1
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper send file`
 Send a file
@@ -1278,11 +2025,29 @@ Send a file
 beeper send file
 ```
 
+Returns when Desktop accepts the send request. Pass `--wait` to wait until the message leaves the pending state or fails.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--caption=<value>` | option | Optional caption to send alongside the file |
+| `--file=<value>` | option | Local file path to upload (max 500 MB) Required. |
+| `--filename=<value>` | option | Override the displayed filename |
+| `--mime=<value>` | option | Override MIME type detection |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--reply-to=<value>` | option | Send as a reply to this message ID |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
+| `--wait-timeout=<value>` | option | Maximum wait time in ms when --wait is set Default: 30000 |
+
 Examples:
 
 ```sh
 beeper send file --to 8951 --file ./photo.jpg --caption "from today"
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper send react`
 Send a reaction to a message
@@ -1291,11 +2056,23 @@ Send a reaction to a message
 beeper send react
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Message ID to react to Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--reaction=<value>` | option | Reaction key (emoji, shortcode, or custom emoji key) Required. |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--transaction=<value>` | option | Optional transaction ID for deduplication |
+
 Examples:
 
 ```sh
 beeper send react --to 10313 --id <messageID> --reaction "+1"
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper send sticker`
 Send a sticker
@@ -1304,11 +2081,28 @@ Send a sticker
 beeper send sticker
 ```
 
+Uploads the file and sends as a sticker message. Defaults --mime to image/webp.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--file=<value>` | option | Sticker file (typically 512x512 WebP) Required. |
+| `--filename=<value>` | option | Override the displayed filename |
+| `--mime=<value>` | option | MIME type for the sticker (default: image/webp) Default: image/webp |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--reply-to=<value>` | option | Send as a reply to this message ID |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
+| `--wait-timeout=<value>` | option | Maximum wait time in ms when --wait is set Default: 30000 |
+
 Examples:
 
 ```sh
 beeper send sticker --to 10313 --file ./hi.webp
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper send unreact`
 Remove a reaction from a message
@@ -1317,11 +2111,23 @@ Remove a reaction from a message
 beeper send unreact
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Message ID whose reaction to remove Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--reaction=<value>` | option | Reaction key to remove (emoji, shortcode, or custom emoji key) Required. |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--transaction=<value>` | option | Optional transaction ID for deduplication |
+
 Examples:
 
 ```sh
 beeper send unreact --to 10313 --id <messageID> --reaction "+1"
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper send voice`
 Send a voice note
@@ -1330,6 +2136,22 @@ Send a voice note
 beeper send voice
 ```
 
+Uploads the audio file and sends as a voice note. Defaults --mime to audio/ogg.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--duration=<value>` | option | Voice note duration in seconds (overrides upload-detected duration) |
+| `--file=<value>` | option | Voice note audio file (OGG/Opus recommended) Required. |
+| `--filename=<value>` | option | Override the displayed filename |
+| `--mime=<value>` | option | MIME type for the voice note (default: audio/ogg) Default: audio/ogg |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--reply-to=<value>` | option | Send as a reply to this message ID |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
+| `--wait-timeout=<value>` | option | Maximum wait time in ms when --wait is set Default: 30000 |
+
 Examples:
 
 ```sh
@@ -1337,12 +2159,25 @@ beeper send voice --to 10313 --file ./note.ogg
 beeper send voice --to 10313 --file ./note.ogg --duration 12
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper presence`
 Send a typing (or paused) indicator to a chat
 
 ```sh
 beeper presence
 ```
+
+Requires server-side support. Networks without typing notifications return an error.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--duration=<value>` | option | When --state is typing, send paused automatically after this many seconds |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `--state=<typing|paused>` | option | Indicator to send Default: typing |
 
 Examples:
 
@@ -1352,6 +2187,8 @@ beeper presence --chat 10313 --state paused
 beeper presence --chat 10313 --duration 5
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper contacts list`
 List contacts
 
@@ -1359,18 +2196,45 @@ List contacts
 beeper contacts list
 ```
 
+List merged contacts for a specific account with cursor-based pagination.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
+| `--ids` | boolean | Print only contact user IDs |
+| `--limit=<value>` | option | Maximum contacts to print Default: 50 |
+| `--query=<value>` | option | Optional blended contact lookup query |
+
 Examples:
 
 ```sh
 beeper contacts list --account whatsapp --query alice
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper contacts search`
 Search contacts
 
 ```sh
-beeper contacts search
+beeper contacts search <query>
 ```
+
+Search contacts on a specific account using merged account contacts, network search, and exact identifier lookup.
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `query` | yes | Contact search query |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>...` | option | Account ID, network, bridge, or account user. Omit to search every account. |
 
 Examples:
 
@@ -1378,12 +2242,26 @@ Examples:
 beeper contacts search alice
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper contacts show`
 Show contact details
 
 ```sh
-beeper contacts show
+beeper contacts show <id>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `id` | yes | Contact user ID, display name, or phone/handle |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>...` | option | Limit to account ID, network, bridge, or account user |
 
 Examples:
 
@@ -1391,12 +2269,26 @@ Examples:
 beeper contacts show "Alice" --account whatsapp
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper media download`
 Download message media
 
 ```sh
-beeper media download
+beeper media download <url>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `url` | yes | mxc:// or localmxc:// URL |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-o, --out=<value>` | option | Output directory; pass - to stream the file to stdout Default: . |
 
 Examples:
 
@@ -1405,12 +2297,30 @@ beeper media download mxc://beeper.com/abc --out ./downloads
 beeper media download mxc://beeper.com/abc -o - > photo.jpg
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper export`
 Export accounts, chats, messages, Markdown transcripts, and attachments
 
 ```sh
 beeper export
 ```
+
+Creates a resumable Beeper Desktop export using the official Desktop API SDK. The export directory contains accounts.json, chats.json, manifest.json, and one directory per chat with chat.json, messages.json, messages.markdown, messages.html, downloaded attachments, and checkpoint state for interrupted runs.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--account=<value>...` | option | Limit to an account selector. Repeat to include more accounts. |
+| `--chat=<value>...` | option | Limit to a chat selector. Repeat to include more chats. |
+| `--force` | boolean | Re-export chats even if checkpoint state says they are complete. |
+| `--limit-chats=<value>` | option | Maximum chats to export. Intended for testing large exports. |
+| `--limit-messages=<value>` | option | Maximum messages per chat. Intended for testing large exports. |
+| `--max-participants=<value>` | option | Maximum participants to include in each chat.json. Default: 500 |
+| `--no-attachments` | boolean | Skip downloading message attachments. |
+| `-o, --out=<value>` | option | Export directory. Default: beeper-export |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
 
@@ -1419,12 +2329,25 @@ beeper export --out ./beeper-export
 beeper export --chat 10313 --out ./chat
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper watch`
 Stream Desktop API WebSocket events
 
 ```sh
 beeper watch
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-c, --chat=<value>...` | option | Chat ID to subscribe to. Defaults to all chats. |
+| `--exclude-type=<chat.upserted|chat.deleted|message.upserted|message.deleted>...` | option | Drop events of these types. Repeat for multiple. |
+| `--include-type=<chat.upserted|chat.deleted|message.upserted|message.deleted>...` | option | Only forward events of these types. Repeat for multiple. |
+| `--webhook=<value>` | option | Forward each event to this URL as a POST request (best-effort, fire-and-forget) |
+| `--webhook-queue=<value>` | option | Maximum pending webhook deliveries before dropping events Default: 64 |
+| `--webhook-secret=<value>` | option | HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex> |
 
 Examples:
 
@@ -1435,6 +2358,8 @@ beeper watch --include-type message.upserted --include-type message.deleted
 beeper watch --webhook https://example.com/hook --webhook-secret "$BEEPER_WEBHOOK_SECRET"
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper rpc`
 Run newline-delimited JSON command RPC over stdin/stdout
 
@@ -1442,11 +2367,15 @@ Run newline-delimited JSON command RPC over stdin/stdout
 beeper rpc
 ```
 
+Reads JSON lines like {"id":1,"command":"send text --to 10313 --message hello"} or {"id":1,"args":["status","--json"]}.
+
 Examples:
 
 ```sh
 printf '{"id":1,"command":"chats list --json"}\n' | beeper rpc
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper man`
 Print the command manual
@@ -1462,12 +2391,16 @@ beeper man
 beeper man --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper doctor`
 Probe the target live and report diagnostics
 
 ```sh
 beeper doctor
 ```
+
+Active reachability check plus readiness diagnostics. Exits non-zero when the target is not ready. For a cheap snapshot use `beeper status`.
 
 Examples:
 
@@ -1476,6 +2409,8 @@ beeper doctor
 beeper doctor --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper status`
 Show selected target and setup readiness
 
@@ -1483,12 +2418,16 @@ Show selected target and setup readiness
 beeper status
 ```
 
+Read-only readiness snapshot for the selected target. For active reachability checks and diagnostics, run `beeper doctor`.
+
 Examples:
 
 ```sh
 beeper status
 beeper status --json
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper docs`
 Open Beeper CLI docs
@@ -1503,6 +2442,8 @@ Examples:
 beeper docs
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper version`
 Print CLI version
 
@@ -1516,12 +2457,29 @@ Examples:
 beeper version
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper completion`
 Print shell completion setup
 
 ```sh
-beeper completion
+beeper completion [shell]
 ```
+
+Print static shell completion setup for bash, zsh, fish, or PowerShell. Pass `--semantic` to print a small supplementary snippet that adds live suggestions for `--chat`, `--to`, `--account`, and `--target` by calling back into `beeper _complete`. Source it after the static completion setup.
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `shell` | no | Shell to set up (bash, zsh, fish, or powershell) |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-r, --refresh-cache` | boolean | Refresh the autocomplete cache before printing setup |
+| `--semantic` | boolean | Print a semantic-completion snippet (chats/accounts/targets) for bash or zsh |
 
 Examples:
 
@@ -1535,6 +2493,8 @@ Manage Beeper CLI plugins
 ```sh
 beeper plugins
 ```
+
+List recommended Beeper CLI plugins, or use oclif plugin commands to install, link, update, and remove plugins.
 
 Examples:
 
@@ -1557,12 +2517,23 @@ beeper plugins available
 beeper plugins available --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper update`
 Check and install Beeper updates
 
 ```sh
 beeper update
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--check` | boolean | Only check for updates; do not install |
+| `--cli` | boolean | Check the Beeper CLI package |
+| `--desktop` | boolean | Check the CLI-owned Desktop install |
+| `--server` | boolean | Check the CLI-owned Server install |
 
 Examples:
 
@@ -1572,12 +2543,20 @@ beeper update --cli
 beeper update --server
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper config get`
 Print CLI configuration
 
 ```sh
-beeper config get
+beeper config get [key]
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `key` | no | Optional config key to print |
 
 Examples:
 
@@ -1586,18 +2565,29 @@ beeper config get
 beeper config get defaultTarget
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper config set`
 Set a CLI configuration value
 
 ```sh
-beeper config set
+beeper config set <key> <value>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `key` | yes | Config key to set |
+| `value` | yes | Config value (pass "" to clear) |
 
 Examples:
 
 ```sh
 beeper config set defaultTarget work
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper config path`
 Print the CLI config path
@@ -1612,6 +2602,8 @@ Examples:
 beeper config path
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper config reset`
 Reset CLI configuration
 
@@ -1625,12 +2617,26 @@ Examples:
 beeper config reset
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper api get`
 Call a raw Desktop API GET path
 
 ```sh
-beeper api get
+beeper api get <path>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `path` | yes | API path, for example /v1/info |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--no-auth` | boolean | Call a public API path without a bearer token |
 
 Examples:
 
@@ -1639,12 +2645,27 @@ beeper api get /v1/info
 beeper api get /v1/chats --json
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper api post`
 Call a raw Desktop API POST path with a JSON body
 
 ```sh
-beeper api post
+beeper api post <path>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `path` | yes | API path, for example /v1/messages/{chatID}/send |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--body=<value>` | option | JSON request body Default: {} |
+| `--no-auth` | boolean | Call a public API path without a bearer token |
 
 Examples:
 
@@ -1652,18 +2673,36 @@ Examples:
 beeper api post /v1/chats/abc/read --body '{"messageID":"x"}'
 ```
 
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
 ### `beeper api request`
 Call a raw Desktop API path with any supported HTTP method
 
 ```sh
-beeper api request
+beeper api request <method> <path>
 ```
+
+Arguments:
+
+| Name | Required | Description |
+| --- | --- | --- |
+| `method` | yes | HTTP method |
+| `path` | yes | API path, for example /v1/info |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--body=<value>` | option | JSON request body |
+| `--no-auth` | boolean | Call a public API path without a bearer token |
 
 Examples:
 
 ```sh
 beeper api request DELETE /v1/chats/abc/messages/def/reactions --body '{"reactionKey":"👍"}'
 ```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ## Publishing
 

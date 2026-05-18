@@ -33,31 +33,35 @@ const commandList = commands.map(command => {
 const examplesByID = new Map(commandManifest.map(item => [item.command, item.examples ?? []]));
 const commandSections = commands.map(command => commandSection(command)).join('\n\n');
 
-const readme = `# Beeper CLI - Beeper from your terminal
+const readme = `# 💬 beeper — Beeper CLI: connect, search, send
 
-A scriptable Beeper client for people and agents. It controls Beeper Desktop
-or Beeper Server through a selected target, then gives you setup, verification,
-bridge discovery, account management, chat search, message reading, sending,
-media downloads, exports, diagnostics, and raw API access from the command line.
+A scriptable Beeper client for humans and agents. Drives Beeper Desktop on this
+machine by default, with first-class paths for self-hosting Beeper Server and
+for talking to remote Desktop or Server targets — then gives you account
+management, chat search, message reading, sending, media downloads, exports,
+diagnostics, and raw API access from the command line.
 
-> Requires a running Beeper Desktop API or a configured Beeper Server target.
+> Third-party-friendly: speaks the Beeper Desktop API. Pairs over the local
+> loopback by default; remote targets authorize over OAuth (PKCE) or with a
+> bearer token you provide.
 
-Command manual: \`beeper man\`
+Command manual: \`beeper man\` · CLI docs: \`beeper docs\`
 
 ## Features
 
-- **Setup + readiness** - \`setup\`, \`verify\`, \`status\`, and \`doctor\` guide a target from login through encrypted-message readiness.
-- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper API targets with one selected default. A target is an endpoint profile: local Server, local Desktop, Desktop API, or a profile that combines Desktop/Server runtime state.
-- **Bridges + accounts** - list bridge connectors, inspect login flows and capabilities, connect accounts, switch defaults, inspect details, and remove accounts.
-- **Chats + contacts + labels** - list, search, start, archive, pin, mute, mark, rename, label, focus, and inspect chats across accounts.
-- **Messages + media + presence** - list, search, show, edit, delete, react, send text/files/reactions, send typing indicators, and download message media.
-- **Exports** - \`export\` for full chats/transcripts/attachments and \`messages export\` for one-chat JSON.
-- **Automation** - \`--json\` everywhere, NDJSON \`--events\`, \`watch\` (WS + outbound webhooks with HMAC), \`rpc\` over stdin/stdout, \`man --json\` for tool manifests.
-- **Safety** - \`--read-only\` rejects mutating commands; raw API access stays explicit under \`api get\` and \`api post\`.
+- **One CLI, three targets** — local Beeper Desktop on this machine (default), a managed local Beeper Server you install via the CLI, or a remote Beeper Desktop/Server you authorize over OAuth/PKCE or with a bearer token.
+- **Guided setup** — \`beeper setup\` discovers a Desktop on this device and adopts its session; \`--server --install\`, \`--desktop --install\`, \`--oauth\`, and \`--remote URL\` cover every other path.
+- **Runtime installers** — \`install desktop\` and \`install server\` install and manage the local Beeper runtimes; \`targets start/stop/restart/logs/enable\` runs them.
+- **Bridges + accounts** — list bridge connectors, walk login flows, connect accounts (WhatsApp, Telegram, Discord, iMessage, …), switch defaults, and remove accounts.
+- **Chats, messages, contacts** — list, search, start, archive, pin, mute, rename, focus, read, edit, delete, react, send text/files/reactions/stickers/voice, send typing indicators, download media.
+- **Verification + readiness** — \`verify\`, \`verify status\`, SAS/QR flows, recovery-key unlock, and \`status\`/\`doctor\` to reach an encrypted-ready target.
+- **Exports** — \`export\` for full chats/transcripts/attachments and \`messages export\` for one-chat JSON.
+- **Automation** — \`--json\` everywhere, NDJSON \`--events\`, \`watch\` (WS + outbound webhooks with HMAC), \`rpc\` over stdin/stdout, \`man --json\` for tool manifests.
+- **Safety** — \`--read-only\` rejects mutating commands; raw API access stays explicit under \`api get\`, \`api post\`, and \`api request\`.
 
 ## Install
 
-### Homebrew
+### Homebrew (recommended)
 
 \`\`\`sh
 brew install beeper/tap/beeper-cli
@@ -76,11 +80,12 @@ The package name is \`beeper-cli\`; the installed command is \`beeper\`.
 
 ### Build from source
 
-Install dependencies before running these commands.
+This repo is a Bun workspace. From the repo root:
 
 \`\`\`sh
-bun run --filter beeper-cli build
-bun run --filter beeper-cli dev -- --help
+bun install
+bun --filter beeper-cli run build
+bun --filter beeper-cli run dev -- --help
 \`\`\`
 
 For local CLI development inside \`packages/cli\`:
@@ -97,20 +102,23 @@ bun run readme
 
 ## Quick start
 
+The happy path: you already run Beeper Desktop on this machine. \`beeper setup\`
+will find it, adopt its session, and you're ready.
+
 \`\`\`sh
-# 1. Prepare the selected target
+# 1. Adopt the local Beeper Desktop session (or pick another target)
 beeper setup
 
 # 2. Check readiness
 beeper status
 beeper doctor
 
-# 3. Inspect accounts and chats
-beeper accounts list
+# 3. Inspect bridges and connected chat accounts
 beeper bridges list
-beeper chats list
+beeper accounts list
 
-# 4. Read and search messages
+# 4. Read and search
+beeper chats list
 beeper messages list --chat 10313 --limit 50
 beeper messages search "flight"
 
@@ -122,29 +130,77 @@ beeper send file --to 8951 --file ./photo.jpg --caption "from today"
 beeper export --out ./beeper-export
 \`\`\`
 
-\`beeper setup\` makes the selected target ready. By default it looks for Beeper
-Desktop on this device and offers to use the existing Desktop session. Use
-\`setup --local\` for the direct Desktop-session path, \`setup --oauth\` for the
-browser-authorized path, \`setup --remote URL\` for a remote Desktop or Server,
-and \`setup --server --install\` or \`setup --desktop --install\` to orchestrate
-installation and target setup. To install runtimes directly: \`install desktop\`
-and \`install server\`.
+Recipients accept a numeric local chat ID, a full Beeper/Matrix chat ID, an
+iMessage chat ID, an exact title, or search text. Ambiguous matches prompt in a
+TTY; pass \`--pick N\` in scripts.
 
-\`install desktop\` and \`install server\` install runtimes directly.
-\`setup --desktop --install\` and \`setup --server --install\` are one-shot
-setup paths that install when needed, then configure the target.
+## Connecting a target
 
-For non-interactive use, pass a token through the environment:
+A *target* is the endpoint \`beeper\` talks to. You pick one of four paths
+depending on where Beeper lives.
+
+### 1. Local Beeper Desktop (default, recommended)
+
+If Beeper Desktop is already installed and signed in on this machine, no
+configuration is required — \`beeper setup\` discovers it on the loopback Desktop
+API (\`http://127.0.0.1:23373\`) and adopts the existing session.
 
 \`\`\`sh
-BEEPER_ACCESS_TOKEN=... beeper chats --json
+beeper setup            # auto-detect; offers to use the running Desktop
+beeper setup --local    # force the direct local-Desktop path
 \`\`\`
+
+If Beeper Desktop is not installed, install it and configure the target in one
+step, or install it directly:
+
+\`\`\`sh
+beeper setup --desktop --install
+beeper install desktop                  # install only
+beeper install desktop --channel nightly
+\`\`\`
+
+### 2. Local Beeper Server (self-hosted, managed by the CLI)
+
+For a long-running headless setup on this machine, install and adopt a local
+Beeper Server. The CLI manages the process (\`targets start/stop/logs/enable\`).
+
+\`\`\`sh
+beeper setup --server --install
+beeper install server
+beeper install server --server-env staging
+\`\`\`
+
+### 3. Remote Desktop or Server via OAuth (PKCE)
+
+For a Beeper Desktop or Server running on another machine, authorize the CLI
+through a browser-based OAuth/PKCE flow.
+
+\`\`\`sh
+beeper setup --oauth                                # PKCE against the default Beeper auth
+beeper setup --remote https://desktop.example.com   # remote URL, OAuth as needed
+beeper targets add remote work https://desktop.example.com --default
+\`\`\`
+
+### 4. Bearer token (non-interactive / CI)
+
+For agents, CI, and scripts, hand the CLI a bearer token directly — no
+browser, no interactive prompts.
+
+\`\`\`sh
+BEEPER_ACCESS_TOKEN=... beeper chats list --json
+BEEPER_ACCESS_TOKEN=... BEEPER_DESKTOP_BASE_URL=https://desktop.example.com \\
+  beeper messages list --chat 10313 --json
+\`\`\`
+
+Once connected, \`beeper accounts add\` walks each chat-network bridge through
+its own login (QR, code, OAuth, cookie — whatever the bridge requires) so your
+WhatsApp, Telegram, Discord, iMessage, and other accounts show up.
 
 ## Documentation
 
 | Topic | Page | Commands |
 | --- | --- | --- |
-| **Setup** | [setup](docs/setup.md) · [auth](docs/auth.md) | \`setup\` · \`install desktop\` · \`install server\` · \`verify\` · \`status\` · \`doctor\` · \`auth status\` |
+| **Setup + install** | [setup](docs/setup.md) · [auth](docs/auth.md) | \`setup\` · \`install desktop\` · \`install server\` · \`verify\` · \`status\` · \`doctor\` · \`auth status\` |
 | **Targets** | [targets](docs/targets.md) | \`targets list\` · \`targets add desktop\` · \`targets add server\` · \`targets add remote\` · \`targets use\` · \`targets status\` · \`targets logs\` |
 | **Bridges + accounts** | [accounts](docs/accounts.md) | \`bridges list\` · \`bridges show\` · \`accounts list\` · \`accounts add\` · \`accounts show\` · \`accounts use\` · \`accounts remove\` |
 | **Chats** | [chats](docs/chats.md) | \`chats list\` · \`chats search\` · \`chats show\` · \`chats start\` · \`chats archive\` · \`chats pin\` · \`chats mute\` · \`chats priority\` · \`chats remind\` · \`chats rename\` · \`chats draft\` · \`chats focus\` |
@@ -156,37 +212,10 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 Use \`beeper docs\` to open the CLI docs and \`beeper man\` to print the local
 command manual.
 
-## Plugins
-
-Beeper CLI supports optional oclif plugins. List recommended Beeper plugins:
-
-\`\`\`sh
-beeper plugins available
-\`\`\`
-
-Install a published plugin:
-
-\`\`\`sh
-beeper plugins install @beeper/cli-plugin-cloudflare
-\`\`\`
-
-For plugin development, import from \`beeper-cli/plugin-sdk\` and expose oclif
-commands from your package. Link a local plugin while working on it:
-
-\`\`\`sh
-beeper plugins link ./packages/cli-plugin-cloudflare
-beeper targets tunnel --help
-\`\`\`
-
-First-party optional plugins:
-
-| Package | Adds |
-| --- | --- |
-| \`@beeper/cli-plugin-cloudflare\` | \`targets tunnel\` for exposing a selected Beeper target through Cloudflare Tunnel. |
-
 ## Configuration
 
-Default Desktop API target: \`http://127.0.0.1:23373\`.
+Default Desktop API target: \`http://127.0.0.1:23373\`. CLI configuration is
+stored under your user config dir; print it with \`beeper config path\`.
 
 **Global flags:** \`--base-url\`, \`--target\`, \`--json\`, \`--events\`,
 \`--full\`, \`--timeout\`, \`--read-only\`, \`--debug\`, \`--yes\`, \`--quiet\`.
@@ -195,9 +224,9 @@ Default Desktop API target: \`http://127.0.0.1:23373\`.
 
 | Variable | Effect |
 | --- | --- |
-| \`BEEPER_ACCESS_TOKEN\` | Bearer token. Overrides stored OAuth login. |
-| \`BEEPER_DESKTOP_BASE_URL\` | Beeper Desktop API base URL. Defaults to \`http://127.0.0.1:23373\`. |
-| \`BEEPER_READONLY\` | \`1\`/\`true\`/\`yes\`/\`on\` enables read-only mode. |
+| \`BEEPER_ACCESS_TOKEN\` | Bearer token for the selected target. Overrides stored OAuth login. |
+| \`BEEPER_DESKTOP_BASE_URL\` | Desktop/Server API base URL. Defaults to \`http://127.0.0.1:23373\`. |
+| \`BEEPER_READONLY\` | \`1\`/\`true\`/\`yes\`/\`on\` enables read-only mode globally. |
 | \`BEEPER_CLI_CONFIG_DIR\` | Override config directory for testing or isolated profiles. |
 
 ## Exit codes
@@ -207,7 +236,7 @@ Default Desktop API target: \`http://127.0.0.1:23373\`.
 | \`0\` | Success. |
 | \`1\` | Generic runtime error. |
 | \`2\` | Usage error (parsing, validation, missing required flag/arg, read-only refusal). |
-| \`3\` | Auth required (no stored token; sign in to Beeper Desktop or set \`BEEPER_ACCESS_TOKEN\`). |
+| \`3\` | Auth required (no stored token; sign in or set \`BEEPER_ACCESS_TOKEN\`). |
 | \`4\` | Target/account not ready (\`doctor\` reports this when readiness is not \`ready\`). |
 | \`5\` | Selector matched nothing (unknown target, account, chat, contact). |
 | \`6\` | Ambiguous selector (multiple matches; pass an exact ID or \`--pick N\`). |
@@ -242,19 +271,48 @@ Most commands support:
 
 ## Raw API access
 
-Raw Desktop API calls live under \`api\`, so scripts can reach a new endpoint
-before a workflow command exists:
+Raw Desktop/Server API calls live under \`api\`, so scripts can reach a new
+endpoint before a workflow command exists:
 
 \`\`\`sh
 beeper api get /v1/info
 beeper api post /v1/messages/{chatID}/send --body '{"text":"hello"}'
+beeper api request DELETE /v1/chats/abc/messages/def/reactions --body '{"reactionKey":"👍"}'
 \`\`\`
+
+## Plugins
+
+Beeper CLI supports optional oclif plugins. List recommended Beeper plugins:
+
+\`\`\`sh
+beeper plugins available
+\`\`\`
+
+Install a published plugin:
+
+\`\`\`sh
+beeper plugins install @beeper/cli-plugin-cloudflare
+\`\`\`
+
+For plugin development, import from \`beeper-cli/plugin-sdk\` and expose oclif
+commands from your package. Link a local plugin while working on it:
+
+\`\`\`sh
+beeper plugins link ./packages/cli-plugin-cloudflare
+beeper targets tunnel --help
+\`\`\`
+
+First-party optional plugins:
+
+| Package | Adds |
+| --- | --- |
+| \`@beeper/cli-plugin-cloudflare\` | \`targets tunnel\` for exposing a selected Beeper target through Cloudflare Tunnel. |
 
 ## Inspiration
 
-This CLI is shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI
-that gets the command-line product shape right. Beeper CLI borrows the same
-taste: workflow-first commands, readable default output, boring machine output,
+Shamelessly inspired by [wacli](https://wacli.sh/), a WhatsApp CLI that gets
+the command-line product shape right. Beeper CLI borrows the same taste:
+workflow-first commands, readable default output, boring machine output,
 explicit writes, and names based on what people are trying to do.
 
 ## Command Summary
@@ -284,14 +342,20 @@ Required repository secrets:
 - \`HOMEBREW_TAP_GITHUB_TOKEN\`
 `;
 
+const targets = ['README.md', '../../README.md'];
+
 if (check) {
-  const current = await readFile('README.md', 'utf8');
-  if (current !== readme) {
-    console.error('README.md is out of date. Run bun run readme.');
-    process.exit(1);
+  for (const target of targets) {
+    const current = await readFile(target, 'utf8');
+    if (current !== readme) {
+      console.error(`${target} is out of date. Run bun run readme.`);
+      process.exit(1);
+    }
   }
 } else {
-  await writeFile('README.md', readme);
+  for (const target of targets) {
+    await writeFile(target, readme);
+  }
 }
 
 function commandSection(command) {
