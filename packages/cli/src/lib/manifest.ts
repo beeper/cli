@@ -28,7 +28,7 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'targets list',
-    description: 'List Beeper targets',
+    description: 'List configured Beeper targets',
     examples: ['beeper targets list', 'beeper targets list --json'],
   },
   {
@@ -38,7 +38,7 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'bridges show',
-    description: 'Show bridge details',
+    description: 'Show bridge details, login flows, and connected accounts',
     examples: ['beeper bridges show local-whatsapp', 'beeper bridges show telegram'],
   },
   {
@@ -68,7 +68,7 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'targets status',
-    description: 'Check target reachability',
+    description: 'Check endpoint and process reachability for a target',
     examples: ['beeper targets status', 'beeper targets status work --json'],
   },
   {
@@ -93,12 +93,12 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'targets enable',
-    description: 'Start a managed target at login',
+    description: 'Enable managed target startup at login',
     examples: ['beeper targets enable work'],
   },
   {
     command: 'targets disable',
-    description: 'Stop starting a managed target at login',
+    description: 'Disable managed target startup at login',
     examples: ['beeper targets disable work'],
   },
   {
@@ -117,7 +117,7 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'auth status',
-    description: 'Show local auth status and token metadata',
+    description: 'Show stored auth for the selected target',
     examples: ['beeper auth status', 'beeper auth status --json'],
   },
   {
@@ -127,12 +127,12 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'verify',
-    description: 'Continue or start device verification',
+    description: 'Finish setup verification or verify another device',
     examples: ['beeper verify', 'beeper verify --user @alice:beeper.com'],
   },
   {
     command: 'verify status',
-    description: 'Show encryption readiness',
+    description: 'Show encryption and device-verification readiness',
     examples: ['beeper verify status --json'],
   },
   {
@@ -167,17 +167,17 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'verify show',
-    description: 'Show active verification details',
+    description: 'Show the current active verification request',
     examples: ['beeper verify show --json'],
   },
   {
     command: 'verify sas',
-    description: 'Start short-authentication-string (emoji) verification',
+    description: 'Start emoji verification',
     examples: ['beeper verify sas'],
   },
   {
     command: 'verify sas-confirm',
-    description: 'Confirm short-authentication-string (emoji) verification',
+    description: 'Confirm matching emoji verification',
     examples: ['beeper verify sas-confirm'],
   },
   {
@@ -385,16 +385,16 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'messages export',
-    description: 'Export one chat\'s messages to JSON',
+    description: 'Export one chat to JSON',
     examples: [
       'beeper messages export --chat 10313 --output chat.json',
-      'beeper messages export --chat 10313 --after 2026-01-01T00:00:00Z --output -',
-      'beeper messages export --chat 10313 --before-cursor "<messageID>" --limit 500',
+      'beeper messages export --chat 8951 --after 2026-01-01T00:00:00Z --output -',
+      'beeper messages export --chat \'!plUOsWkvMmJmJPVAjS:beeper.com\' --before-cursor "<messageID>" --limit 500',
     ],
   },
   {
     command: 'send text',
-    description: 'Send text',
+    description: 'Send a text message',
     examples: [
       'beeper send text --to 10313 --message "on my way"',
       'beeper send text --to "Family" --message "hi" --pick 1',
@@ -408,7 +408,7 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'send react',
     description: 'Send a reaction to a message',
-    examples: ['beeper send react --to 10313 --id <messageID> --reaction "🎉"'],
+    examples: ['beeper send react --to 10313 --id <messageID> --reaction "+1"'],
   },
   {
     command: 'send sticker',
@@ -418,7 +418,7 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'send unreact',
     description: 'Remove a reaction from a message',
-    examples: ['beeper send unreact --to 10313 --id <messageID> --reaction "🎉"'],
+    examples: ['beeper send unreact --to 10313 --id <messageID> --reaction "+1"'],
   },
   {
     command: 'send voice',
@@ -492,7 +492,7 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'status',
-    description: 'Print a snapshot of the selected target and readiness',
+    description: 'Show selected target and setup readiness',
     examples: ['beeper status', 'beeper status --json'],
   },
   {
@@ -507,12 +507,17 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'completion',
-    description: 'Print shell completion help',
+    description: 'Print shell completion setup',
     examples: ['beeper completion'],
   },
   {
+    command: 'plugins',
+    description: 'Manage Beeper CLI plugins',
+    examples: ['beeper plugins', 'beeper plugins install @beeper/cli-plugin-cloudflare'],
+  },
+  {
     command: 'plugins available',
-    description: 'List recommended Beeper CLI plugins',
+    description: 'List recommended optional Beeper CLI plugins',
     examples: ['beeper plugins available', 'beeper plugins available --json'],
   },
   {

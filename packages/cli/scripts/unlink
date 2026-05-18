@@ -5,4 +5,4 @@ set -e
 cd "$(dirname "$0")/.."
 
 echo "==> Unlinking Beeper CLI"
-npm unlink -g beeper-cli || true
+bun unlink -g beeper-cli || true

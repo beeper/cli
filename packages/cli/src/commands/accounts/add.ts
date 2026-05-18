@@ -11,8 +11,9 @@ type AccountType = Bridge
 
 export default class AccountsAdd extends BeeperCommand {
   static override summary = 'Connect a chat account'
+  static override description = '`accounts add` without an argument opens the guided bridge chooser. Pass a bridge ID when you already know which chat network connector to use.'
   static override args = {
-    type: Args.string({ description: 'Bridge ID, network, or type to connect. Omit to list available bridges.' }),
+    bridge: Args.string({ description: 'Bridge ID, network, or type to connect. Omit to list available bridges.' }),
   }
   static override flags = {
     cookie: Flags.string({ description: 'Cookie value for non-interactive login, in name=value form. Repeat for multiple cookies.', multiple: true }),
@@ -28,7 +29,7 @@ export default class AccountsAdd extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
 
-    if (!args.type) {
+    if (!args.bridge) {
       const bridges = await client.bridges.list()
       if (flags.json) {
         await printData(bridges, 'json')
@@ -40,7 +41,7 @@ export default class AccountsAdd extends BeeperCommand {
     }
 
     const bridges = await client.bridges.list()
-    const accountType = resolveAccountType(bridges.items, args.type)
+    const accountType = resolveAccountType(bridges.items, args.bridge)
     if (accountType.status !== 'available') {
       const suffix = accountType.statusText ? `: ${accountType.statusText}` : ''
       throw new Error(`${accountType.displayName} is not available${suffix}`)

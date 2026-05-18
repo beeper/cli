@@ -24,6 +24,8 @@ beeper messages export   --chat SEL [--before-cursor MSG_ID | --after-cursor MSG
 - `messages search` rejects an empty query *and* no filter flags with exit code 2 (`usageError`).
 - `messages list --sender` filters client-side: `me` (your own messages), `others`, or an exact user ID.
 - `messages list --asc` reverses the default newest-first order.
+- `messages export` writes one chat to JSON. Use top-level `export` for a full
+  export with transcripts, attachments, and multiple chats.
 - `messages export --output -` writes JSON to stdout for piping.
 - `messages delete --for-everyone` requires the network supports it; otherwise it falls back to delete-for-you.
 - `messages edit` only succeeds on your own text messages with no attachments.
@@ -32,15 +34,15 @@ beeper messages export   --chat SEL [--before-cursor MSG_ID | --after-cursor MSG
 ## Examples
 
 ```sh
-beeper messages list --chat "Family" --limit 50
-beeper messages list --chat "Family" --sender me --asc
-beeper messages list --chat "Family" --before-cursor "$LAST_ID" --limit 200
+beeper messages list --chat 10313 --limit 50
+beeper messages list --chat 10313 --sender me --asc
+beeper messages list --chat 8951 --before-cursor "$LAST_ID" --limit 200
 beeper messages search "invoice"
-beeper messages search --chat "Family" --sender me --media image --after 2026-01-01
-beeper messages show    --chat "Family" --id ABC123
-beeper messages context --chat "Family" --id ABC123 --before 5 --after 5
-beeper messages edit    --chat "Family" --id ABC123 --message "fixed typo"
-beeper messages delete  --chat "Family" --id ABC123 --for-everyone
-beeper messages export  --chat "Family" --output family.json
-beeper messages export  --chat "Family" --after 2026-01-01T00:00:00Z -o -
+beeper messages search --chat 10313 --sender me --media image --after 2026-01-01
+beeper messages show    --chat 10313 --id ABC123
+beeper messages context --chat 10313 --id ABC123 --before 5 --after 5
+beeper messages edit    --chat 10313 --id ABC123 --message "fixed typo"
+beeper messages delete  --chat 10313 --id ABC123 --for-everyone
+beeper messages export  --chat 10313 --output family.json
+beeper messages export  --chat 8951 --after 2026-01-01T00:00:00Z -o -
 ```

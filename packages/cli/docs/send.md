@@ -17,6 +17,11 @@ beeper send unreact --to SEL --id MSG_ID --reaction KEY [--pick N]
 ## Notes
 
 - `--to` accepts a chat ID, local chat ID, exact title, or search text.
+- Prefer numeric local chat IDs from `beeper chats list` when scripting against
+  the same target/profile. Use full Beeper/Matrix chat IDs for selectors that
+  need to work across targets or profiles.
+- Send commands return when Desktop accepts the send request. Use `--wait` when
+  you need to know whether the message left the pending state or failed.
 - `--wait` blocks until the message leaves the pending state (or fails). Default poll cap: `--wait-timeout 30000` ms.
 - `--reply-to` quotes an existing message ID.
 - `send text --mention <userID>` adds a Matrix mention; repeat for multiple users.
@@ -28,12 +33,12 @@ beeper send unreact --to SEL --id MSG_ID --reaction KEY [--pick N]
 ## Examples
 
 ```sh
-beeper send text --to "Family" --message "on my way"
-beeper send text --to "Family" --message "ack" --reply-to ABC123
+beeper send text --to 10313 --message "on my way"
+beeper send text --to 8951 --message "ack" --reply-to ABC123
 beeper send text --to "@alice:beeper.com" --message "hi @alice" --mention @alice:beeper.com --no-preview
-beeper send file --to "Family" --file ./photo.jpg --caption "from today"
-beeper send sticker --to "Family" --file ./hi.webp
-beeper send voice --to "Family" --file ./note.ogg --duration 12
-beeper send react --to "Family" --id ABC123 --reaction "🎉"
-beeper send unreact --to "Family" --id ABC123 --reaction "🎉"
+beeper send file --to 10313 --file ./photo.jpg --caption "from today"
+beeper send sticker --to 10313 --file ./hi.webp
+beeper send voice --to 8951 --file ./note.ogg --duration 12
+beeper send react --to 10313 --id ABC123 --reaction "+1"
+beeper send unreact --to 10313 --id ABC123 --reaction "+1"
 ```

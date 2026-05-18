@@ -47,11 +47,11 @@ Command manual: \`beeper man\`
 ## Features
 
 - **Setup + readiness** - \`setup\`, \`verify\`, \`status\`, and \`doctor\` guide a target from login through encrypted-message readiness.
-- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper API targets with one selected default. A target is an endpoint profile.
-- **Bridges + accounts** - list bridges that can connect chat accounts, connect accounts, switch defaults, inspect details, and remove accounts.
+- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper API targets with one selected default. A target is an endpoint profile: local Server, local Desktop, Desktop API, or a profile that combines Desktop/Server runtime state.
+- **Bridges + accounts** - list bridge connectors, inspect login flows and capabilities, connect accounts, switch defaults, inspect details, and remove accounts.
 - **Chats + contacts + labels** - list, search, start, archive, pin, mute, mark, rename, label, focus, and inspect chats across accounts.
 - **Messages + media + presence** - list, search, show, edit, delete, react, send text/files/reactions, send typing indicators, and download message media.
-- **Exports** - heavy \`export\` for full chats/transcripts/attachments and light \`messages export\` for single-chat JSON.
+- **Exports** - \`export\` for full chats/transcripts/attachments and \`messages export\` for one-chat JSON.
 - **Automation** - \`--json\` everywhere, NDJSON \`--events\`, \`watch\` (WS + outbound webhooks with HMAC), \`rpc\` over stdin/stdout, \`man --json\` for tool manifests.
 - **Safety** - \`--read-only\` rejects mutating commands; raw API access stays explicit under \`api get\` and \`api post\`.
 
@@ -79,20 +79,20 @@ The package name is \`beeper-cli\`; the installed command is \`beeper\`.
 Install dependencies before running these commands.
 
 \`\`\`sh
-pnpm --filter beeper-cli build
-pnpm --filter beeper-cli dev -- --help
+bun --filter beeper-cli run build
+bun --filter beeper-cli run dev -- --help
 \`\`\`
 
 For local CLI development inside \`packages/cli\`:
 
 \`\`\`sh
-pnpm dev -- --help
+bun run dev -- --help
 \`\`\`
 
 Regenerate this README after command, flag, or argument changes:
 
 \`\`\`sh
-pnpm readme
+bun run readme
 \`\`\`
 
 ## Quick start
@@ -130,6 +130,10 @@ and \`setup --server --install\` or \`setup --desktop --install\` to orchestrate
 installation and target setup. To install runtimes directly: \`install desktop\`
 and \`install server\`.
 
+\`install desktop\` and \`install server\` install runtimes directly.
+\`setup --desktop --install\` and \`setup --server --install\` are one-shot
+setup paths that install when needed, then configure the target.
+
 For non-interactive use, pass a token through the environment:
 
 \`\`\`sh
@@ -154,7 +158,13 @@ command manual.
 
 ## Plugins
 
-Beeper CLI supports oclif plugins. Install a published plugin:
+Beeper CLI supports optional oclif plugins. List recommended Beeper plugins:
+
+\`\`\`sh
+beeper plugins available
+\`\`\`
+
+Install a published plugin:
 
 \`\`\`sh
 beeper plugins install @beeper/cli-plugin-cloudflare
@@ -207,7 +217,8 @@ JSON output preserves the same envelope on failure: \`{"success":false,"data":nu
 ## Addressing
 
 - Chat arguments accept numeric local chat IDs, full Beeper/Matrix chat IDs, iMessage chat IDs, exact titles, or search text.
-- For scripts, prefer the numeric local chat ID shown by \`beeper chats list\`, or the full Beeper/Matrix chat ID.
+- For scripts on the same target/profile, prefer the numeric local chat ID shown by \`beeper chats list\`; use the full Beeper/Matrix chat ID when the selector must work across targets or profiles.
+- Numeric local chat IDs come from the selected Desktop database. Treat them as local to that target/profile.
 - Ambiguous chat matches return numbered choices; pass \`--pick N\` to select one.
 - Account arguments accept account IDs, network names, bridge type/id, or account user identity.
 - Account filters can expand a network name to multiple matching accounts.
@@ -263,8 +274,8 @@ Releases. Push a \`v*\` tag to run \`.github/workflows/publish-release.yml\`.
 
 The release workflow:
 
-- runs the TypeScript test suite
-- builds a Homebrew archive containing the compiled CLI and production dependencies
+- runs the Bun test suite
+- builds standalone Bun binaries and Homebrew archives
 - uploads the archive to the GitHub release
 - updates \`beeper/homebrew-tap\` with the pinned archive SHA
 
@@ -276,7 +287,7 @@ Required repository secrets:
 if (check) {
   const current = await readFile('README.md', 'utf8');
   if (current !== readme) {
-    console.error('README.md is out of date. Run npm run readme.');
+    console.error('README.md is out of date. Run bun run readme.');
     process.exit(1);
   }
 } else {

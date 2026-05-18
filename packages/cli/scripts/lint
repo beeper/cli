@@ -5,4 +5,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> Typechecking Beeper CLI"
-npm run typecheck
+bun run typecheck

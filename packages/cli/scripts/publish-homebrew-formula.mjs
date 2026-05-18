@@ -58,18 +58,27 @@ try {
 }
 
 function formula({formulaClass, formulaName, sourceRepository, tag, version, metadata, commandName}) {
+  const archives = metadata.archives ?? [metadata]
+  const arm64 = archives.find(archive => archive.platform === 'darwin-arm64') ?? archives[0]
+  const x64 = archives.find(archive => archive.platform === 'darwin-x64') ?? arm64
+
   return `class ${formulaClass} < Formula
   desc "Beeper CLI"
   homepage "https://developers.beeper.com/desktop-api/"
-  url "https://github.com/${sourceRepository}/releases/download/${tag}/${metadata.archive}"
-  sha256 "${metadata.sha256}"
   license "MIT"
   version "${version}"
 
-  depends_on "node"
+  on_arm do
+    url "https://github.com/${sourceRepository}/releases/download/${tag}/${arm64.archive}"
+    sha256 "${arm64.sha256}"
+  end
+
+  on_intel do
+    url "https://github.com/${sourceRepository}/releases/download/${tag}/${x64.archive}"
+    sha256 "${x64.sha256}"
+  end
 
   def install
-    libexec.install Dir["libexec/*"]
     bin.install "bin/${commandName}"
     bin.install_symlink bin/"${commandName}" => "${formulaName}"
   end

@@ -4,8 +4,10 @@ Read when: managing local Desktop, managed Server, or remote Beeper API
 targets — adding, switching, starting/stopping a managed runtime, or removing
 a target.
 
-A *target* is a runnable or reachable Beeper endpoint. The CLI tracks an
-optional default; commands use it unless `--target <name>` overrides.
+A *target* is a runnable or reachable Beeper endpoint profile: local Server,
+local Desktop, Desktop API, or a profile that combines Desktop/Server runtime
+state. The CLI tracks an optional default; commands use it unless
+`--target <name>` overrides.
 
 ## Commands
 
@@ -27,9 +29,11 @@ beeper targets remove <name>
 
 - `list` prints all configured targets; the one used by default has `default: true`.
 - `show` defaults to the currently-selected target if no name is given.
-- `status` is a cheap reachability probe. For full diagnostics use `beeper doctor`.
+- `status` checks endpoint and process reachability. For setup/auth/encryption
+  diagnostics use `beeper doctor`.
 - `start`/`stop`/`restart` only apply to managed targets (`type: desktop|server`); they error for `remote`.
-- `enable`/`disable` registers/unregisters the launchd or systemd unit that starts the managed target at login.
+- `enable`/`disable` registers/unregisters the launchd or systemd unit that
+  starts the managed target at login.
 - Removing the active default clears the `defaultTarget` config field.
 - `BEEPER_TARGET=<name>` overrides the default for a single shell.
 

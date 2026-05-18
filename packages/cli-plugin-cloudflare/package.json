@@ -11,9 +11,9 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "pnpm --filter beeper-cli build && pnpm clean && tsc -p tsconfig.json",
+    "build": "bun --filter beeper-cli run build && bun run clean && tsc -p tsconfig.json",
     "clean": "rm -rf dist",
-    "test": "pnpm build && node test/smoke.mjs",
+    "test": "bun run build && bun test/smoke.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "oclif": {

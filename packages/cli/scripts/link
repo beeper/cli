@@ -5,4 +5,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> Linking Beeper CLI"
-npm link
+bun link

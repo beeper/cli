@@ -117,7 +117,7 @@ type CLIInstallMethod =
 function detectCLIInstallMethod(): CLIInstallMethod {
   const path = decodeURI(new URL(import.meta.url).pathname)
   if (/\/(Cellar|homebrew|linuxbrew)\//.test(path)) return { kind: 'brew' }
-  // pnpm/npm/yarn global installs end up under `<prefix>/lib/node_modules/...` or `<prefix>/global/...`
+  // bun/npm/yarn global installs end up under `<prefix>/lib/node_modules/...` or `<prefix>/global/...`
   if (/\/(lib\/node_modules|global\/(\d+\.\d+\.\d+\/)?node_modules)\//.test(path)) return { kind: 'npm-global' }
   if (/\/(\.packs|packages\/cli\/dist|packages\/cli\/src)\//.test(path)) return { kind: 'git', path }
   return { kind: 'unknown', path }
@@ -128,10 +128,10 @@ function upgradeAction(method: CLIInstallMethod): string {
     case 'brew':
       return 'Update with: brew upgrade beeper/tap/beeper-cli'
     case 'npm-global':
-      return 'Update with: npm install -g beeper-cli@latest'
+      return 'Update with: bun install -g beeper-cli@latest'
     case 'git':
-      return `Update with: git -C ${method.path.split('/packages/')[0]} pull && pnpm --filter beeper-cli build`
+      return `Update with: git -C ${method.path.split('/packages/')[0]} pull && bun --filter beeper-cli run build`
     default:
-      return 'Update with: brew upgrade beeper/tap/beeper-cli  OR  npm install -g beeper-cli@latest'
+      return 'Update with: brew upgrade beeper/tap/beeper-cli  OR  bun install -g beeper-cli@latest'
   }
 }

@@ -4,7 +4,7 @@ import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
 
 export default class BridgesShow extends BeeperCommand {
-  static override summary = 'Show bridge details'
+  static override summary = 'Show bridge details, login flows, and connected accounts'
   static override args = {
     bridge: Args.string({ required: true, description: 'Bridge ID, display name, network, or type' }),
   }
@@ -13,8 +13,18 @@ export default class BridgesShow extends BeeperCommand {
     const { args, flags } = await this.parse(BridgesShow)
     const client = await createClient(flags)
     const response = await client.bridges.list()
-    const bridge = resolveBridge(((response as unknown as { items?: Array<Record<string, unknown>> }).items ?? []), args.bridge)
-    await printData(bridge, flags.json ? 'json' : 'human')
+    const listBridge = resolveBridge(((response as unknown as { items?: Array<Record<string, unknown>> }).items ?? []), args.bridge)
+    const bridgeID = String(listBridge.id)
+    const [bridge, loginFlows, capabilities] = await Promise.all([
+      client.bridges.retrieve(bridgeID).catch(() => listBridge),
+      client.bridges.loginFlows.list(bridgeID).catch(() => undefined),
+      client.bridges.retrieveCapabilities(bridgeID).catch(() => undefined),
+    ])
+    await printData({
+      ...bridge,
+      loginFlows: loginFlows ? (loginFlows as { items?: unknown[] }).items ?? loginFlows : undefined,
+      capabilities,
+    }, flags.json ? 'json' : 'human')
   }
 }
 

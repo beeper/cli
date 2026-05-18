@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 
 let tmp: string
 const configFile = () => join(tmp, 'config.json')
@@ -9,7 +9,6 @@ const configFile = () => join(tmp, 'config.json')
 beforeEach(() => {
   tmp = mkdtempSync(join(tmpdir(), 'beeper-cli-test-'))
   process.env.BEEPER_CLI_CONFIG_DIR = tmp
-  vi.resetModules()
 })
 
 afterEach(() => {

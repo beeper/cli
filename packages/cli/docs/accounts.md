@@ -8,7 +8,7 @@ commands, or removing one.
 
 ```sh
 beeper accounts list   [--account SELECTOR]... [--ids]
-beeper accounts add    [type] [--flow ID] [--login-id ID] [--cookie name=value]... [--field id=value]... [--non-interactive] [--no-guided]
+beeper accounts add    [bridge] [--flow ID] [--login-id ID] [--cookie name=value]... [--field id=value]... [--non-interactive] [--no-guided]
 beeper accounts show   <selector>
 beeper accounts use    <selector | "">              # "" clears defaultAccount
 beeper accounts remove <selector>
@@ -18,8 +18,10 @@ beeper accounts remove <selector>
 
 - An *account selector* matches by account ID, network name, bridge type/id,
   or user identity (display name, username, email, phone).
-- `accounts add` without a type lists every available network with its
-  current connection status.
+- A *bridge* is the connector used to add or reconnect a chat account.
+- `accounts add` without a bridge opens the account-connection chooser.
+- `bridges list` is the scriptable catalog; `accounts add` is the guided
+  account connection flow.
 - `accounts use NAME` persists `defaultAccount` in CLI config. Subsequent
   account-scoped commands fall back to that default when `--account` is
   omitted.
@@ -32,7 +34,8 @@ beeper accounts remove <selector>
 
 ```sh
 beeper accounts list --json
-beeper accounts add whatsapp
+beeper bridges list
+beeper accounts add local-whatsapp
 beeper accounts add discord --non-interactive --cookie sessionid=…
 beeper accounts use whatsapp-main
 beeper accounts use ""

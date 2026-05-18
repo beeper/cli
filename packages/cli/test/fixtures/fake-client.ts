@@ -2,7 +2,9 @@
  * Lightweight fake of the @beeper/desktop-api client. Shape matches what
  * commands actually call. Pass per-test overrides to swap individual methods.
  */
-import { vi, type Mock } from 'vitest'
+import { mock } from 'bun:test'
+
+type Mock = ReturnType<typeof mock>
 
 export type FakeChat = {
   id: string
@@ -72,41 +74,41 @@ export function makeFakeClient(overrides: Partial<FakeClient> = {}): FakeClient 
 
   return {
     accounts: {
-      list: vi.fn(async () => []),
-      contacts: { list: vi.fn(() => empty()), search: vi.fn(async () => ({ items: [] })) },
+      list: mock(async () => []),
+      contacts: { list: mock(() => empty()), search: mock(async () => ({ items: [] })) },
       ...overrides.accounts,
     },
     chats: {
-      list: vi.fn(() => empty()),
-      retrieve: vi.fn(async (id: string) => ({ id })),
-      search: vi.fn(() => empty()),
-      update: vi.fn(async (id: string, body: any) => ({ id, ...body })),
-      archive: vi.fn(async () => ({})),
-      markRead: vi.fn(async () => ({})),
-      markUnread: vi.fn(async () => ({})),
-      notifyAnyway: vi.fn(async () => ({})),
-      start: vi.fn(async () => ({ chatID: '!new:beeper.com' })),
-      messages: { reactions: { add: vi.fn(async () => ({})), delete: vi.fn(async () => ({})) } },
-      reminders: { create: vi.fn(async () => ({})), delete: vi.fn(async () => ({})) },
+      list: mock(() => empty()),
+      retrieve: mock(async (id: string) => ({ id })),
+      search: mock(() => empty()),
+      update: mock(async (id: string, body: any) => ({ id, ...body })),
+      archive: mock(async () => ({})),
+      markRead: mock(async () => ({})),
+      markUnread: mock(async () => ({})),
+      notifyAnyway: mock(async () => ({})),
+      start: mock(async () => ({ chatID: '!new:beeper.com' })),
+      messages: { reactions: { add: mock(async () => ({})), delete: mock(async () => ({})) } },
+      reminders: { create: mock(async () => ({})), delete: mock(async () => ({})) },
       ...overrides.chats,
     },
     messages: {
-      list: vi.fn(() => empty()),
-      search: vi.fn(() => empty()),
-      retrieve: vi.fn(async (id: string) => ({ id })),
-      send: vi.fn(async () => ({ pendingMessageID: 'pending-1' })),
-      update: vi.fn(async (id: string) => ({ id })),
-      delete: vi.fn(async () => undefined),
+      list: mock(() => empty()),
+      search: mock(() => empty()),
+      retrieve: mock(async (id: string) => ({ id })),
+      send: mock(async () => ({ pendingMessageID: 'pending-1' })),
+      update: mock(async (id: string) => ({ id })),
+      delete: mock(async () => undefined),
       ...overrides.messages,
     },
-    assets: { upload: vi.fn(async () => ({ uploadID: 'upload-1', mimeType: 'application/octet-stream' })), serve: vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })), ...overrides.assets },
-    bridges: { list: vi.fn(async () => ({ items: [] })), loginFlows: { list: vi.fn(async () => ({ items: [] })) }, loginSessions: { create: vi.fn(async () => ({})) }, ...overrides.bridges },
+    assets: { upload: mock(async () => ({ uploadID: 'upload-1', mimeType: 'application/octet-stream' })), serve: mock(async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })), ...overrides.assets },
+    bridges: { list: mock(async () => ({ items: [] })), loginFlows: { list: mock(async () => ({ items: [] })) }, loginSessions: { create: mock(async () => ({})) }, ...overrides.bridges },
     app: overrides.app ?? {},
-    post: vi.fn(async () => ({})),
-    get: vi.fn(async () => ({})),
-    put: vi.fn(async () => ({})),
-    delete: vi.fn(async () => ({})),
-    focus: vi.fn(async () => ({})),
+    post: mock(async () => ({})),
+    get: mock(async () => ({})),
+    put: mock(async () => ({})),
+    delete: mock(async () => ({})),
+    focus: mock(async () => ({})),
     ...overrides,
   }
 }

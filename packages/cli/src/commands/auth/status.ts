@@ -3,7 +3,7 @@ import { resolveTarget } from '../../lib/targets.js'
 import { printData } from '../../lib/output.js'
 
 export default class AuthStatus extends BeeperCommand {
-  static override summary = 'Show authentication status'
+  static override summary = 'Show stored auth for the selected target'
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthStatus)

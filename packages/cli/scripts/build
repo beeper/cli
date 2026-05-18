@@ -5,4 +5,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> Building Beeper CLI"
-npm run build
+bun run build
