@@ -1110,7 +1110,7 @@ Flags:
 | `--login-id=<value>` | option | Existing login ID to re-login as |
 | `--non-interactive` | boolean | Do not prompt; require --flow, --field, and --cookie values when needed. |
 | `--webview` | boolean | Use Bun.WebView to collect cookie login fields when a cookie step is returned. |
-| `--webview-backend=<auto|chrome|webkit>` | option | Bun.WebView backend for cookie login steps. Default: auto |
+| `--webview-backend=<auto|chrome|webkit>` | option | Bun.WebView backend for cookie login steps. Default: chrome |
 | `--webview-timeout=<value>` | option | Seconds to wait for Bun.WebView cookie collection. Default: 120 |
 
 Examples:
