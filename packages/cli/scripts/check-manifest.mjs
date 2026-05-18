@@ -53,6 +53,8 @@ console.log(`check-manifest: ${commandManifest.length} commands ok, plugin-sdk s
 function listCommandFiles(dir) {
   const output = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    // Files / directories starting with _ are private/internal (e.g. _complete used by autocomplete).
+    if (entry.name.startsWith('_')) continue
     const path = join(dir, entry.name)
     if (entry.isDirectory()) output.push(...listCommandFiles(path))
     else if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.d.ts')) output.push(path)

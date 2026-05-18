@@ -230,6 +230,7 @@ explicit writes, and names based on what people are trying to do.
 | `targets enable` | Start a managed target at login |
 | `targets disable` | Stop starting a managed target at login |
 | `targets remove` | Remove a target |
+| `targets tunnel` | Expose a local Beeper Desktop API over a public Cloudflare tunnel |
 | `auth status` | Show authentication status |
 | `auth logout` | Log out and invalidate the session |
 | `auth verify` | Continue (or start) a device verification flow interactively |
@@ -772,6 +773,34 @@ Examples:
 
 ```sh
 beeper targets remove work
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
+
+### `beeper targets tunnel`
+Expose a local Beeper Desktop API over a public Cloudflare tunnel
+
+```sh
+beeper targets tunnel
+```
+
+Spawns cloudflared as a quick tunnel pointing at the selected target's Desktop API port and prints the public URL plus the `beeper targets add` command another machine can paste to attach. Foreground command — runs until you press Ctrl+C. The URL is useless without the access token printed alongside it; treat it like a credential. Only valid for local Desktop targets. Remote targets are already reachable over the network.
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--as=<value>` | option | Suggested target name to use on the other machine (printed in the bootstrap command) |
+| `--port=<value>` | option | Override the Desktop API port to expose (defaults to the target's configured port) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+| `--skip-token` | boolean | Do not mint or print an access token. The remote machine must already have one. |
+
+Examples:
+
+```sh
+beeper targets tunnel
+beeper targets tunnel --target work --read-only
+beeper targets tunnel --as work-laptop --port 23373
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -2578,7 +2607,7 @@ Print shell completion setup (alias for autocomplete)
 beeper completion [shell]
 ```
 
-Same as `beeper autocomplete`: prints setup instructions and the generated completion script for the requested shell. Use `eval` or redirect to a shell init file as documented.
+Same as `beeper autocomplete`: prints setup instructions and the generated completion script for the requested shell. Pass `--semantic` to print a small supplementary snippet that adds live suggestions for `--chat`, `--to`, `--account`, and `--target` by calling back into `beeper _complete`. Source it *after* the static autocomplete setup.
 
 Arguments:
 
@@ -2591,6 +2620,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `-r, --refresh-cache` | boolean | Refresh the autocomplete cache before printing setup |
+| `--semantic` | boolean | Print a semantic-completion snippet (chats/accounts/targets) for bash or zsh |
 
 Examples:
 

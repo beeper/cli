@@ -3,6 +3,8 @@ import type { BeeperDesktop } from '@beeper/desktop-api'
 export { Args, Command, Flags, ux } from '@oclif/core'
 export { BeeperCommand, ensureWritable, writeEvent, isQuiet } from './lib/command.js'
 export {
+  AbortError,
+  BugError,
   CLIError,
   ExitCodes,
   ambiguous,
@@ -49,6 +51,27 @@ export {
   type ChatResolutionOptions,
 } from './lib/resolve.js'
 export { appRequest } from './lib/app-api.js'
+export {
+  cloudflaredBinPath,
+  ensureCloudflared,
+  startTunnel,
+  CLOUDFLARED_VERSION,
+  type TunnelHandle,
+  type TunnelStatus,
+  type StartTunnelOptions,
+} from './lib/cloudflared.js'
+export {
+  confirmSuggestion,
+  declineWithExit127,
+  levenshtein,
+  rankSuggestions,
+  type Suggestion as DidYouMeanSuggestion,
+} from './lib/did-you-mean.js'
+export {
+  formatUpdateFooter,
+  readUpdateAvailability,
+  type UpdateAvailability,
+} from './lib/update-banner.js'
 
 export type BeeperClient = BeeperDesktop
 

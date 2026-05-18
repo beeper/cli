@@ -1,10 +1,12 @@
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const cli = ['./bin/run.js']
+const cliRoot = fileURLToPath(new URL('..', import.meta.url))
 
 function run(...args: string[]) {
-  return spawnSync(process.execPath, [...cli, ...args], {
+  return spawnSync(process.execPath, ['./bin/run.js', ...args], {
+    cwd: cliRoot,
     encoding: 'utf8',
     env: { ...process.env, BEEPER_CLI_CONFIG_DIR: '/tmp/beeper-cli-vitest', BEEPER_NO_LOGO: '1' },
   })
@@ -13,9 +15,10 @@ function run(...args: string[]) {
 describe('messages search query-or-filter requirement', () => {
   it('rejects empty query with no filters and exits with usage error', () => {
     const result = run('messages', 'search', '--json')
-    expect(result.status).not.toBe(0)
+    expect(result.status).toBe(2)
     const envelope = JSON.parse(result.stderr)
     expect(envelope.success).toBe(false)
+    expect(envelope.exitCode).toBe(2)
     expect(envelope.error).toMatch(/Provide a search query or at least one filter flag/)
   })
 

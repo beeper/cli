@@ -1,6 +1,7 @@
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
+import { usageError } from '../../lib/errors.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs, resolveChatID } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
@@ -38,7 +39,7 @@ export default class MessagesSearch extends BeeperCommand {
       || flags.sender,
     )
     if (!args.query && !hasFilter) {
-      throw new Error('Provide a search query or at least one filter flag (--chat, --sender, --media, etc.).')
+      throw usageError('Provide a search query or at least one filter flag (--chat, --sender, --media, etc.).')
     }
     const client = await createClient(flags)
     const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true })

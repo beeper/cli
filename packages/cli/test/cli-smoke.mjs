@@ -42,6 +42,7 @@ const expectedCommands = [
   'targets enable',
   'targets disable',
   'targets remove',
+  'targets tunnel',
   'auth status',
   'auth logout',
   'auth verify',
@@ -127,9 +128,11 @@ const expectedCommands = [
 const commandFiles = listCommandFiles(join(root, 'src/commands'))
 const commandNames = commandFiles.map(file => fileToCommand(file)).sort()
 const manifestNames = commandManifest.map(item => item.command).sort()
+// First-party commands shipped by separate plugins (not present in src/commands).
+const pluginShippedCommands = new Set(['targets tunnel'])
 
 assert.deepEqual(commandManifest.map(item => item.command), expectedCommands, 'command manifest must be the nuclear public surface')
-assert.deepEqual(manifestNames, commandNames, 'command manifest must match src/commands')
+assert.deepEqual(manifestNames.filter(name => !pluginShippedCommands.has(name)), commandNames, 'command manifest must match src/commands (excluding plugin-shipped commands)')
 assert.equal(new Set(manifestNames).size, manifestNames.length, 'command manifest must not contain duplicates')
 
 const help = ok('--help')
@@ -144,6 +147,7 @@ assert.match(help, /\bautocomplete\b/, 'help should expose shell autocomplete')
 assert.doesNotMatch(help, /\bassets\b|\bapp\b/, 'help must not expose old API namespaces')
 
 for (const command of expectedCommands) {
+  if (pluginShippedCommands.has(command)) continue
   ok(...command.split(' '), '--help')
 }
 

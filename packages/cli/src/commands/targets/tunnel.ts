@@ -5,6 +5,7 @@ import { ensureCloudflared, startTunnel } from '../../lib/cloudflared.js'
 import { ensureDesktopToken } from '../../lib/desktop-auth.js'
 import { CLIError, ExitCodes, notReady, usageError } from '../../lib/errors.js'
 import { printData } from '../../lib/output.js'
+import { formatUpdateFooter, readUpdateAvailability } from '../../lib/update-banner.js'
 
 export default class TargetsTunnel extends BeeperCommand {
   static override summary = 'Expose a local Beeper Desktop API over a public Cloudflare tunnel'
@@ -90,6 +91,8 @@ Only valid for local Desktop targets. Remote targets are already reachable over 
           addCommand,
         }, 'json')
       } else {
+        const availability = await readUpdateAvailability({ cacheDir: this.config.cacheDir, currentVersion: this.config.version })
+        const footer = formatUpdateFooter(availability)
         process.stdout.write([
           '',
           `  tunnel: ${publicURL}`,
@@ -100,6 +103,7 @@ Only valid for local Desktop targets. Remote targets are already reachable over 
           `    ${addCommand}`,
           '',
           '  Press Ctrl+C to stop.',
+          ...(footer ? ['', `  ${footer}`] : []),
           '',
         ].join('\n'))
       }

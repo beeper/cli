@@ -1,5 +1,5 @@
 import { Command, Flags } from '@oclif/core'
-import { CLIError, ExitCodes } from './errors.js'
+import { BugError, CLIError, ExitCodes } from './errors.js'
 
 export abstract class BeeperCommand extends Command {
   static override baseFlags = {
@@ -26,19 +26,44 @@ export abstract class BeeperCommand extends Command {
     const code = error instanceof CLIError ? error.exitCode : error.exitCode ?? ExitCodes.Generic
     process.exitCode = process.exitCode ?? code
     const message = error.message || String(error)
+    const tryMessage = error instanceof CLIError ? error.tryMessage : undefined
+    const isBug = !(error instanceof CLIError) || error instanceof BugError
 
     if (this.argv.includes('--events')) {
-      writeEvent('error', { message, exitCode: code })
+      writeEvent('error', { message, exitCode: code, kind: isBug ? 'bug' : 'abort', tryMessage })
       return
     }
 
     if (this.argv.includes('--json')) {
-      process.stderr.write(`${JSON.stringify({ success: false, data: null, error: message, exitCode: code })}\n`)
+      process.stderr.write(`${JSON.stringify({ success: false, data: null, error: message, exitCode: code, kind: isBug ? 'bug' : 'abort', tryMessage })}\n`)
       return
     }
 
-    return super.catch(error)
+    if (isBug) {
+      process.stderr.write(formatBugPanel(error, this.config.version))
+      return
+    }
+
+    if (tryMessage) process.stderr.write(`${message}\n  hint: ${tryMessage}\n`)
+    else return super.catch(error)
   }
+}
+
+function formatBugPanel(error: Error, version: string): string {
+  const bar = '─'.repeat(60)
+  const stack = error.stack?.split('\n').slice(0, 8).join('\n') ?? error.message
+  return [
+    '',
+    `┌─ unexpected error ${bar.slice(20)}`,
+    `│ ${error.message}`,
+    '│',
+    ...stack.split('\n').map(line => `│   ${line}`),
+    '│',
+    `│ beeper-cli ${version} — please report at`,
+    '│   https://github.com/beeper/desktop-api-cli/issues',
+    `└${'─'.repeat(60)}`,
+    '',
+  ].join('\n')
 }
 
 export function ensureWritable(flags: { 'read-only'?: boolean }): void {

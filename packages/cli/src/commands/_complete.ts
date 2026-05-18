@@ -71,12 +71,21 @@ async function emit(kind: Kind, flags: { target?: string }): Promise<string[]> {
   }
 
   if (kind === 'contact') {
+    const accountsList = await client.accounts.list()
+    const accountIDs = (Array.isArray(accountsList) ? accountsList : ((accountsList as { items?: unknown[] }).items ?? []))
+      .map((row: unknown) => (row && typeof row === 'object' ? (row as Record<string, unknown>).accountID : undefined))
+      .filter((id): id is string => typeof id === 'string')
     const out: string[] = []
-    for await (const contact of client.contacts.list({ limit: 50 } as never)) {
-      const c = contact as unknown as Record<string, unknown>
-      const id = c.id || c.username
-      const name = (c.fullName as string | undefined) || (c.displayName as string | undefined) || ''
-      if (id) out.push(`${String(id)}\t${name}`)
+    for (const accountID of accountIDs.slice(0, 3)) {
+      const page = await client.accounts.contacts.list(accountID, { limit: 25 } as never)
+      const rows = Array.isArray(page) ? page : ((page as { items?: unknown[] }).items ?? [])
+      for (const contact of rows) {
+        const c = contact as Record<string, unknown>
+        const id = c.id || c.username
+        const name = (c.fullName as string | undefined) || (c.displayName as string | undefined) || ''
+        if (id) out.push(`${String(id)}\t${name}`)
+        if (out.length >= 50) break
+      }
       if (out.length >= 50) break
     }
     return out

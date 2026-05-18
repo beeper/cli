@@ -1,5 +1,6 @@
 import { readConfig } from './targets.js'
 import { ambiguous, notFound } from './errors.js'
+import { confirmSuggestion, declineWithExit127, rankSuggestions } from './did-you-mean.js'
 
 type AnyRecord = Record<string, any>
 
@@ -11,6 +12,7 @@ export type AccountResolutionOptions = {
 export type ChatResolutionOptions = {
   accountIDs?: string[]
   pick?: number
+  assumeYes?: boolean
 }
 
 export async function resolveAccountIDs(
@@ -68,7 +70,11 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
     normalize(chat.title) === normalizedInput
   )
   const matches = exactMatches.length ? exactMatches : candidates
-  if (matches.length === 0) return input
+  if (matches.length === 0) {
+    const suggestion = await suggestChat(client, input, options)
+    if (suggestion) return suggestion
+    return input
+  }
   if (matches.length === 1) return chatInputID(matches[0]!)
 
   if (options.pick) {
@@ -78,6 +84,27 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
   }
 
   throw ambiguous(formatAmbiguous(`chat "${input}"`, matches.map(formatChat)))
+}
+
+async function suggestChat(client: any, input: string, options: ChatResolutionOptions): Promise<string | undefined> {
+  let pool: AnyRecord[]
+  try {
+    pool = await collect<AnyRecord>(client.chats.list({ accountIDs: options.accountIDs, limit: 100 }), 100)
+  } catch {
+    return undefined
+  }
+  const ranked = rankSuggestions(input, pool, chat => chat.title as string | undefined, 3)
+  const top = ranked[0]
+  if (!top) return undefined
+  const detail = top.value.network ? ` (${top.value.network})` : ''
+  const prompt = `No chat matches "${input}". Did you mean "${top.label}"${detail}?`
+  process.stderr.write(`${prompt}\n`)
+  for (const alt of ranked.slice(1)) {
+    process.stderr.write(`  also: ${alt.label}${alt.value.network ? ` (${alt.value.network})` : ''}\n`)
+  }
+  const ok = await confirmSuggestion('use it?', { assumeYes: options.assumeYes, timeoutMs: 10_000 })
+  if (!ok) declineWithExit127(`no chat selected for "${input}"`)
+  return chatInputID(top.value)
 }
 
 function accountItems(accounts: unknown): AnyRecord[] {
