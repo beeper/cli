@@ -517,7 +517,7 @@ async function phaseControlSurface() {
       }
     }
   }
-  if (target.kind !== 'remote') {
+  if (target.kind === 'server') {
     const args = ['targets', 'restart', target.name, '--json']
     const result = runCli(args, { env: serverEnv(), allowFailure: true })
     recordCommand('control-surface', args, result)
@@ -529,7 +529,7 @@ async function phaseControlSurface() {
       recordFailure('control-surface', target, error)
     }
   } else {
-    report.coverage.skipped.push({ command: 'targets restart', reason: 'Remote source Server targets are not lifecycle-managed by the CLI.' })
+    report.coverage.skipped.push({ command: 'targets restart', reason: 'Only server targets are lifecycle-managed by the CLI.' })
   }
 
   const remoteName = `remote-${runID}`
