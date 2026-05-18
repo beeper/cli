@@ -1,4 +1,5 @@
 import { Args, Flags } from '@oclif/core'
+import type { ChatStartParams } from '@beeper/desktop-api/resources/chats'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
@@ -11,13 +12,15 @@ export default class ChatsStart extends BeeperCommand {
     account: Flags.string({ description: 'Account selector. Defaults to the single available account or the matrix account.' }),
     title: Flags.string({ description: 'Optional initial title for a new group chat' }),
   }
+
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ChatsStart)
     ensureWritable(flags)
     const client = await createClient(flags)
     const accountID = flags.account ? await resolveAccountID(client, flags.account) : await defaultAccountID(client)
     const user = userQueryFromInput(args.user)
-    await printData(await client.chats.start({ accountID, user, title: flags.title } as any), flags.json ? 'json' : 'human')
+    const payload: ChatStartParams & { title?: string } = { accountID, user, title: flags.title }
+    await printData(await client.chats.start(payload), flags.json ? 'json' : 'human')
   }
 }
 
