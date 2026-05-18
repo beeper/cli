@@ -16,4 +16,4 @@ jobs:
 
       - name: Check release environment
         run: |
-          bash ./bin/check-release-environment
+          bash packages/cli/bin/check-release-environment
