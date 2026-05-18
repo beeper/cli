@@ -226,10 +226,10 @@ assert.match(envelope.error, /auth email start/)
 assert.doesNotMatch(envelope.error, /--code|OTP/i, 'setup must direct automation to the two-step email commands without accepting OTP itself')
 
 result = run('targets', 'show', 'email-remote', '--json')
-assert.equal(result.status, 0, result.stderr)
-envelope = JSON.parse(result.stdout)
-assert.equal(envelope.success, true)
-assert.equal(envelope.data.baseURL, 'http://127.0.0.1:9')
+assert.notEqual(result.status, 0)
+envelope = JSON.parse(result.stderr)
+assert.equal(envelope.success, false)
+assert.match(envelope.error, /Unknown Beeper target/)
 
 const rpcResult = spawnSync(process.execPath, ['./bin/dev.js', 'rpc'], {
   cwd: root,

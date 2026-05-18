@@ -206,9 +206,9 @@ export default class Setup extends BeeperCommand {
       baseURL: flags.remote!,
       managed: false,
     }
+    const result = flags.email ? await setupEmailTarget(target, flags) : await setupOAuthTarget(target, flags, 'remote-oauth')
     await writeTarget(target)
     if (!flags.target) await updateConfig(config => ({ ...config, defaultTarget: config.defaultTarget ?? target.id }))
-    const result = flags.email ? await setupEmailTarget(target, flags) : await setupOAuthTarget(target, flags, 'remote-oauth')
     await this.printSetupResult(result, flags)
   }
 
