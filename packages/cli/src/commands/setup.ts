@@ -4,7 +4,7 @@ import { driveVerification, evaluateReadiness, type Readiness } from '../lib/app
 import { ensureDesktopToken, findLocalDesktop } from '../lib/desktop-auth.js'
 import { promptText, promptYesNoDefaultYes } from '../lib/app-api.js'
 import { installDesktop, installServer, readInstallations } from '../lib/installations.js'
-import { connectedAccountSummary, findLocalDesktopSession, type LocalDesktopSession } from '../lib/local-desktop.js'
+import { connectedAccountSummary, findLocalDesktopSession, localConnectedAccountSummary, localDesktopReadiness, type LocalDesktopSession } from '../lib/local-desktop.js'
 import { loginWithPKCE } from '../lib/oauth.js'
 import { findDesktopAppPath, launchDesktopApp, startProfile } from '../lib/profiles.js'
 import { interactiveEmailSetup } from '../lib/setup-login.js'
@@ -390,10 +390,8 @@ async function prepareLocalDesktopSetup(target: Target, flags: SetupFlags): Prom
     managed: target.managed ?? false,
   }
   const session = await findLocalDesktopSession(resolvedTarget)
-  const [readiness, accounts] = await Promise.all([
-    evaluateReadiness({ baseURL: resolvedTarget.baseURL, target: resolvedTarget.id, token: session.auth.accessToken }),
-    connectedAccountSummary(resolvedTarget, session.auth).catch(() => []),
-  ])
+  const readiness = localDesktopReadiness(session)
+  const accounts = await localConnectedAccountSummary(session.dataDir).catch(() => [])
   return { accounts, readiness, session, target: resolvedTarget }
 }
 
