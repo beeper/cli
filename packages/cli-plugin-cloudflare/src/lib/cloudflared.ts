@@ -1,6 +1,10 @@
-import { access, chmod, mkdir, rename, rm, writeFile } from 'node:fs/promises'
+import { createWriteStream } from 'node:fs'
+import { access, chmod, mkdir, rename, rm } from 'node:fs/promises'
 import { arch, platform } from 'node:os'
 import { basename, dirname, join } from 'node:path'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
+import type { ReadableStream } from 'node:stream/web'
 import { fileURLToPath } from 'node:url'
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
 
@@ -193,7 +197,7 @@ function downloadURL(system = platform(), cpu = arch()): string {
 async function downloadFile(url: string, to: string): Promise<void> {
   const response = await fetch(url, { redirect: 'follow' })
   if (!response.ok || !response.body) throw new Error(`Could not download ${url}: ${response.status} ${response.statusText}`)
-  await writeFile(to, Buffer.from(await response.arrayBuffer()))
+  await pipeline(Readable.fromWeb(response.body as unknown as ReadableStream), createWriteStream(to))
 }
 
 export function findTunnelURL(data: string, domain = cloudflaredDomain()): string | undefined {
