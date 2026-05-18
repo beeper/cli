@@ -93,13 +93,14 @@ async function fetchExpectedHash() {
   }
 }
 
-async function download(url, destination, options = {}) {
+async function download(url, destination, options = {}, redirectCount = 0) {
+  if (redirectCount > 10) throw new Error(`too many redirects while downloading ${basename(url)}`)
   await mkdir(dirname(destination), { recursive: true })
   await new Promise((resolve, reject) => {
     const request = get(url, response => {
       if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
         response.resume()
-        download(new URL(response.headers.location, url).toString(), destination, options).then(resolve, reject)
+        download(new URL(response.headers.location, url).toString(), destination, options, redirectCount + 1).then(resolve, reject)
         return
       }
       if (response.statusCode !== 200) {
