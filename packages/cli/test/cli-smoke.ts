@@ -9,7 +9,7 @@ import { downloadURLFor, feedURLFor, normalizeInstallRequest } from '../dist/lib
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const configDir = '/tmp/beeper-cli-test'
-const run = (...args) => spawnSync(process.execPath, ['./bin/run.js', ...args], {
+const run = (...args) => spawnSync(process.execPath, ['./bin/dev.js', ...args], {
   cwd: root,
   encoding: 'utf8',
   env: {
@@ -47,6 +47,8 @@ const expectedCommands = [
   'targets tunnel',
   'auth status',
   'auth logout',
+  'auth email start',
+  'auth email response',
   'verify',
   'verify status',
   'verify approve',
@@ -170,7 +172,8 @@ assert.match(setupHelp, /--oauth/, 'setup should expose OAuth setup')
 assert.match(setupHelp, /--remote/, 'setup should expose remote setup shortcut')
 assert.match(setupHelp, /--server/, 'setup should expose Server setup shortcut')
 assert.match(setupHelp, /--desktop/, 'setup should expose Desktop setup shortcut')
-assert.doesNotMatch(setupHelp, /--email|--code|--accept-terms/, 'setup must not expose email-code login flags')
+assert.match(setupHelp, /--email/, 'setup should expose email setup start')
+assert.doesNotMatch(setupHelp, /--code|--accept-terms/, 'setup must not accept OTP or terms flags in the first command')
 
 const man = JSON.parse(ok('man', '--json'))
 assert.equal(man.success, true)
@@ -215,7 +218,20 @@ envelope = JSON.parse(result.stderr)
 assert.equal(envelope.success, false)
 assert.match(envelope.error, /read-only mode/)
 
-const rpcResult = spawnSync(process.execPath, ['./bin/run.js', 'rpc'], {
+result = run('setup', '--remote', 'http://127.0.0.1:9', '--target', 'email-remote', '--email', 'qatest+123456@beeper.com', '--json')
+assert.notEqual(result.status, 0)
+envelope = JSON.parse(result.stderr)
+assert.equal(envelope.success, false)
+assert.match(envelope.error, /auth email start/)
+assert.doesNotMatch(envelope.error, /--code|OTP/i, 'setup must direct automation to the two-step email commands without accepting OTP itself')
+
+result = run('targets', 'show', 'email-remote', '--json')
+assert.equal(result.status, 0, result.stderr)
+envelope = JSON.parse(result.stdout)
+assert.equal(envelope.success, true)
+assert.equal(envelope.data.baseURL, 'http://127.0.0.1:9')
+
+const rpcResult = spawnSync(process.execPath, ['./bin/dev.js', 'rpc'], {
   cwd: root,
   encoding: 'utf8',
   env: {

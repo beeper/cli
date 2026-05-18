@@ -1,7 +1,6 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { sendMatrixText, shouldFallbackToMatrix } from '../../lib/matrix-direct.js'
 import { printData } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 import { sendMessage } from '../../lib/send-message.js'
@@ -29,11 +28,6 @@ export default class SendText extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
-    try {
-      await printData(await sendMessage(client, { chatID, text: flags.message, replyTo: flags['reply-to'], mentions: flags.mention, noPreview: flags['no-preview'], wait: flags.wait, waitTimeoutMs: flags['wait-timeout'] }), flags.json ? 'json' : 'human')
-    } catch (error) {
-      if (!shouldFallbackToMatrix(chatID, error)) throw error
-      await printData(await sendMatrixText(flags, chatID, flags.message), flags.json ? 'json' : 'human')
-    }
+    await printData(await sendMessage(client, { chatID, text: flags.message, replyTo: flags['reply-to'], mentions: flags.mention, noPreview: flags['no-preview'], wait: flags.wait, waitTimeoutMs: flags['wait-timeout'] }), flags.json ? 'json' : 'human')
   }
 }

@@ -330,6 +330,8 @@ First-party optional plugins:
 | `targets tunnel` | Expose a local Desktop API over a public Cloudflare tunnel |
 | `auth status` | Show stored auth for the selected target |
 | `auth logout` | Clear stored authentication |
+| `auth email start` | Start email sign-in for a target |
+| `auth email response` | Finish email sign-in with a verification code |
 | `verify` | Finish setup verification or verify another device |
 | `verify status` | Show encryption and device-verification readiness |
 | `verify approve` | Approve a pending device verification request |
@@ -423,12 +425,14 @@ Flags:
 | --- | --- | --- |
 | `--channel=<stable|nightly>` | option | Install release channel Default: stable |
 | `--desktop` | boolean | Set up a local Beeper Desktop target |
+| `--email=<value>` | option | Sign in with an email address |
 | `--install` | boolean | Allow installing missing managed runtime |
 | `--local` | boolean | Use the local Beeper Desktop session on this device |
 | `--oauth` | boolean | Authorize the target with browser OAuth/PKCE |
 | `--remote=<value>` | option | Connect to a remote Beeper Desktop or Server URL |
 | `--server` | boolean | Set up a local Beeper Server target |
 | `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--username=<value>` | option | Username to use if setup creates a new account |
 
 Examples:
 
@@ -898,6 +902,50 @@ Examples:
 
 ```sh
 beeper auth logout
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
+### `beeper auth email start`
+Start email sign-in for a target
+
+```sh
+beeper auth email start
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--email=<value>` | option | Email address to sign in with Required. |
+
+Examples:
+
+```sh
+beeper auth email start --email you@example.com --target work --json
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
+### `beeper auth email response`
+Finish email sign-in with a verification code
+
+```sh
+beeper auth email response
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--code=<value>` | option | Email verification code Required. |
+| `--setup-request-id=<value>` | option | Setup request ID from auth email start Required. |
+| `--username=<value>` | option | Username to use if setup creates a new account |
+
+Examples:
+
+```sh
+beeper auth email response --setup-request-id <id> --code <code> --target work --json
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.

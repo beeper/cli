@@ -5,7 +5,7 @@ import { describe, expect, it } from 'bun:test'
 const cliRoot = fileURLToPath(new URL('..', import.meta.url))
 
 function run(...args: string[]) {
-  return spawnSync(process.execPath, ['./bin/run.js', ...args], {
+  return spawnSync(process.execPath, ['./bin/dev.js', ...args], {
     cwd: cliRoot,
     encoding: 'utf8',
     env: { ...process.env, BEEPER_CLI_CONFIG_DIR: '/tmp/beeper-cli-bun-test', BEEPER_NO_LOGO: '1' },
