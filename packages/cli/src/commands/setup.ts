@@ -588,10 +588,12 @@ async function maybeDriveOnboarding(result: SetupResult, flags: SetupFlags): Pro
 
 async function installWithCopy(type: 'desktop' | 'server', flags: SetupFlags): Promise<void> {
   const label = type === 'desktop' ? 'Beeper Desktop' : 'local Beeper Server'
-  if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installing ${label} stable from beeper.com...\n`)
-  if (type === 'desktop') await installDesktop({ channel: 'stable', serverEnv: flags['server-env'] })
-  else await installServer({ channel: 'stable', serverEnv: 'production' })
-  if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installed ${label} stable.\n\n`)
+  const channel = flags.channel === 'nightly' ? 'nightly' : 'stable'
+  const serverEnv = flags['server-env'] === 'staging' ? 'staging' : 'production'
+  if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installing ${label} ${channel} from beeper.com...\n`)
+  if (type === 'desktop') await installDesktop({ channel, serverEnv })
+  else await installServer({ channel, serverEnv })
+  if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installed ${label} ${channel}.\n\n`)
 }
 
 function setupResultDetail(result: SetupResult): string | undefined {
