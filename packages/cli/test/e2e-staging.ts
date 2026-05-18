@@ -412,6 +412,8 @@ async function phaseCliSurface() {
     recordCoverage('commands', args, result)
     if (args[0] === 'accounts' && args[1] === 'add' && args.length === 5) {
       recordBlock('cli-surface', target, 'accounts add without a bridge intentionally lists available account types; local-dummy covers the actual login flow.')
+    } else if (args[0] === 'doctor' && result.status !== 0 && parseEnvelope(result.stdout)?.data) {
+      report.notes.push('doctor returned non-zero because the target is not fully healthy; JSON diagnostics were still returned.')
     } else if (result.status !== 0) {
       recordFailure('cli-surface', target, `beeper ${args.join(' ')} failed with status ${result.status}`)
     }
