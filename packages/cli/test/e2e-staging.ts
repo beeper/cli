@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 await loadEnvFile(process.env.BEEPER_E2E_ENV_FILE || path.join(repoRoot, '.env.e2e'))
 
-const cliBin = path.join(repoRoot, 'bin/run.js')
+const cliBin = process.env.BEEPER_E2E_CLI_BIN || path.join(repoRoot, 'bin/dev.js')
 const runID = process.env.BEEPER_E2E_RUN_ID || String(Date.now())
 const workDir = process.env.BEEPER_E2E_WORKDIR || path.join(tmpdir(), `beeper-cli-e2e-${runID}`)
 const configDir = process.env.BEEPER_E2E_CONFIG_DIR || path.join(workDir, 'cli-config')
@@ -265,14 +265,17 @@ async function phaseMessaging() {
 
 async function phaseGroupMessaging(targets) {
   const [sender, ...receivers] = targets.filter(target => target.accessToken && target.matrix?.userID)
-  if (!sender || receivers.length < 2) {
-    recordBlock('messaging', undefined, 'group messaging needs three signed-in targets with Matrix user IDs.')
+  const distinctReceivers = receivers.filter((target, index, list) =>
+    target.matrix.userID !== sender?.matrix?.userID &&
+    list.findIndex(candidate => candidate.matrix.userID === target.matrix.userID) === index)
+  if (!sender || distinctReceivers.length < 2) {
+    recordBlock('messaging', undefined, 'group messaging needs three signed-in targets with distinct Matrix user IDs.')
     return
   }
 
   const roomName = `CLI E2E ${runID}`
   const createRoomBody = JSON.stringify({
-    invite: receivers.slice(0, 2).map(target => target.matrix.userID),
+    invite: distinctReceivers.slice(0, 2).map(target => target.matrix.userID),
     name: roomName,
     preset: 'trusted_private_chat',
   })
@@ -290,7 +293,7 @@ async function phaseGroupMessaging(targets) {
   const send = runCli(sendArgs, { env: { BEEPER_ACCESS_TOKEN: sender.accessToken }, allowFailure: true })
   recordCommand('messaging-group', sendArgs, send)
 
-  for (const target of [sender, ...receivers.slice(0, 2)]) {
+  for (const target of [sender, ...distinctReceivers.slice(0, 2)]) {
     const listArgs = ['messages', 'list', '--chat', chatID, '--target', target.name, '--limit', '10', '--json']
     const list = runCli(listArgs, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
     recordCommand('messaging-group', listArgs, list)
@@ -314,11 +317,10 @@ async function phaseApiSurface() {
   for (const args of [
     ['api', 'request', 'GET', '/v1/info', '--target', target.name, '--no-auth', '--json'],
     ['api', 'request', 'GET', '/v1/spec', '--target', target.name, '--no-auth', '--json'],
-    ['api', 'request', 'GET', '/v1/app', '--target', target.name, '--json'],
-    ['api', 'request', 'GET', '/v1/app/verifications', '--target', target.name, '--json'],
+    ['api', 'request', 'GET', '/v1/app/setup', '--target', target.name, '--json'],
+    ['api', 'request', 'GET', '/v1/app/setup/verifications', '--target', target.name, '--json'],
     ['api', 'get', '/v1/accounts', '--target', target.name, '--json'],
     ['api', 'get', '/v1/chats?limit=10', '--target', target.name, '--json'],
-    ['api', 'get', '/v1/contacts?limit=10', '--target', target.name, '--json'],
   ]) {
     const result = runCli(args, { env, allowFailure: true })
     recordCommand('api-surface', args, result)
@@ -653,7 +655,8 @@ function recordLoginBlock(target, args, result) {
   if (target.kind === 'server' && /OAuth authorization failed|needs-login|server_error/i.test(output)) {
     recordBlock('login', target, 'Complete Server setup sign-in, then rerun the login/readiness phases.', [
       `BEEPER_CLI_CONFIG_DIR=${configDir} bun packages/cli/bin/run.js targets start ${target.name} --json`,
-      `BEEPER_CLI_CONFIG_DIR=${configDir} bun packages/cli/bin/run.js api post /v1/app/setup/start --target ${target.name} --no-auth`,
+      `BEEPER_CLI_CONFIG_DIR=${configDir} bun packages/cli/bin/run.js auth email start --target ${target.name} --email ${target.email} --json`,
+      `BEEPER_CLI_CONFIG_DIR=${configDir} bun packages/cli/bin/run.js auth email response --target ${target.name} --setup-request-id "$SETUP_REQUEST_ID" --code "$QA_OTP" --username qatest --yes --json`,
       `BEEPER_E2E_RUN_ID=${runID} BEEPER_E2E_OTP="$QA_OTP" BEEPER_E2E_PHASES=login,readiness bun packages/cli/test/e2e-staging.ts`,
     ])
     return
@@ -662,73 +665,41 @@ function recordLoginBlock(target, args, result) {
 }
 
 async function loginServerViaSetupAPI(target) {
-  const setupApi = (path, body) => {
-    const args = ['api', 'post', path, '--target', target.name, '--no-auth']
-    if (body !== undefined) args.push('--body', body)
-    args.push('--json')
-    return args
+  const startArgs = ['auth', 'email', 'start', '--target', target.name, '--email', target.email, '--json']
+  const start = runCli(startArgs, { allowFailure: true })
+  recordCommand('login', startArgs, start)
+  if (start.status !== 0) {
+    recordLoginBlock(target, startArgs, start)
+    return false
   }
-  const runStep = (args) => {
-    const result = runCli(args, { allowFailure: true })
-    recordCommand('login', args, result)
-    if (result.status !== 0) recordLoginBlock(target, args, result)
-    return result
-  }
-
-  const start = runStep(setupApi('/v1/app/setup/start'))
-  if (start.status !== 0) return false
   const setupRequestID = parseEnvelope(start.stdout)?.data?.setupRequestID
   if (!setupRequestID) {
-    recordFailure('login', target, `setup start did not return setupRequestID for ${target.name}`)
+    recordFailure('login', target, `auth email start did not return setupRequestID for ${target.name}`)
     return false
   }
 
-  const email = runStep(setupApi('/v1/app/setup/email', JSON.stringify({ setupRequestID, email: target.email })))
-  if (email.status !== 0) return false
-
-  const response = runStep(setupApi('/v1/app/setup/response', JSON.stringify({ setupRequestID, response: otp })))
-  if (response.status !== 0) return false
-
-  let data = parseEnvelope(response.stdout)?.data
-  if (data?.registrationRequired) {
-    const registerBody = JSON.stringify({
-      acceptTerms: true,
-      leadToken: data.leadToken,
-      setupRequestID: data.setupRequestID ?? setupRequestID,
-      username: usernameForEmail(target.email) ?? data.usernameSuggestions?.[0],
-    })
-    const register = runStep(setupApi('/v1/app/setup/register', registerBody))
-    if (register.status !== 0) return false
-    data = parseEnvelope(register.stdout)?.data
+  const responseArgs = ['auth', 'email', 'response', '--target', target.name, '--setup-request-id', setupRequestID, '--code', otp, '--username', usernameForEmail(target.email), '--yes', '--json']
+  const response = runCli(responseArgs, { allowFailure: true })
+  recordCommand('login', responseArgs, response)
+  if (response.status !== 0) {
+    recordLoginBlock(target, responseArgs, response)
+    return false
   }
 
-  const token = data?.matrix?.accessToken
+  const body = parseEnvelope(response.stdout)?.data
+  const token = await loadTargetAccessToken(target)
   if (!token) {
-    recordFailure('login', target, `setup API did not return a Matrix access token for ${target.name}`)
+    recordFailure('login', target, `setup did not persist a Matrix access token for ${target.name}`)
     return false
   }
-  target.matrix = {
-    deviceID: data.matrix.deviceID,
-    homeserver: data.matrix.homeserver,
-    userID: data.matrix.userID,
-  }
-  await saveTargetAuth(target, {
-    accessToken: token,
-    source: 'manual',
-    tokenType: 'Bearer',
-  })
+  target.accessToken = token
+  target.matrix = body?.readiness?.app?.matrix
   return true
-}
-
-async function saveTargetAuth(target, auth) {
-  const targetPath = path.join(configDir, 'targets', `${target.name}.json`)
-  const current = JSON.parse(await readFile(targetPath, 'utf8'))
-  await writeFile(targetPath, `${JSON.stringify({ ...current, auth }, null, 2)}\n`, { mode: 0o600 })
 }
 
 function usernameForEmail(email) {
   const digits = email.match(/\+(\d+)@/)?.[1]
-  return digits ? `qatest${digits}` : undefined
+  return digits ? `qatest${digits}` : `qatest${Date.now()}`
 }
 
 async function waitForInfo(target) {
@@ -795,8 +766,8 @@ function isCoveredByCliSurface(pathname) {
   return [
     '/v1/info',
     '/v1/spec',
-    '/v1/app',
-    '/v1/app/verifications',
+    '/v1/app/setup',
+    '/v1/app/setup/verifications',
     '/v1/accounts',
     '/v1/chats',
     '/v1/contacts',

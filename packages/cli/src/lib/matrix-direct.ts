@@ -1,4 +1,4 @@
-import { appRequest } from './app-api.js'
+import { getAppState } from './app-state.js'
 import { resolveTarget } from './targets.js'
 
 type MatrixFlags = {
@@ -12,7 +12,7 @@ export async function matrixContext(flags: MatrixFlags): Promise<MatrixContext> 
   const target = await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
   const token = process.env.BEEPER_ACCESS_TOKEN || target.auth?.accessToken
   if (!token) throw new Error('Matrix fallback requires stored target auth or BEEPER_ACCESS_TOKEN.')
-  const state = await appRequest<{ matrix?: { homeserver?: string } }>('GET', '/v1/app/setup', {
+  const state = await getAppState({
     baseURL: flags['base-url'],
     target: flags.target,
     token,

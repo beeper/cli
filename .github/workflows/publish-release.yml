@@ -38,25 +38,13 @@ jobs:
           gh release create "${tag}" --title "${tag}" --generate-notes --verify-tag
         fi
 
-    # Binary/Homebrew release assets are intentionally disabled until binary
-    # releases are ready to ship. Re-enable these steps with the package scripts
-    # already kept in packages/cli/package.json:
-    #
-    # - name: Build Homebrew archive
-    #   run: bun run --filter beeper-cli pack:homebrew
-    #
-    # - name: Publish GitHub release assets
-    #   env:
-    #     GH_TOKEN: ${{ github.token }}
-    #   run: |
-    #     set -euo pipefail
-    #     tag="${GITHUB_REF_NAME}"
-    #     if ! gh release view "${tag}" >/dev/null 2>&1; then
-    #       gh release create "${tag}" --title "${tag}" --generate-notes --verify-tag
-    #     fi
-    #     gh release upload "${tag}" packages/cli/dist/bin/beeper-* packages/cli/dist/bin/binaries.json packages/cli/dist/release/*.tar.gz packages/cli/dist/release/homebrew.json --clobber
-    #
-    # - name: Publish Homebrew formula
-    #   env:
-    #     HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-    #   run: bun scripts/publish-homebrew-formula.ts
+    - name: Build binary release assets
+      run: bun run --filter beeper-cli binary
+
+    - name: Publish GitHub release assets
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        tag="${GITHUB_REF_NAME}"
+        gh release upload "${tag}" packages/cli/dist/bin/beeper-* packages/cli/dist/bin/binaries.json --clobber

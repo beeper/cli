@@ -1,5 +1,5 @@
 {
-  "name": "desktop-api-cli-monorepo",
+  "name": "@beeper/cli",
   "private": true,
   "type": "module",
   "packageManager": "bun@1.3.10",
@@ -16,6 +16,7 @@
     "changeset": "changeset",
     "lint": "eslint eslint.config.mjs packages/cli-plugin-cloudflare/src packages/cli-plugin-cloudflare/test",
     "pack:packages": "mkdir -p .packs && (cd packages/cli && bun pm pack --destination ../../.packs) && (cd packages/cli-plugin-cloudflare && bun pm pack --destination ../../.packs)",
+    "publish:packages": "bun scripts/publish-packages.ts",
     "release": "bun run check && bun changeset publish",
     "test": "bun run --workspaces --sequential test",
     "typecheck": "bun run --filter beeper-cli build && bun run --workspaces --sequential typecheck",

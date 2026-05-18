@@ -11,7 +11,7 @@ void (async () => {
   const payloadHash = createHash('sha256').update(archive).digest('hex').slice(0, 16)
   const cacheRoot = process.env.BEEPER_CLI_BINARY_CACHE_DIR || join(homedir(), '.cache', 'beeper-cli', 'binary')
   const payloadRoot = join(cacheRoot, payloadHash)
-  const entrypoint = join(payloadRoot, 'bin', 'run.js')
+  const entrypoint = join(payloadRoot, 'bin', 'cli.js')
 
   if (!existsSync(entrypoint)) {
     const tempArchive = join(tmpdir(), `beeper-cli-${payloadHash}.tar.gz`)

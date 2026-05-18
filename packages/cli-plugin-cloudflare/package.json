@@ -1,6 +1,6 @@
 {
   "name": "@beeper/cli-plugin-cloudflare",
-  "version": "0.0.0",
+  "version": "0.6.0",
   "description": "Cloudflare Tunnel commands for Beeper CLI",
   "license": "MIT",
   "type": "module",
@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@oclif/core": "^4.11.2",
-    "beeper-cli": "workspace:*"
+    "beeper-cli": "^0.6.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

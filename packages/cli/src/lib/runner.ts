@@ -1,3 +1,5 @@
+import { spawn } from 'node:child_process'
+
 export type RunResult = {
   code: number | null
   signal: NodeJS.Signals | null
@@ -6,22 +8,32 @@ export type RunResult = {
 }
 
 export async function runCli(args: string[], options: { inherit?: boolean } = {}): Promise<RunResult> {
-  const child = Bun.spawn([process.execPath, process.argv[1]!, ...args], {
+  const child = spawn(process.execPath, [process.argv[1]!, ...args], {
     env: process.env,
-    stdin: options.inherit ? 'inherit' : 'ignore',
-    stdout: options.inherit ? 'inherit' : 'pipe',
-    stderr: options.inherit ? 'inherit' : 'pipe',
+    stdio: [options.inherit ? 'inherit' : 'ignore', options.inherit ? 'inherit' : 'pipe', options.inherit ? 'inherit' : 'pipe'],
+  })
+
+  const waitForExit = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
+    child.once('error', reject)
+    child.once('exit', (code, signal) => resolve({ code, signal }))
   })
 
   if (options.inherit) {
-    const code = await child.exited
-    return { code, signal: child.signalCode as NodeJS.Signals | null, stdout: '', stderr: '' }
+    const { code, signal } = await waitForExit
+    return { code, signal, stdout: '', stderr: '' }
   }
 
-  const [stdout, stderr, code] = await Promise.all([
-    new Response(child.stdout).text(),
-    new Response(child.stderr).text(),
-    child.exited,
+  const [stdout, stderr, exit] = await Promise.all([
+    streamToString(child.stdout),
+    streamToString(child.stderr),
+    waitForExit,
   ])
-  return { code, signal: child.signalCode as NodeJS.Signals | null, stdout, stderr }
+  return { code: exit.code, signal: exit.signal, stdout, stderr }
+}
+
+async function streamToString(stream: NodeJS.ReadableStream | null): Promise<string> {
+  if (!stream) return ''
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)))
+  return Buffer.concat(chunks).toString('utf8')
 }

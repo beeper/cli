@@ -1,4 +1,4 @@
-import { access, chmod, mkdir, rename, rm } from 'node:fs/promises'
+import { access, chmod, mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { arch, platform } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -193,7 +193,7 @@ function downloadURL(system = platform(), cpu = arch()): string {
 async function downloadFile(url: string, to: string): Promise<void> {
   const response = await fetch(url, { redirect: 'follow' })
   if (!response.ok || !response.body) throw new Error(`Could not download ${url}: ${response.status} ${response.statusText}`)
-  await Bun.write(to, response)
+  await writeFile(to, Buffer.from(await response.arrayBuffer()))
 }
 
 export function findTunnelURL(data: string, domain = cloudflaredDomain()): string | undefined {

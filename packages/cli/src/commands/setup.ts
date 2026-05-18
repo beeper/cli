@@ -7,6 +7,7 @@ import { installDesktop, installServer, type InstallChannel } from '../lib/insta
 import { connectedAccountSummary, findLocalDesktopSession, type LocalDesktopSession } from '../lib/local-desktop.js'
 import { loginWithPKCE } from '../lib/oauth.js'
 import { launchDesktopApp, startProfile } from '../lib/profiles.js'
+import { interactiveEmailSetup } from '../lib/setup-login.js'
 import {
   builtInDesktopTargetID,
   createProfileTarget,
@@ -32,6 +33,8 @@ export default class Setup extends BeeperCommand {
     install: Flags.boolean({ default: false, description: 'Allow installing missing managed runtime' }),
     channel: Flags.string({ options: ['stable', 'nightly'], default: 'stable', description: 'Install release channel' }),
     'server-env': Flags.string({ options: ['production', 'staging'], default: 'production', description: 'Server environment. Staging forces nightly.' }),
+    email: Flags.string({ description: 'Sign in with an email address' }),
+    username: Flags.string({ description: 'Username to use if setup creates a new account' }),
   }
 
   static override examples = [
@@ -45,8 +48,8 @@ export default class Setup extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(Setup)
     ensureWritable(flags)
-    const modeCount = [flags.local, flags.oauth, Boolean(flags.remote), flags.server, flags.desktop].filter(Boolean).length
-    if (modeCount > 1) throw new Error('Specify at most one of --local, --oauth, --remote, --server, or --desktop')
+    const modeCount = [flags.local, flags.oauth, Boolean(flags.email), Boolean(flags.remote), flags.server, flags.desktop].filter(Boolean).length
+    if (modeCount > 1) throw new Error('Specify at most one of --local, --oauth, --email, --remote, --server, or --desktop')
     if (flags.events) writeEvent('setup_step', { step: 'start', target: flags.target })
 
     if (flags.remote) {
@@ -69,6 +72,10 @@ export default class Setup extends BeeperCommand {
     }
     if (flags.oauth) {
       await this.setupOAuth(target, flags)
+      return
+    }
+    if (flags.email) {
+      await this.setupEmail(target, flags)
       return
     }
 
@@ -138,6 +145,11 @@ export default class Setup extends BeeperCommand {
     await this.printSetupResult(result, flags)
   }
 
+  private async setupEmail(target: Target, flags: SetupFlags): Promise<void> {
+    const result = await setupEmailTarget(target, flags)
+    await this.printSetupResult(result, flags)
+  }
+
   private async setupRemote(flags: SetupFlags): Promise<void> {
     const name = flags.target ?? remoteName(flags.remote!)
     const target: Target = {
@@ -194,10 +206,12 @@ type SetupFlags = {
   json?: boolean
   local?: boolean
   oauth?: boolean
+  email?: string
   remote?: string
   server?: boolean
   'server-env'?: string
   target?: string
+  username?: string
   yes?: boolean
 }
 
@@ -309,6 +323,14 @@ async function setupOAuthTarget(target: Target, flags: SetupFlags, source?: Auth
     connectedAccountSummary(target, auth).catch(() => []),
   ])
   return { accounts, authSource, readiness, target: publicTarget({ ...target, auth }) }
+}
+
+async function setupEmailTarget(target: Target, flags: SetupFlags): Promise<SetupResult> {
+  if (flags.events) writeEvent('setup_step', { step: 'email', target: target.id })
+  const email = flags.email
+  if (!email) throw new Error('Email setup requires --email.')
+  if (flags.json || !process.stdin.isTTY) throw new Error('Email setup prompts for the verification code. For automation, use `beeper auth email start` and `beeper auth email response`.')
+  return interactiveEmailSetup(target, { email, username: flags.username, yes: flags.yes, json: flags.json })
 }
 
 function publicTarget(target: Target): Omit<Target, 'auth'> & { auth?: { source?: AuthSource; tokenType?: 'Bearer' } } {

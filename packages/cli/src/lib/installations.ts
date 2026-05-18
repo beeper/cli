@@ -213,7 +213,7 @@ export async function downloadArtifact(url: string, destinationDir: string): Pro
   const filename = filenameFromResponse(response) ?? (basename(new URL(response.url).pathname) || `beeper-download-${Date.now()}`)
   const finalPath = join(destinationDir, filename)
   const tmpPath = join(tmpdir(), `${filename}.${process.pid}.${Date.now()}.tmp`)
-  await Bun.write(tmpPath, response)
+  await writeResponseToFile(response, tmpPath)
   await rename(tmpPath, finalPath)
   return finalPath
 }
@@ -358,6 +358,10 @@ function stringField(value: unknown, fields: string[]): string | undefined {
     if (typeof candidate === 'string' && candidate.length > 0) return candidate
   }
   return undefined
+}
+
+async function writeResponseToFile(response: Response, path: string): Promise<void> {
+  await writeFile(path, Buffer.from(await response.arrayBuffer()))
 }
 
 function filenameFromResponse(response: Response): string | undefined {

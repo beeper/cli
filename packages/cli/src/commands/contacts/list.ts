@@ -3,7 +3,7 @@ import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
-import { resolveAccountIDs } from '../../lib/resolve.js'
+import { listAccountIDs, resolveAccountIDs } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
 export default class ContactsList extends BeeperCommand {
@@ -21,7 +21,7 @@ export default class ContactsList extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(ContactsList)
     const client = await createClient(flags)
-    const accountIDs = (await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true }))!
+    const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true }) ?? await listAccountIDs(client)
     const useSpinner = !flags.json && !flags.ids
     const load = async (): Promise<Array<Record<string, unknown>>> => {
       const collected: Array<Record<string, unknown>> = []

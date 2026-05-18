@@ -38,9 +38,12 @@ export default class AccountsAdd extends BeeperCommand {
         await printData(bridges, 'json')
         return
       }
-
-      printAvailableAccounts(bridges.items)
-      return
+      if (flags.guided && !flags['non-interactive'] && process.stdin.isTTY) {
+        args.bridge = await chooseAccountType(bridges.items)
+      } else {
+        printAvailableAccounts(bridges.items)
+        return
+      }
     }
 
     const bridges = await client.bridges.list()
@@ -78,6 +81,31 @@ export default class AccountsAdd extends BeeperCommand {
     }) : step
     if (flags.json) await printData(result, 'json')
     else await printAccountLoginStep(result)
+  }
+}
+
+async function chooseAccountType(items: AccountType[]): Promise<string> {
+  const available = items.filter(item => item.status === 'available')
+  if (!available.length) throw new Error('No available bridges to connect.')
+
+  process.stdout.write('Choose a bridge to connect an account:\n')
+  available.forEach((account, index) => {
+    const multiple = account.supportsMultipleAccounts ? 'multiple allowed' : 'single account'
+    process.stdout.write(`  ${index + 1}. ${account.displayName} (${account.id}) - ${multiple}\n`)
+  })
+
+  const rl = createInterface({ input, output })
+  try {
+    for (;;) {
+      const answer = (await rl.question('Select a bridge: ')).trim()
+      const selected = Number.parseInt(answer, 10)
+      if (Number.isInteger(selected) && selected >= 1 && selected <= available.length) return available[selected - 1]!.id
+      const byID = available.find(account => account.id === answer)
+      if (byID) return byID.id
+      process.stdout.write('Choose one of the listed bridges.\n')
+    }
+  } finally {
+    rl.close()
   }
 }
 
