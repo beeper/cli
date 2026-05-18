@@ -407,6 +407,11 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper send sticker --to "Family" --file ./hi.webp'],
   },
   {
+    command: 'send unreact',
+    description: 'Remove a reaction from a message',
+    examples: ['beeper send unreact --to "Family" --id <messageID> --reaction "🎉"'],
+  },
+  {
     command: 'send voice',
     description: 'Send a voice note',
     examples: [

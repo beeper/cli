@@ -34,9 +34,19 @@ export default class Setup extends BeeperCommand {
     'server-env': Flags.string({ options: ['production', 'staging'], default: 'production', description: 'Server environment. Staging forces nightly.' }),
   }
 
+  static override examples = [
+    'beeper setup --local',
+    'beeper setup --oauth',
+    'beeper setup --remote https://my-beeper.example.com',
+    'beeper setup --server --install',
+    'beeper setup --desktop --channel nightly',
+  ]
+
   async run(): Promise<void> {
     const { flags } = await this.parse(Setup)
     ensureWritable(flags)
+    const modeCount = [flags.local, flags.oauth, Boolean(flags.remote), flags.server, flags.desktop].filter(Boolean).length
+    if (modeCount > 1) throw new Error('Specify at most one of --local, --oauth, --remote, --server, or --desktop')
     if (flags.events) writeEvent('setup_step', { step: 'start', target: flags.target })
 
     if (flags.remote) {

@@ -97,6 +97,7 @@ const expectedCommands = [
   'send file',
   'send react',
   'send sticker',
+  'send unreact',
   'send voice',
   'presence',
   'contacts list',
@@ -134,7 +135,9 @@ const help = ok('--help')
 assert.match(help, /\btargets\b/, 'help should expose targets')
 assert.match(help, /\bchats\b/, 'help should expose chats')
 assert.match(help, /\bmessages\b/, 'help should expose messages')
-assert.doesNotMatch(help, /\bprofile\b|\bcommands\b|\bllm\b|\blogin\b|\blogout\b/, 'help must not expose deleted root/internal commands')
+// Anchor to the column-2 command/topic listing so we don't false-positive on the word
+// "commands" inside another command's summary (e.g. rpc).
+assert.doesNotMatch(help, /^\s{2,}(profile|commands|llm|login|logout)\s/m, 'help must not expose deleted root/internal commands')
 assert.match(help, /\bplugins\b/, 'help should expose plugin management')
 assert.match(help, /\bautocomplete\b/, 'help should expose shell autocomplete')
 assert.doesNotMatch(help, /\bassets\b|\bapp\b/, 'help must not expose old API namespaces')
