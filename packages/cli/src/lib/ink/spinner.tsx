@@ -106,6 +106,7 @@ export async function withInkSpinner<T>(
   fn: () => Promise<T>,
   options?: { done?: (value: T) => string | undefined; stream?: NodeJS.WriteStream },
 ): Promise<T> {
+  if (process.env.BEEPER_QUIET === '1') return fn()
   const stream = options?.stream ?? process.stderr
   const spinner = createInkSpinner(label, stream)
   try {

@@ -160,10 +160,13 @@ Default Desktop API target: `http://127.0.0.1:23373`.
 | --- | --- |
 | `0` | Success. |
 | `1` | Generic runtime error. |
-| `2` | Usage error (parsing, validation, missing required flag/arg). |
-| Non-zero | Most failures use `1`; `doctor` reports `1` when readiness is not `ready`. |
+| `2` | Usage error (parsing, validation, missing required flag/arg, read-only refusal). |
+| `3` | Auth required (no stored token; sign in to Beeper Desktop or set `BEEPER_ACCESS_TOKEN`). |
+| `4` | Target/account not ready (`doctor` reports this when readiness is not `ready`). |
+| `5` | Selector matched nothing (unknown target, account, chat, contact). |
+| `6` | Ambiguous selector (multiple matches; pass an exact ID or `--pick N`). |
 
-JSON output preserves the same envelope on failure: `{"success":false,"data":null,"error":"..."}` written to stderr.
+JSON output preserves the same envelope on failure: `{"success":false,"data":null,"error":"...","exitCode":N}` written to stderr.
 
 ## Addressing
 
@@ -280,8 +283,9 @@ explicit writes, and names based on what people are trying to do.
 | `messages export` | Export one chat's messages to JSON |
 | `send text` | Send a text message |
 | `send file` | Send a file |
-| `send react` | Send a reaction to a message (alias of messages react) |
+| `send react` | Send a reaction to a message |
 | `send sticker` | Send a sticker |
+| `send unreact` | Remove a reaction from a message |
 | `send voice` | Send a voice note |
 | `presence` | Send a typing (or paused) indicator to a chat |
 | `contacts list` | List contacts |
@@ -324,6 +328,7 @@ Flags:
 | `--install` | boolean | Allow installing missing managed runtime |
 | `--local` | boolean | Use the local Beeper Desktop session on this device |
 | `--oauth` | boolean | Authorize the target with browser OAuth/PKCE |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--remote=<value>` | option | Connect to a remote Beeper Desktop or Server URL |
 | `--server` | boolean | Set up a local Beeper Server target |
 | `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
@@ -352,6 +357,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--channel=<stable|nightly>` | option | Desktop release channel Default: stable |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -374,6 +380,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--channel=<stable|nightly>` | option | Server release channel Default: stable |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Examples:
@@ -391,6 +398,12 @@ List Beeper targets
 ```sh
 beeper targets list
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -420,6 +433,7 @@ Flags:
 | --- | --- | --- |
 | `--default` | boolean | Set this target as the default after creation |
 | `--port=<value>` | option | TCP port the managed Desktop will expose its API on |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Examples:
@@ -449,6 +463,7 @@ Flags:
 | --- | --- | --- |
 | `--default` | boolean | Set this target as the default after creation |
 | `--port=<value>` | option | TCP port the managed Server will expose its API on |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Examples:
@@ -478,6 +493,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--default` | boolean | Set this target as the default after creation |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -500,6 +516,12 @@ Arguments:
 | --- | --- | --- |
 | `name` | yes | Target name |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -520,6 +542,12 @@ Arguments:
 | Name | Required | Description |
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -543,6 +571,12 @@ Arguments:
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -565,6 +599,12 @@ Arguments:
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -585,6 +625,12 @@ Arguments:
 | Name | Required | Description |
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -607,6 +653,12 @@ Arguments:
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -627,6 +679,12 @@ Arguments:
 | Name | Required | Description |
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -649,6 +707,12 @@ Arguments:
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -669,6 +733,12 @@ Arguments:
 | Name | Required | Description |
 | --- | --- | --- |
 | `name` | no | Target name. Defaults to the selected target. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -691,6 +761,12 @@ Arguments:
 | --- | --- | --- |
 | `name` | yes | Target name |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -705,6 +781,12 @@ Show authentication status
 ```sh
 beeper auth status
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -721,6 +803,12 @@ Log out and invalidate the session
 ```sh
 beeper auth logout
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -741,6 +829,7 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--user=<value>` | option | User ID to verify against (defaults to your own account) |
 
 Examples:
@@ -758,6 +847,12 @@ Show encryption readiness
 ```sh
 beeper auth verify status
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -779,6 +874,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -800,6 +896,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--key=<value>` | option | Recovery key string Required. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -815,6 +912,12 @@ Create a new encrypted-messages recovery key
 ```sh
 beeper auth verify reset-recovery-key
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -836,6 +939,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -851,6 +955,12 @@ List active verification work
 ```sh
 beeper auth verify list
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -871,6 +981,7 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--user=<value>` | option | User ID to verify with (defaults to your own account) |
 
 Examples:
@@ -887,6 +998,12 @@ Show active verification details
 ```sh
 beeper auth verify show
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -908,6 +1025,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -929,6 +1047,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -951,6 +1070,7 @@ Flags:
 | --- | --- | --- |
 | `--id=<value>` | option | Verification request ID. Defaults to the active request. |
 | `--payload=<value>` | option | Raw QR-code data scanned from the other device Required. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -972,6 +1092,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--id=<value>` | option | Verification request ID. Defaults to the active request. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -994,6 +1115,7 @@ Flags:
 | --- | --- | --- |
 | `--account=<value>...` | option | Filter by account selector |
 | `--ids` | boolean | Print only account IDs |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1027,6 +1149,7 @@ Flags:
 | `--guided` | boolean | Prompt through login steps until completion |
 | `--login-id=<value>` | option | Existing login ID to re-login as |
 | `--non-interactive` | boolean | Do not prompt; require --flow, --field, and --cookie values when needed. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1051,6 +1174,12 @@ Arguments:
 | --- | --- | --- |
 | `account` | yes | Account selector (ID, network, bridge, or user identity) |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -1071,6 +1200,12 @@ Arguments:
 | Name | Required | Description |
 | --- | --- | --- |
 | `account` | yes | Account selector (ID, network, bridge, or user identity) |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1094,6 +1229,12 @@ Arguments:
 | Name | Required | Description |
 | --- | --- | --- |
 | `account` | yes | Account selector (ID, network, bridge, user identity), or "" to clear. |
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1121,6 +1262,7 @@ Flags:
 | `--low-priority` | boolean | Only Low Priority chats (--no-low-priority to exclude) |
 | `--muted` | boolean | Only muted chats (--no-muted to exclude) |
 | `--pinned` | boolean | Only pinned chats (--no-pinned to exclude) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--unread` | boolean | Only chats with unread messages (--no-unread to exclude) |
 
 Examples:
@@ -1153,6 +1295,7 @@ Flags:
 | `--account=<value>...` | option | Limit to Account ID, network, bridge, or account user |
 | `--ids` | boolean | Print only chat IDs |
 | `--limit=<value>` | option | Maximum chats to print Default: 20 |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1176,6 +1319,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--max-participants=<value>` | option | Limit number of participants returned in chat details |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1204,6 +1348,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--account=<value>` | option | Account selector. Defaults to the single available account or the matrix account. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--title=<value>` | option | Optional initial title for a new group chat |
 
 Examples:
@@ -1228,6 +1373,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1250,6 +1396,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1272,6 +1419,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1294,6 +1442,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1316,6 +1465,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1338,6 +1488,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1361,6 +1512,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--message=<value>` | option | Mark read at (or unread starting from) this message ID |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1384,6 +1536,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--message=<value>` | option | Mark read at (or unread starting from) this message ID |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1407,6 +1560,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--level=<inbox|low>` | option | Destination: inbox (default mailbox) or low (Low Priority) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1430,6 +1584,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1452,6 +1607,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--title=<value>` | option | New chat title Required. |
 
 Examples:
@@ -1477,6 +1633,7 @@ Flags:
 | `--clear` | boolean | Clear the existing description instead of setting one |
 | `--description=<value>` | option | New chat description |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1502,6 +1659,7 @@ Flags:
 | `--clear` | boolean | Clear the existing avatar instead of setting a new one |
 | `--file=<value>` | option | Image file to upload as the new avatar |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1528,6 +1686,7 @@ Flags:
 | `--filename=<value>` | option | Override the displayed filename of the attachment |
 | `--mime=<value>` | option | Override MIME type detection for the attachment |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--text=<value>` | option | Draft text. Omit and pass --clear to remove the draft. |
 
 Examples:
@@ -1552,6 +1711,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--seconds=<value>` | option | Timer in seconds, or "off" to disable Required. |
 
 Examples:
@@ -1576,6 +1736,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--dismiss-on-message` | boolean | Dismiss the reminder automatically when a new message arrives |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--when=<value>` | option | ISO timestamp when the reminder should trigger Required. |
 
 Examples:
@@ -1600,6 +1761,7 @@ Flags:
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1625,6 +1787,7 @@ Flags:
 | `--draft=<value>` | option | Prefill the chat composer with this draft text |
 | `--message=<value>` | option | Scroll Desktop to this message ID after focusing |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1652,6 +1815,7 @@ Flags:
 | `--ids` | boolean | Print only message IDs |
 | `--limit=<value>` | option | Maximum messages to print Default: 50 |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--sender=<value>` | option | Filter by sender: me, others, or a specific user ID (client-side) |
 
 Examples:
@@ -1691,6 +1855,7 @@ Flags:
 | `--include-muted` | boolean | Include muted chats |
 | `--limit=<value>` | option | Maximum results Default: 50 |
 | `--media=<any|video|image|link|file>...` | option | Filter by media type. Repeat for multiple. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--sender=<value>` | option | me, others, or a user ID |
 
 Examples:
@@ -1717,6 +1882,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Message ID, pendingMessageID, or Matrix event ID Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1742,6 +1908,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Target message ID to center the window on Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1766,6 +1933,7 @@ Flags:
 | `--id=<value>` | option | Message ID to edit (must be one of your own messages with no attachments) Required. |
 | `--message=<value>` | option | New message text Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1790,6 +1958,7 @@ Flags:
 | `--for-everyone` | boolean | Delete for everyone when the network supports it (otherwise deletes only for you) |
 | `--id=<value>` | option | Message ID to delete (final message ID; pending IDs are rejected) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1813,6 +1982,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Message ID to react to Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--reaction=<value>` | option | Reaction key (emoji, shortcode, or custom emoji key) Required. |
 | `--transaction=<value>` | option | Optional transaction ID for deduplication |
 
@@ -1838,6 +2008,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--id=<value>` | option | Message ID whose reaction to remove Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--reaction=<value>` | option | Reaction key previously added (emoji, shortcode, or custom emoji key) Required. |
 
 Examples:
@@ -1870,6 +2041,7 @@ Flags:
 | `--limit=<value>` | option | Maximum messages to export |
 | `-o, --output=<value>` | option | Output path; - writes JSON to stdout Default: - |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -1896,6 +2068,7 @@ Flags:
 | `--message=<value>` | option | Message text to send Required. |
 | `--no-preview` | boolean | Disable automatic link preview for URLs in the message |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
@@ -1926,6 +2099,7 @@ Flags:
 | `--filename=<value>` | option | Override the displayed filename |
 | `--mime=<value>` | option | Override MIME type detection |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
@@ -1940,7 +2114,7 @@ beeper send file --to "Family" --file ./photo.jpg --caption "from today"
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper send react`
-Send a reaction to a message (alias of messages react)
+Send a reaction to a message
 
 ```sh
 beeper send react
@@ -1952,6 +2126,7 @@ Flags:
 | --- | --- | --- |
 | `--id=<value>` | option | Message ID to react to Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--reaction=<value>` | option | Reaction key (emoji, shortcode, or custom emoji key) Required. |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--transaction=<value>` | option | Optional transaction ID for deduplication |
@@ -1981,6 +2156,7 @@ Flags:
 | `--filename=<value>` | option | Override the displayed filename |
 | `--mime=<value>` | option | MIME type for the sticker (default: image/webp) Default: image/webp |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
@@ -1990,6 +2166,32 @@ Examples:
 
 ```sh
 beeper send sticker --to "Family" --file ./hi.webp
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
+
+### `beeper send unreact`
+Remove a reaction from a message
+
+```sh
+beeper send unreact
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--id=<value>` | option | Message ID whose reaction to remove Required. |
+| `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+| `--reaction=<value>` | option | Reaction key to remove (emoji, shortcode, or custom emoji key) Required. |
+| `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
+| `--transaction=<value>` | option | Optional transaction ID for deduplication |
+
+Examples:
+
+```sh
+beeper send unreact --to "Family" --id <messageID> --reaction "🎉"
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--read-only`, `--timeout`, `--yes`.
@@ -2012,6 +2214,7 @@ Flags:
 | `--filename=<value>` | option | Override the displayed filename |
 | `--mime=<value>` | option | MIME type for the voice note (default: audio/ogg) Default: audio/ogg |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--reply-to=<value>` | option | Send as a reply to this message ID |
 | `--to=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--wait` | boolean | Wait for the message to leave the pending state (or fail) before returning |
@@ -2042,6 +2245,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--duration=<value>` | option | When --state is typing, send paused automatically after this many seconds |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--state=<typing|paused>` | option | Indicator to send Default: typing |
 
 Examples:
@@ -2071,6 +2275,7 @@ Flags:
 | `--ids` | boolean | Print only contact user IDs |
 | `--limit=<value>` | option | Maximum contacts to print Default: 50 |
 | `--query=<value>` | option | Optional blended contact lookup query |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2100,6 +2305,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--account=<value>...` | option | Account ID, network, bridge, or account user. Omit to search every account. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2127,6 +2333,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--account=<value>...` | option | Limit to account ID, network, bridge, or account user |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2154,6 +2361,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `-o, --out=<value>` | option | Output directory; pass - to stream the file to stdout Default: . |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2211,6 +2419,7 @@ Flags:
 | `-c, --chat=<value>...` | option | Chat ID to subscribe to. Defaults to all chats. |
 | `--exclude-type=<chat.upserted|chat.deleted|message.upserted|message.deleted>...` | option | Drop events of these types. Repeat for multiple. |
 | `--include-type=<chat.upserted|chat.deleted|message.upserted|message.deleted>...` | option | Only forward events of these types. Repeat for multiple. |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--webhook=<value>` | option | Forward each event to this URL as a POST request (best-effort, fire-and-forget) |
 | `--webhook-queue=<value>` | option | Maximum pending webhook deliveries before dropping events Default: 64 |
 | `--webhook-secret=<value>` | option | HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex> |
@@ -2235,6 +2444,12 @@ beeper rpc
 
 Reads JSON lines like {"id":1,"command":"send CHAT hello"} or {"id":1,"args":["status","--json"]}.
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -2249,6 +2464,12 @@ Print the command manual
 ```sh
 beeper man
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2268,6 +2489,12 @@ beeper doctor
 
 Active reachability check plus readiness diagnostics. Exits non-zero when the target is not ready. For a cheap snapshot use `beeper status`.
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -2286,6 +2513,12 @@ beeper status
 
 Cheap, read-only snapshot. For active reachability checks and diagnostics, run `beeper doctor`.
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -2302,6 +2535,12 @@ Open Beeper CLI docs
 beeper docs
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -2316,6 +2555,12 @@ Print CLI version
 ```sh
 beeper version
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2366,6 +2611,7 @@ Flags:
 | `--check` | boolean | Only check for updates; do not install |
 | `--cli` | boolean | Check the Beeper CLI package |
 | `--desktop` | boolean | Check the CLI-owned Desktop install |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 | `--server` | boolean | Check the CLI-owned Server install |
 
 Examples:
@@ -2391,6 +2637,12 @@ Arguments:
 | --- | --- | --- |
 | `key` | no | Optional config key to print |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -2414,6 +2666,12 @@ Arguments:
 | `key` | yes | Config key to set |
 | `value` | yes | Config value (pass "" to clear) |
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -2429,6 +2687,12 @@ Print the CLI config path
 beeper config path
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
+
 Examples:
 
 ```sh
@@ -2443,6 +2707,12 @@ Reset CLI configuration
 ```sh
 beeper config reset
 ```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2470,6 +2740,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--no-auth` | boolean | Call a public API path without a bearer token |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2499,6 +2770,7 @@ Flags:
 | --- | --- | --- |
 | `--body=<value>` | option | JSON request body Default: {} |
 | `--no-auth` | boolean | Call a public API path without a bearer token |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 
@@ -2528,6 +2800,7 @@ Flags:
 | --- | --- | --- |
 | `--body=<value>` | option | JSON request body |
 | `--no-auth` | boolean | Call a public API path without a bearer token |
+| `-q, --quiet` | boolean | Suppress spinners and success lines (errors still print). Honored with or without --json. |
 
 Examples:
 

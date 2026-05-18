@@ -77,6 +77,7 @@ export async function printSuccess(
     writeJSON(envelope({ message: opts.message, detail: opts.detail, entity: opts.entity, ...(opts.data ?? {}) }), format)
     return
   }
+  if (process.env.BEEPER_QUIET === '1') return
   const { renderSuccess } = await loadInk()
   await renderSuccess(opts)
 }

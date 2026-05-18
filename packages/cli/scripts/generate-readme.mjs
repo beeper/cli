@@ -185,10 +185,13 @@ Default Desktop API target: \`http://127.0.0.1:23373\`.
 | --- | --- |
 | \`0\` | Success. |
 | \`1\` | Generic runtime error. |
-| \`2\` | Usage error (parsing, validation, missing required flag/arg). |
-| Non-zero | Most failures use \`1\`; \`doctor\` reports \`1\` when readiness is not \`ready\`. |
+| \`2\` | Usage error (parsing, validation, missing required flag/arg, read-only refusal). |
+| \`3\` | Auth required (no stored token; sign in to Beeper Desktop or set \`BEEPER_ACCESS_TOKEN\`). |
+| \`4\` | Target/account not ready (\`doctor\` reports this when readiness is not \`ready\`). |
+| \`5\` | Selector matched nothing (unknown target, account, chat, contact). |
+| \`6\` | Ambiguous selector (multiple matches; pass an exact ID or \`--pick N\`). |
 
-JSON output preserves the same envelope on failure: \`{"success":false,"data":null,"error":"..."}\` written to stderr.
+JSON output preserves the same envelope on failure: \`{"success":false,"data":null,"error":"...","exitCode":N}\` written to stderr.
 
 ## Addressing
 

@@ -9,9 +9,17 @@ export abstract class BeeperCommand extends Command {
     events: Flags.boolean({ default: false, description: 'Emit NDJSON lifecycle events on stderr (long-running commands)' }),
     full: Flags.boolean({ default: false, description: 'Disable text-output truncation; print full IDs and bodies' }),
     json: Flags.boolean({ default: false, description: 'Print machine-readable JSON envelope on stdout' }),
+    quiet: Flags.boolean({ char: 'q', default: false, description: 'Suppress spinners and success lines (errors still print). Honored with or without --json.' }),
     'read-only': Flags.boolean({ default: false, description: 'Reject commands that would modify Beeper or local CLI state (or set BEEPER_READONLY=1)' }),
     timeout: Flags.string({ description: 'Maximum time to wait, such as 30s, 2m, or 1h' }),
     yes: Flags.boolean({ char: 'y', default: false, description: 'Skip interactive confirmation prompts' }),
+  }
+
+  public override async init(): Promise<void> {
+    await super.init()
+    if (this.argv.includes('--quiet') || this.argv.includes('-q')) {
+      process.env.BEEPER_QUIET = '1'
+    }
   }
 
   protected override async catch(error: Error & { exitCode?: number }): Promise<void> {
@@ -41,4 +49,8 @@ export function ensureWritable(flags: { 'read-only'?: boolean }): void {
 
 export function writeEvent(event: string, data: Record<string, unknown> = {}): void {
   process.stderr.write(`${JSON.stringify({ event, data, ts: Date.now() })}\n`)
+}
+
+export function isQuiet(): boolean {
+  return process.env.BEEPER_QUIET === '1'
 }
