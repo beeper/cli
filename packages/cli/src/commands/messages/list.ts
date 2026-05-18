@@ -53,7 +53,7 @@ function filterBySender(items: unknown[], sender: string | undefined): unknown[]
   return items.filter(item => matchesSender(item, sender))
 }
 
-function matchesSender(item: unknown, sender: string): boolean {
+export function matchesSender(item: unknown, sender: string): boolean {
   if (!item || typeof item !== 'object') return false
   const row = item as { isSender?: boolean; senderID?: string }
   if (sender === 'me') return row.isSender === true

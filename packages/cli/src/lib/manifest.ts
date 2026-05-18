@@ -97,6 +97,15 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper targets remove work'],
   },
   {
+    command: 'targets tunnel',
+    description: 'Expose a local Desktop API over a public Cloudflare tunnel',
+    examples: [
+      'beeper targets tunnel',
+      'beeper targets tunnel --target work --read-only',
+      'beeper targets tunnel --as work-laptop --port 23373',
+    ],
+  },
+  {
     command: 'auth status',
     description: 'Show local auth status and token metadata',
     examples: ['beeper auth status', 'beeper auth status --json'],

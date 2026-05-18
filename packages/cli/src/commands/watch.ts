@@ -7,7 +7,7 @@ import { getBaseURL } from '../lib/targets.js'
 import { startStream } from '../lib/output.js'
 
 type WebhookConfig = { url: string; secret?: string; queue: Array<{ body: string; signature?: string }>; inflight: number; max: number }
-type EventFilter = { include?: Set<string>; exclude?: Set<string> }
+export type EventFilter = { include?: Set<string>; exclude?: Set<string> }
 
 export default class Watch extends BeeperCommand {
   static override summary = 'Stream Desktop API WebSocket events'
@@ -127,7 +127,7 @@ export default class Watch extends BeeperCommand {
   }
 }
 
-function passesFilter(body: string, filter?: EventFilter): boolean {
+export function passesFilter(body: string, filter?: EventFilter): boolean {
   if (!filter || (!filter.include && !filter.exclude)) return true
   let type: string | undefined
   try {

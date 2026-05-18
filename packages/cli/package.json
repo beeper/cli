@@ -29,7 +29,7 @@
     "e2e:staging": "pnpm build && node test/e2e-staging.mjs",
     "pack:homebrew": "pnpm build && node scripts/build-homebrew-archive.mjs",
     "readme": "pnpm build && node scripts/generate-readme.mjs",
-    "test": "pnpm build && node scripts/generate-readme.mjs --check && node scripts/check-api-copy.mjs && node ./test/cli-smoke.mjs",
+    "test": "pnpm build && node scripts/generate-readme.mjs --check && node scripts/check-api-copy.mjs && node scripts/check-manifest.mjs && node ./test/cli-smoke.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "oclif": {
@@ -110,6 +110,7 @@
     "@types/react": "^19.2.14",
     "@types/ws": "^8.18.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.18"
   }
 }
