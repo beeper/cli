@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { existsSync } from "node:fs";
 import { readdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 const root = process.cwd();
 const args = Bun.argv.slice(2);
@@ -68,7 +68,7 @@ const packageJsonPaths = packageDirs
   .filter((path) => existsSync(path));
 
 const packages = await Promise.all(
-  packageJsonPaths.map(async (path) => ({ path, dir: path.replace(/\/package\.json$/, ""), json: await readJson(path) })),
+  packageJsonPaths.map(async (path) => ({ path, dir: dirname(path), json: await readJson(path) })),
 );
 
 const publishable = packages.filter(
