@@ -1,98 +1,60 @@
-#!/usr/bin/env node
-import {createHash} from 'node:crypto';
-import {existsSync} from 'node:fs';
-import {cp, mkdir, mkdtemp, readFile, rm, stat, writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {basename, join, resolve} from 'node:path';
-import {spawn} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
+#!/usr/bin/env bun
+import { createHash } from 'node:crypto'
+import { chmod, cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { basename, join } from 'node:path'
+import { spawn } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 
-const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const workspaceRoot = resolve(root, '../..');
-const packageJsonPath = join(root, 'package.json');
-const pnpmLockPath = join(workspaceRoot, 'pnpm-lock.yaml');
-const distPath = join(root, 'dist');
-const outDir = join(root, 'dist', 'release');
+const root = fileURLToPath(new URL('..', import.meta.url))
+const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
+const version = process.env.PACKAGE_VERSION || pkg.version
+const binaryDir = join(root, 'dist', 'bin')
+const outDir = join(root, 'dist', 'release')
+const metadataPath = join(outDir, 'homebrew.json')
+const platforms = ['darwin-arm64', 'darwin-x64']
 
-const pkg = JSON.parse(await readFile(packageJsonPath, 'utf8'));
-const packageName = 'beeper-cli';
-const commandName = 'beeper';
-const version = process.env.PACKAGE_VERSION || pkg.version;
-const archiveName = `${packageName}_${version}_any.tar.gz`;
-const archivePath = join(outDir, archiveName);
-const metadataPath = join(outDir, 'homebrew.json');
-const workDir = await mkdtemp(join(tmpdir(), 'beeper-cli-homebrew-'));
+await mkdir(outDir, { recursive: true })
 
-await ensureBuilt();
-await mkdir(join(workDir, 'bin'), {recursive: true});
-await mkdir(join(workDir, 'libexec'), {recursive: true});
-await mkdir(outDir, {recursive: true});
+const archives = []
+for (const platform of platforms) {
+  const binaryPath = join(binaryDir, `beeper-${platform}`)
+  const workDir = await mkdtemp(join(tmpdir(), `beeper-cli-${platform}-`))
+  const archiveName = `beeper-cli_${version}_${platform}.tar.gz`
+  const archivePath = join(outDir, archiveName)
 
-await cp(packageJsonPath, join(workDir, 'libexec', 'package.json'));
-await cp(pnpmLockPath, join(workDir, 'libexec', 'pnpm-lock.yaml'));
-await writeFile(join(workDir, 'libexec', 'pnpm-workspace.yaml'), 'packages:\n  - .\n');
-await cp(join(root, 'bin'), join(workDir, 'libexec', 'bin'), {recursive: true});
-await cp(distPath, join(workDir, 'libexec', 'dist'), {
-  recursive: true,
-  filter: source => !source.startsWith(outDir),
-});
-await writeFile(
-  join(workDir, 'bin', commandName),
-  `#!/bin/sh
-set -e
-prefix="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
-exec node "$prefix/libexec/bin/run.js" "$@"
-`,
-  {mode: 0o755},
-);
+  await mkdir(join(workDir, 'bin'), { recursive: true })
+  const installedBinary = join(workDir, 'bin', 'beeper')
+  await cp(binaryPath, installedBinary)
+  await chmod(installedBinary, 0o755)
+  await rm(archivePath, { force: true })
+  await run('tar', ['-czf', archivePath, '-C', workDir, '.'], { cwd: root })
+  const sha256 = await hashFile(archivePath)
+  archives.push({ archive: basename(archivePath), path: archivePath, platform, sha256 })
+  console.log(`${archivePath}`)
+  console.log(`sha256 ${sha256}`)
+  await rm(workDir, { recursive: true, force: true })
+}
 
-await run('pnpm', ['install', '--prod', '--frozen-lockfile', '--ignore-scripts'], {
-  cwd: join(workDir, 'libexec'),
-});
-await rm(archivePath, {force: true});
-await run('tar', ['-czf', archivePath, '-C', workDir, '.'], {cwd: root});
-
-const sha256 = await hashFile(archivePath);
 await writeFile(
   metadataPath,
   `${JSON.stringify(
     {
-      archive: basename(archivePath),
-      command: commandName,
+      archives,
+      command: 'beeper',
       displayName: 'Beeper CLI',
-      package: packageName,
-      path: archivePath,
-      sha256,
+      package: 'beeper-cli',
       version,
     },
     null,
     2,
   )}\n`,
-);
-
-console.log(`${archivePath}`);
-console.log(`sha256 ${sha256}`);
-await rm(workDir, {recursive: true, force: true});
-
-async function ensureBuilt() {
-  if (!existsSync(distPath)) {
-    throw new Error('dist/ does not exist. Run pnpm build before packaging.');
-  }
-
-  const distStats = await stat(distPath);
-  if (!distStats.isDirectory()) {
-    throw new Error('dist/ exists but is not a directory.');
-  }
-
-  if (!existsSync(join(distPath, 'commands'))) {
-    throw new Error('dist/commands does not exist. Run pnpm build before packaging.');
-  }
-}
+)
 
 async function hashFile(path) {
-  const hash = createHash('sha256');
-  hash.update(await readFile(path));
-  return hash.digest('hex');
+  const hash = createHash('sha256')
+  hash.update(await readFile(path))
+  return hash.digest('hex')
 }
 
 async function run(command, args, options = {}) {
@@ -101,16 +63,16 @@ async function run(command, args, options = {}) {
       cwd: options.cwd || root,
       env: process.env,
       stdio: 'inherit',
-    });
+    })
 
-    child.on('error', reject);
+    child.on('error', reject)
     child.on('exit', code => {
       if (code === 0) {
-        resolvePromise();
-        return;
+        resolvePromise()
+        return
       }
 
-      reject(new Error(`${command} ${args.join(' ')} exited with ${code}`));
-    });
-  });
+      reject(new Error(`${command} ${args.join(' ')} exited with ${code}`))
+    })
+  })
 }

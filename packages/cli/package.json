@@ -21,15 +21,16 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "pnpm clean && tsc -p tsconfig.json",
-    "check:api-copy": "pnpm build && node scripts/check-api-copy.mjs",
-    "check:readme": "pnpm build && node scripts/generate-readme.mjs --check",
+    "build": "bun scripts/generate-command-map.mjs && bun run clean && tsc -p tsconfig.json",
+    "binary": "bun run build && bun scripts/build-binaries.mjs",
+    "check:api-copy": "bun run build && bun scripts/check-api-copy.mjs",
+    "check:readme": "bun run build && bun scripts/generate-readme.mjs --check",
     "clean": "rm -rf dist",
-    "dev": "node --import tsx ./bin/dev.js",
-    "e2e:staging": "pnpm build && node test/e2e-staging.mjs",
-    "pack:homebrew": "pnpm build && node scripts/build-homebrew-archive.mjs",
-    "readme": "pnpm build && node scripts/generate-readme.mjs",
-    "test": "pnpm build && node scripts/generate-readme.mjs --check && node scripts/check-api-copy.mjs && node scripts/check-manifest.mjs && node ./test/cli-smoke.mjs && vitest run",
+    "dev": "bun ./bin/dev.js",
+    "e2e:staging": "bun run build && bun test/e2e-staging.mjs",
+    "pack:homebrew": "bun run binary && bun scripts/build-homebrew-archive.mjs",
+    "readme": "bun run build && bun scripts/generate-readme.mjs",
+    "test": "bun run build && bun scripts/generate-readme.mjs --check && bun scripts/check-api-copy.mjs && bun scripts/check-manifest.mjs && bun ./test/cli-smoke.mjs && bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "oclif": {
@@ -37,11 +38,9 @@
       "-h"
     ],
     "commands": {
-      "strategy": "pattern",
-      "target": "./dist/commands",
-      "globPatterns": [
-        "**/!(*.d).{js,ts,tsx}"
-      ]
+      "strategy": "explicit",
+      "target": "./dist/commands.generated.js",
+      "identifier": "commands"
     },
     "bin": "beeper",
     "dirname": "beeper",
@@ -131,11 +130,10 @@
     "ws": "^8.20.1"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.3",
     "@types/node": "^20.0.0",
     "@types/react": "^19.2.14",
     "@types/ws": "^8.18.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.7.2",
-    "vitest": "^4.0.18"
+    "typescript": "^5.7.2"
   }
 }

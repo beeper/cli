@@ -8,8 +8,9 @@ import { sendMessage } from '../../lib/send-message.js'
 
 export default class SendText extends BeeperCommand {
   static override summary = 'Send a text message'
+  static override description = 'Returns when Desktop accepts the send request. Pass `--wait` to wait until the message leaves the pending state or fails.'
   static override examples = [
-    'beeper send text --to "Mom" --message "On my way"',
+    'beeper send text --to 10313 --message "On my way"',
     'beeper send text --to "Team Chat" --message "See @alice" --mention alice@whatsapp',
     'beeper send text --to alice@whatsapp --message "Got it" --reply-to <msgID>',
   ]

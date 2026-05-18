@@ -1,6 +1,6 @@
 import { Args, Command, Flags } from '@oclif/core'
 
-const ZSH_SNIPPET = `# beeper semantic completion (zsh) — source after \`beeper autocomplete\`
+const ZSH_SNIPPET = `# beeper semantic completion (zsh) - source after \`beeper completion\`
 # Augments static command completion with live suggestions for --chat / --to / --account / --target.
 _beeper_complete_kind() {
   local kind="$1"
@@ -28,7 +28,7 @@ compdef '_arguments \\
   "-t+[Target name]:target:_beeper_target"' beeper
 `
 
-const BASH_SNIPPET = `# beeper semantic completion (bash) — source after \`beeper autocomplete\`
+const BASH_SNIPPET = `# beeper semantic completion (bash) - source after \`beeper completion\`
 # Augments static command completion with live suggestions for --chat / --to / --account / --target.
 _beeper_semantic_kind() {
   local kind="$1" cur="$2"
@@ -49,10 +49,10 @@ complete -o nospace -o default -F _beeper_semantic_dispatch beeper
 `
 
 export default class Completion extends Command {
-  static override summary = 'Print shell completion setup (alias for autocomplete)'
-  static override description = `Same as \`beeper autocomplete\`: prints setup instructions and the generated completion script for the requested shell.
+  static override summary = 'Print shell completion setup'
+  static override description = `Print static shell completion setup for bash, zsh, fish, or PowerShell.
 
-Pass \`--semantic\` to print a small supplementary snippet that adds live suggestions for \`--chat\`, \`--to\`, \`--account\`, and \`--target\` by calling back into \`beeper _complete\`. Source it *after* the static autocomplete setup.`
+Pass \`--semantic\` to print a small supplementary snippet that adds live suggestions for \`--chat\`, \`--to\`, \`--account\`, and \`--target\` by calling back into \`beeper _complete\`. Source it after the static completion setup.`
   static override args = {
     shell: Args.string({ description: 'Shell to set up (bash, zsh, fish, or powershell)', required: false }),
   }

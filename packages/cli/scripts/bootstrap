@@ -18,8 +18,8 @@ if [ -f "Brewfile" ] && [ "$(uname -s)" = "Darwin" ] && [ "$SKIP_BREW" != "1" ] 
     echo
   }
 fi
-echo "==> Checking Node dependencies"
+echo "==> Checking Bun dependencies"
 if [ ! -d node_modules ]; then
-  echo "node_modules is missing. Run npm install after approving dependency installation."
+  echo "node_modules is missing. Run bun install after approving dependency installation."
   exit 1
 fi

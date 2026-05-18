@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import { CLIError, ExitCodes, ambiguous, authRequired, notFound, notReady, usageError } from '../src/lib/errors.js'
 
 describe('CLIError factories', () => {

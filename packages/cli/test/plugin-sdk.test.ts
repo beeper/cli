@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 import * as sdk from '../src/plugin-sdk.js'
 
 describe('plugin-sdk public surface', () => {

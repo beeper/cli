@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { execute } from '@oclif/core'
 import { renderStartupLogo } from './logo.js'
 

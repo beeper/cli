@@ -12,8 +12,8 @@ Server / remote targets.
 
 ```sh
 beeper setup [--local | --oauth | --remote URL | --desktop | --server] [--install] [--channel stable|nightly]
-beeper setup install desktop [--channel stable|nightly]
-beeper setup install server  [--channel stable|nightly] [--server-env production|staging]
+beeper install desktop [--channel stable|nightly]
+beeper install server  [--channel stable|nightly] [--server-env production|staging]
 ```
 
 ## Notes
@@ -22,7 +22,7 @@ beeper setup install server  [--channel stable|nightly] [--server-env production
 - `setup --oauth` runs browser-based OAuth/PKCE against the resolved target.
 - `setup --remote URL` configures a remote Beeper Desktop or Server target.
 - `setup --desktop --install` or `setup --server --install` installs the runtime if missing, then sets up.
-- `setup install desktop|server` installs without changing the selected target.
+- `install desktop|server` installs without changing the selected target.
 - The selected target is persisted in `~/.beeper/config.json` (override with `BEEPER_CLI_CONFIG_DIR`).
 - For non-interactive use, pass a token in the environment: `BEEPER_ACCESS_TOKEN=… beeper …`.
 
@@ -34,5 +34,5 @@ beeper setup --local
 beeper setup --oauth
 beeper setup --remote https://desktop.example.com
 beeper setup --desktop --install --channel nightly
-beeper setup install server --server-env staging
+beeper install server --server-env staging
 ```

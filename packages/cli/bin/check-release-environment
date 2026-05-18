@@ -3,13 +3,13 @@ set -euo pipefail
 
 errors=()
 
-for path in package.json package-lock.json scripts/build-homebrew-archive.mjs scripts/publish-homebrew-formula.mjs .github/workflows/publish-release.yml; do
+for path in package.json bun.lock scripts/build-homebrew-archive.mjs scripts/publish-homebrew-formula.mjs .github/workflows/publish-release.yml; do
   if [[ ! -f "${path}" ]]; then
     errors+=("Missing required release file: ${path}")
   fi
 done
 
-for command in node npm git gh tar; do
+for command in bun git gh tar; do
   if ! command -v "${command}" >/dev/null 2>&1; then
     errors+=("Missing required release command: ${command}")
   fi
