@@ -263,6 +263,8 @@ await assert.rejects(() => resolveChatID(fakeClient, 'fam'), /Ambiguous chat/)
 function listCommandFiles(dir) {
   const output = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    // Skip private/internal files like _complete used by autocomplete.
+    if (entry.name.startsWith('_')) continue
     const path = join(dir, entry.name)
     if (entry.isDirectory()) {
       output.push(...listCommandFiles(path))
