@@ -5,7 +5,7 @@ import { createClient } from '../../lib/client.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesExport extends BeeperCommand {
-  static override summary = 'Export one chat\'s messages to JSON'
+  static override summary = 'Export one chat to JSON'
   static override description = 'Lightweight per-chat JSON export. For a full export with transcripts, attachments, and multiple chats, use `beeper export`.'
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),

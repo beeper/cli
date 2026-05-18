@@ -3,7 +3,7 @@ import { clearTargetAuth, resolveTarget } from '../../lib/targets.js'
 import { printSuccess } from '../../lib/output.js'
 
 export default class AuthLogout extends BeeperCommand {
-  static override summary = 'Log out and invalidate the session'
+  static override summary = 'Clear stored authentication'
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthLogout)

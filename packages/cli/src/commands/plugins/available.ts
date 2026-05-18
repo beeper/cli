@@ -3,7 +3,7 @@ import { printData } from '../../lib/output.js'
 import { recommendedPlugins } from '../../lib/recommended-plugins.js'
 
 export default class PluginsAvailable extends BeeperCommand {
-  static override summary = 'List recommended Beeper CLI plugins'
+  static override summary = 'List recommended optional Beeper CLI plugins'
 
   async run(): Promise<void> {
     const { flags } = await this.parse(PluginsAvailable)

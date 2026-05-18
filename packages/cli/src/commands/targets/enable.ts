@@ -7,7 +7,7 @@ import { targetLiveStatus } from '../../lib/target-status.js'
 import { printData, printSuccess } from '../../lib/output.js'
 
 export default class TargetsEnable extends BeeperCommand {
-  static override summary = 'Start a managed target at login'
+  static override summary = 'Enable managed target startup at login'
   static override args = { name: Args.string({ required: false, description: 'Target name. Defaults to the selected target.' }) }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsEnable)

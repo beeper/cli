@@ -3,7 +3,7 @@ import { BeeperCommand, ensureWritable } from '../lib/command.js'
 import { driveVerification } from '../lib/app-state.js'
 import { printData } from '../lib/output.js'
 export default class AuthVerify extends BeeperCommand {
-  static override summary = 'Continue or start device verification'
+  static override summary = 'Finish setup verification or verify another device'
   static override flags = {
     user: Flags.string({ description: 'User ID to verify against (defaults to your own account)' }),
   }

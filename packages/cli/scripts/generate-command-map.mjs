@@ -45,5 +45,5 @@ async function listCommandFiles(dir) {
 function fileToCommand(file) {
   const commandPath = relative(commandsDir, file).split(sep).join('/')
   const parts = commandPath.replace(/\.(ts|tsx)$/, '').split('/')
-  return parts.map(part => part === 'index' ? undefined : part).filter(Boolean).join(' ')
+  return parts.map(part => part === 'index' ? undefined : part).filter(Boolean).join(':')
 }

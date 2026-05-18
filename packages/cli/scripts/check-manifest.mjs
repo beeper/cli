@@ -34,7 +34,8 @@ for (const entry of commandManifest) {
 // The manifest may list commands shipped by first-party plugins (e.g. `targets tunnel`
 // from @beeper/cli-plugin-cloudflare). Only enforce that every file in src/commands has
 // a manifest entry — the reverse direction is allowed to include plugin-provided commands.
-const commandFiles = listCommandFiles(join(root, 'src/commands'))
+const internalCommands = new Set(['autocomplete'])
+const commandFiles = listCommandFiles(join(root, 'src/commands')).filter(file => !internalCommands.has(fileToCommand(file)))
 const fileCommands = new Set(commandFiles.map(fileToCommand))
 for (const file of fileCommands) {
   if (!seen.has(file)) failures.push(`Command file has no manifest entry: ${file}`)
@@ -62,7 +63,7 @@ function listCommandFiles(dir) {
   const output = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     // Files / directories starting with _ are private/internal (e.g. _complete used by autocomplete).
-    if (entry.name.startsWith('_')) continue
+    if (entry.name.startsWith('_') || entry.name === 'autocomplete.ts') continue
     const path = join(dir, entry.name)
     if (entry.isDirectory()) output.push(...listCommandFiles(path))
     else if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.d.ts')) output.push(path)

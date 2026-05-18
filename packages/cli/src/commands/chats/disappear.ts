@@ -5,7 +5,7 @@ import { printData } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsDisappear extends BeeperCommand {
-  static override summary = 'Set disappearing messages for a chat'
+  static override summary = 'Set disappearing-message expiry'
   static override examples = [
     'beeper chats disappear --chat "Mom" --seconds 86400',
     'beeper chats disappear --chat "Work Group" --seconds off',

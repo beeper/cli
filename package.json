@@ -17,7 +17,7 @@
     "lint": "eslint eslint.config.mjs packages/cli-plugin-cloudflare/src packages/cli-plugin-cloudflare/test",
     "pack:packages": "mkdir -p .packs && (cd packages/cli && bun pm pack --destination ../../.packs) && (cd packages/cli-plugin-cloudflare && bun pm pack --destination ../../.packs)",
     "release": "bun run check && bun changeset publish",
-    "test": "bun run --workspaces test",
+    "test": "bun run --workspaces --sequential test",
     "typecheck": "bun run --workspaces typecheck",
     "version-packages": "changeset version"
   },

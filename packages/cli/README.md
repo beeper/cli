@@ -242,13 +242,13 @@ explicit writes, and names based on what people are trying to do.
 | `targets stop` | Stop a managed target |
 | `targets restart` | Restart a managed target |
 | `targets logs` | Print managed target logs |
-| `targets enable` | Start a managed target at login |
-| `targets disable` | Stop starting a managed target at login |
+| `targets enable` | Enable managed target startup at login |
+| `targets disable` | Disable managed target startup at login |
 | `targets remove` | Remove a target |
 | `targets tunnel` | Expose a local Desktop API over a public Cloudflare tunnel |
 | `auth status` | Show stored auth for the selected target |
-| `auth logout` | Log out and invalidate the session |
-| `verify` | Continue or start device verification |
+| `auth logout` | Clear stored authentication |
+| `verify` | Finish setup verification or verify another device |
 | `verify status` | Show encryption and device-verification readiness |
 | `verify approve` | Approve a pending device verification request |
 | `verify recovery-key` | Unlock encrypted messages with a recovery key |
@@ -262,39 +262,39 @@ explicit writes, and names based on what people are trying to do.
 | `verify qr-scan` | Submit a scanned QR-code verification payload |
 | `verify qr-confirm` | Confirm that the other device scanned your QR code |
 | `accounts list` | List connected accounts |
-| `accounts add` | Connect a chat account |
+| `accounts add` | Connect a chat account by bridge |
 | `accounts show` | Show account details |
 | `accounts remove` | Remove an account |
 | `accounts use` | Select a default account for account-scoped commands |
 | `chats list` | List chats |
-| `chats search` | Search chats by title or participant |
+| `chats search` | Search chats |
 | `chats show` | Show chat details |
-| `chats start` | Start a chat with a user or phone number |
+| `chats start` | Start a chat |
 | `chats archive` | Archive a chat |
 | `chats unarchive` | Unarchive a chat |
 | `chats pin` | Pin a chat |
 | `chats unpin` | Unpin a chat |
 | `chats mute` | Mute a chat |
 | `chats unmute` | Unmute a chat |
-| `chats mark-read` | Mark a chat read |
-| `chats mark-unread` | Mark a chat unread |
+| `chats mark-read` | Mark a chat as read |
+| `chats mark-unread` | Mark a chat as unread |
 | `chats priority` | Move a chat to the Inbox or Low Priority |
-| `chats notify-anyway` | Receive the next notification from a muted chat |
+| `chats notify-anyway` | Send an iMessage Notify Anyway alert |
 | `chats rename` | Rename a chat |
 | `chats description` | Set a chat description |
 | `chats avatar` | Set a chat avatar |
 | `chats draft` | Set or clear a chat draft |
-| `chats disappear` | Set disappearing messages for a chat |
+| `chats disappear` | Set disappearing-message expiry |
 | `chats remind` | Set a chat reminder |
 | `chats unremind` | Clear a chat reminder |
 | `chats focus` | Focus Beeper Desktop on a chat |
 | `messages list` | List chat messages |
 | `messages search` | Search messages across chats |
 | `messages show` | Show one message |
-| `messages context` | Show messages around a target message |
+| `messages context` | Show message context |
 | `messages edit` | Edit a message |
 | `messages delete` | Delete a message |
-| `messages export` | Export one chat's messages to JSON |
+| `messages export` | Export one chat to JSON |
 | `send text` | Send a text message |
 | `send file` | Send a file |
 | `send react` | Send a reaction to a message |
@@ -308,7 +308,7 @@ explicit writes, and names based on what people are trying to do.
 | `media download` | Download message media |
 | `export` | Export accounts, chats, messages, Markdown transcripts, and attachments |
 | `watch` | Stream Desktop API WebSocket events |
-| `rpc` | Execute commands via JSON-line RPC (reads stdin) |
+| `rpc` | Run newline-delimited JSON command RPC over stdin/stdout |
 | `man` | Print the command manual |
 | `doctor` | Probe the target live and report diagnostics |
 | `status` | Show selected target and setup readiness |
@@ -316,7 +316,7 @@ explicit writes, and names based on what people are trying to do.
 | `version` | Print CLI version |
 | `completion` | Print shell completion setup |
 | `plugins` | Manage Beeper CLI plugins |
-| `plugins available` | List recommended Beeper CLI plugins |
+| `plugins available` | List recommended optional Beeper CLI plugins |
 | `update` | Check and install Beeper updates |
 | `config get` | Print CLI configuration |
 | `config set` | Set a CLI configuration value |
@@ -702,7 +702,7 @@ beeper targets logs work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets enable`
-Start a managed target at login
+Enable managed target startup at login
 
 ```sh
 beeper targets enable [name]
@@ -723,7 +723,7 @@ beeper targets enable work
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper targets disable`
-Stop starting a managed target at login
+Disable managed target startup at login
 
 ```sh
 beeper targets disable [name]
@@ -796,7 +796,7 @@ beeper auth status --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper auth logout`
-Log out and invalidate the session
+Clear stored authentication
 
 ```sh
 beeper auth logout
@@ -811,7 +811,7 @@ beeper auth logout
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper verify`
-Continue or start device verification
+Finish setup verification or verify another device
 
 ```sh
 beeper verify
@@ -1085,7 +1085,7 @@ beeper accounts list --account whatsapp --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper accounts add`
-Connect a chat account
+Connect a chat account by bridge
 
 ```sh
 beeper accounts add [bridge]
@@ -1109,6 +1109,9 @@ Flags:
 | `--guided` | boolean | Prompt through login steps until completion |
 | `--login-id=<value>` | option | Existing login ID to re-login as |
 | `--non-interactive` | boolean | Do not prompt; require --flow, --field, and --cookie values when needed. |
+| `--webview` | boolean | Use Bun.WebView to collect cookie login fields when a cookie step is returned. |
+| `--webview-backend=<auto|chrome|webkit>` | option | Bun.WebView backend for cookie login steps. Default: auto |
+| `--webview-timeout=<value>` | option | Seconds to wait for Bun.WebView cookie collection. Default: 120 |
 
 Examples:
 
@@ -1116,6 +1119,7 @@ Examples:
 beeper accounts add
 beeper accounts add local-whatsapp
 beeper accounts add discord --non-interactive --cookie sessiontoken=...
+beeper accounts add discord --webview --webview-backend chrome
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
@@ -1216,7 +1220,7 @@ beeper chats list --unread --no-muted --json
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats search`
-Search chats by title or participant
+Search chats
 
 ```sh
 beeper chats search <query>
@@ -1269,7 +1273,7 @@ beeper chats show --chat '!plUOsWkvMmJmJPVAjS:beeper.com'
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats start`
-Start a chat with a user or phone number
+Start a chat
 
 ```sh
 beeper chats start <user>
@@ -1430,7 +1434,7 @@ beeper chats unmute --chat 10313
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats mark-read`
-Mark a chat read
+Mark a chat as read
 
 ```sh
 beeper chats mark-read
@@ -1453,7 +1457,7 @@ beeper chats mark-read --chat 10313
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats mark-unread`
-Mark a chat unread
+Mark a chat as unread
 
 ```sh
 beeper chats mark-unread
@@ -1500,7 +1504,7 @@ beeper chats priority --chat '!plUOsWkvMmJmJPVAjS:beeper.com' --level low
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats notify-anyway`
-Receive the next notification from a muted chat
+Send an iMessage Notify Anyway alert
 
 ```sh
 beeper chats notify-anyway
@@ -1622,7 +1626,7 @@ beeper chats draft --chat 10313 --clear
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper chats disappear`
-Set disappearing messages for a chat
+Set disappearing-message expiry
 
 ```sh
 beeper chats disappear
@@ -1809,7 +1813,7 @@ beeper messages show --chat 10313 --id <messageID>
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper messages context`
-Show messages around a target message
+Show message context
 
 ```sh
 beeper messages context
@@ -1882,7 +1886,7 @@ beeper messages delete --chat 10313 --id <messageID> --for-everyone
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper messages export`
-Export one chat's messages to JSON
+Export one chat to JSON
 
 ```sh
 beeper messages export
@@ -2286,7 +2290,7 @@ beeper watch --webhook https://example.com/hook --webhook-secret "$BEEPER_WEBHOO
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
 
 ### `beeper rpc`
-Execute commands via JSON-line RPC (reads stdin)
+Run newline-delimited JSON command RPC over stdin/stdout
 
 ```sh
 beeper rpc
@@ -2429,7 +2433,7 @@ beeper plugins install @beeper/cli-plugin-cloudflare
 ```
 
 ### `beeper plugins available`
-List recommended Beeper CLI plugins
+List recommended optional Beeper CLI plugins
 
 ```sh
 beeper plugins available

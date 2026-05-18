@@ -5,7 +5,7 @@ import { collectPage, printData } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesContext extends BeeperCommand {
-  static override summary = 'Show messages around a target message'
+  static override summary = 'Show message context'
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
     id: Flags.string({ required: true, description: 'Target message ID to center the window on' }),

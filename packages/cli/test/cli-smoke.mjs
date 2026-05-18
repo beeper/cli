@@ -126,7 +126,8 @@ const expectedCommands = [
   'api request',
 ]
 
-const commandFiles = listCommandFiles(join(root, 'src/commands'))
+const internalCommands = new Set(['autocomplete'])
+const commandFiles = listCommandFiles(join(root, 'src/commands')).filter(file => !internalCommands.has(fileToCommand(file)))
 const commandNames = commandFiles.map(file => fileToCommand(file)).sort()
 const manifestNames = commandManifest.map(item => item.command).sort()
 // First-party commands shipped by a separate plugin package (not present in src/commands here).
@@ -273,7 +274,7 @@ function listCommandFiles(dir) {
   const output = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     // Skip private/internal files like _complete used by autocomplete.
-    if (entry.name.startsWith('_')) continue
+    if (entry.name.startsWith('_') || entry.name === 'autocomplete.ts') continue
     const path = join(dir, entry.name)
     if (entry.isDirectory()) {
       output.push(...listCommandFiles(path))

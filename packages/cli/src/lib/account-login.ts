@@ -10,6 +10,9 @@ export type AccountLoginOptions = {
   cookies?: Record<string, string>
   fields?: Record<string, string>
   nonInteractive?: boolean
+  webview?: boolean
+  webviewBackend?: 'auto' | 'chrome' | 'webkit'
+  webviewTimeoutMs?: number
 }
 
 export function printAccountLoginStep(session: AccountLoginStep): void {
@@ -84,8 +87,18 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
 
     if (step.type === 'cookies') {
       const fields: Record<string, string> = {}
+      if (options.webview) {
+        try {
+          Object.assign(fields, await collectCookieFieldsWithWebView(step, options))
+        } catch (error) {
+          if (options.nonInteractive) throw error
+          output.write(`webview: ${error instanceof Error ? error.message : String(error)}\n`)
+        }
+      }
+
       for (const field of step.fields) {
         const id = field.id
+        if (fields[id] !== undefined) continue
         if (options.cookies?.[id] !== undefined) {
           fields[id] = options.cookies[id]!
           continue
@@ -100,6 +113,123 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
 
     throw new Error(`Unsupported account login step: ${step.type}`)
   }
+}
+
+type CookieLoginStep = NonNullable<AccountLoginStep['currentStep']> & {
+  type: 'cookies'
+}
+
+type CookieField = CookieLoginStep['fields'][number]
+
+type WebViewConstructor = new (options?: Record<string, unknown>) => {
+  url: string
+  close(): void
+  navigate(url: string): Promise<void>
+  evaluate(script: string): Promise<unknown>
+  cdp?(method: string, params?: Record<string, unknown>): Promise<unknown>
+  onNavigated?: ((url: string, title: string) => void) | null
+}
+
+async function collectCookieFieldsWithWebView(step: CookieLoginStep, options: AccountLoginOptions): Promise<Record<string, string>> {
+  const BunRuntime = (globalThis as { Bun?: { WebView?: WebViewConstructor } }).Bun
+  const WebView = BunRuntime?.WebView
+  if (!WebView) throw new Error('Bun.WebView is not available in this Bun runtime.')
+
+  const backend = options.webviewBackend && options.webviewBackend !== 'auto' ? options.webviewBackend : undefined
+  const view = new WebView(backend ? { backend } : undefined)
+  const found: Record<string, string> = {}
+  let lastURL = ''
+  view.onNavigated = url => {
+    lastURL = url
+  }
+
+  try {
+    if (step.userAgent && backend === 'chrome' && view.cdp) {
+      await view.navigate('about:blank')
+      await view.cdp('Emulation.setUserAgentOverride', { userAgent: step.userAgent })
+    } else if (step.userAgent) {
+      output.write('webview: this cookie step suggests a user agent; pass --webview-backend chrome to apply it.\n')
+    }
+
+    output.write(`webview: opening ${step.url}\n`)
+    if (backend === 'chrome') {
+      output.write('webview: complete sign-in in the opened Chrome tab. If no tab appears, enable Chrome remote debugging and retry.\n')
+    } else {
+      output.write('webview: running in headless mode; cookie fields will be collected if the page can complete without manual input.\n')
+    }
+
+    await view.navigate(step.url)
+    lastURL = view.url || lastURL
+
+    const deadline = Date.now() + (options.webviewTimeoutMs ?? 120_000)
+    const finalURLRegex = step.expectedFinalURLRegex ? new RegExp(step.expectedFinalURLRegex) : undefined
+    while (Date.now() < deadline) {
+      Object.assign(found, await collectBrowserStorageFields(view, step.fields))
+      if (step.extractJS) Object.assign(found, await runExtractJS(view, step.extractJS, step.fields))
+
+      const hasFields = step.fields.every(field => found[field.id] !== undefined || field.type === 'header')
+      const hasFinalURL = !finalURLRegex || finalURLRegex.test(lastURL || view.url)
+      if (hasFields && hasFinalURL) return found
+      await sleep(500)
+    }
+
+    const missing = step.fields.map(field => field.id).filter(id => found[id] === undefined)
+    throw new Error(`Timed out waiting for cookie fields${missing.length ? `: ${missing.join(', ')}` : ''}.`)
+  } finally {
+    view.close()
+  }
+}
+
+async function collectBrowserStorageFields(view: InstanceType<WebViewConstructor>, fields: CookieField[]): Promise<Record<string, string>> {
+  const serializableFields = fields.map(field => ({
+    id: field.id,
+    name: field.name ?? field.id,
+    type: field.type ?? 'cookie',
+  }))
+  const result = await view.evaluate(`(() => {
+    const fields = ${JSON.stringify(serializableFields)};
+    const cookies = Object.fromEntries(document.cookie.split(';').map(part => {
+      const index = part.indexOf('=');
+      if (index < 0) return undefined;
+      return [decodeURIComponent(part.slice(0, index).trim()), decodeURIComponent(part.slice(index + 1))];
+    }).filter(Boolean));
+    const found = {};
+    for (const field of fields) {
+      if (field.type === 'local_storage') {
+        const value = localStorage.getItem(field.name);
+        if (value !== null) found[field.id] = value;
+      } else if (field.type === 'cookie' && cookies[field.name] !== undefined) {
+        found[field.id] = cookies[field.name];
+      }
+    }
+    return found;
+  })()`)
+  return stringRecord(result)
+}
+
+async function runExtractJS(view: InstanceType<WebViewConstructor>, extractJS: string, fields: CookieField[]): Promise<Record<string, string>> {
+  const script = extractJS.replace(/\\n/g, '\n').replace(/\\t/g, '\t').trim()
+  if (!script) return {}
+  const result = await view.evaluate(`(async () => {
+    const value = await (${script});
+    return value && typeof value === 'object' ? value : {};
+  })()`)
+  const record = stringRecord(result)
+  const fieldIDs = new Set(fields.map(field => field.id))
+  return Object.fromEntries(Object.entries(record).filter(([key]) => fieldIDs.has(key)))
+}
+
+function stringRecord(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const out: Record<string, string> = {}
+  for (const [key, raw] of Object.entries(value)) {
+    if (typeof raw === 'string') out[key] = raw
+  }
+  return out
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function promptText(label: string): Promise<string> {

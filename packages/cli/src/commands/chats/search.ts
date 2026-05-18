@@ -5,7 +5,7 @@ import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
 
 export default class ChatsSearch extends BeeperCommand {
-  static override summary = 'Search chats by title or participant'
+  static override summary = 'Search chats'
   static override args = { query: Args.string({ required: true, description: 'Search query (title, participant, or network)' }) }
   static override flags = {
     account: Flags.string({ multiple: true, description: 'Limit to Account ID, network, bridge, or account user' }),

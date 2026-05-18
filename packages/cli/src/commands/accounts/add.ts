@@ -10,7 +10,7 @@ import { printData } from '../../lib/output.js'
 type AccountType = Bridge
 
 export default class AccountsAdd extends BeeperCommand {
-  static override summary = 'Connect a chat account'
+  static override summary = 'Connect a chat account by bridge'
   static override description = '`accounts add` without an argument opens the guided bridge chooser. Pass a bridge ID when you already know which chat network connector to use.'
   static override args = {
     bridge: Args.string({ description: 'Bridge ID, network, or type to connect. Omit to list available bridges.' }),
@@ -22,6 +22,9 @@ export default class AccountsAdd extends BeeperCommand {
     guided: Flags.boolean({ default: true, allowNo: true, description: 'Prompt through login steps until completion' }),
     'login-id': Flags.string({ description: 'Existing login ID to re-login as' }),
     'non-interactive': Flags.boolean({ default: false, description: 'Do not prompt; require --flow, --field, and --cookie values when needed.' }),
+    webview: Flags.boolean({ default: false, description: 'Use Bun.WebView to collect cookie login fields when a cookie step is returned.' }),
+    'webview-backend': Flags.string({ default: 'chrome', description: 'Bun.WebView backend for cookie login steps.', options: ['auto', 'chrome', 'webkit'] }),
+    'webview-timeout': Flags.integer({ default: 120, description: 'Seconds to wait for Bun.WebView cookie collection.' }),
   }
 
   async run(): Promise<void> {
@@ -69,6 +72,9 @@ export default class AccountsAdd extends BeeperCommand {
       cookies: parseKeyValueFlags(flags.cookie, '--cookie'),
       fields: parseKeyValueFlags(flags.field, '--field'),
       nonInteractive: flags['non-interactive'],
+      webview: flags.webview,
+      webviewBackend: flags['webview-backend'] as 'auto' | 'chrome' | 'webkit',
+      webviewTimeoutMs: flags['webview-timeout'] * 1000,
     }) : step
     if (flags.json) await printData(result, 'json')
     else printAccountLoginStep(result)

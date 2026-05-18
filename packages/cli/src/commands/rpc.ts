@@ -12,7 +12,7 @@ type RPCRequest = {
 }
 
 export default class RPC extends BeeperCommand {
-  static override summary = 'Execute commands via JSON-line RPC (reads stdin)'
+  static override summary = 'Run newline-delimited JSON command RPC over stdin/stdout'
   static override description = 'Reads JSON lines like {"id":1,"command":"send text --to 10313 --message hello"} or {"id":1,"args":["status","--json"]}.'
 
   async run(): Promise<void> {

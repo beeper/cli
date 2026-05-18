@@ -202,6 +202,7 @@ export const commandManifest: ManifestCommand[] = [
       'beeper accounts add',
       'beeper accounts add local-whatsapp',
       'beeper accounts add discord --non-interactive --cookie sessiontoken=...',
+      'beeper accounts add discord --webview --webview-backend chrome',
     ],
   },
   {
@@ -293,7 +294,7 @@ export const commandManifest: ManifestCommand[] = [
   },
   {
     command: 'chats notify-anyway',
-    description: 'Notify a muted chat',
+    description: 'Send an iMessage Notify Anyway alert',
     examples: ['beeper chats notify-anyway --chat 10313'],
   },
   {
