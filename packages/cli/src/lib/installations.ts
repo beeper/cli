@@ -1,6 +1,10 @@
+import { createWriteStream } from 'node:fs'
 import { chmod, cp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
+import type { ReadableStream } from 'node:stream/web'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { beeperDir } from './targets.js'
@@ -213,7 +217,7 @@ export async function downloadArtifact(url: string, destinationDir: string): Pro
   const filename = filenameFromResponse(response) ?? (basename(new URL(response.url).pathname) || `beeper-download-${Date.now()}`)
   const finalPath = join(destinationDir, filename)
   const tmpPath = join(tmpdir(), `${filename}.${process.pid}.${Date.now()}.tmp`)
-  await Bun.write(tmpPath, response)
+  await writeResponseToFile(response, tmpPath)
   await rename(tmpPath, finalPath)
   return finalPath
 }
@@ -358,6 +362,12 @@ function stringField(value: unknown, fields: string[]): string | undefined {
     if (typeof candidate === 'string' && candidate.length > 0) return candidate
   }
   return undefined
+}
+
+async function writeResponseToFile(response: Response, path: string): Promise<void> {
+  if (!response.body) throw new Error('Download response did not include a body.')
+
+  await pipeline(Readable.fromWeb(response.body as unknown as ReadableStream), createWriteStream(path))
 }
 
 function filenameFromResponse(response: Response): string | undefined {

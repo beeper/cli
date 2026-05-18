@@ -436,7 +436,7 @@ function commandSection(command) {
   if (flags.length > 0) {
     parts.push('', 'Flags:', '', '| Flag | Type | Description |', '| --- | --- | --- |');
     for (const flag of flags.sort((a, b) => a.name.localeCompare(b.name))) {
-      parts.push(`| \`${flagLabel(flag)}\` | ${flag.type || 'boolean'} | ${escapeTable(flagDescription(flag))} |`);
+      parts.push(`| \`${escapeTable(flagLabel(flag))}\` | ${flag.type || 'boolean'} | ${escapeTable(flagDescription(flag))} |`);
     }
   }
 

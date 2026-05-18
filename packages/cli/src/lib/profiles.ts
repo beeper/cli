@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { execFile } from 'node:child_process'
 import { closeSync, openSync } from 'node:fs'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -54,7 +54,8 @@ export async function startProfile(target: Target): Promise<ProfileRun | { id: s
 
 export async function launchDesktopApp(target?: Target): Promise<{ id: string; startedAt: string }> {
   const installations = await readInstallations().catch(() => ({ desktop: undefined }))
-  const args = installations.desktop?.path ? ['-n', installations.desktop.path, '--args'] : ['-n', '-a', 'Beeper', '--args']
+  const appPath = installations.desktop?.path ?? await findDesktopAppPath()
+  const args = appPath ? ['-n', appPath, '--args'] : ['-n', '-a', 'Beeper', '--args']
   args.push('--no-enforce-app-location')
   if (target?.port) args.push(`--pas-port=${target.port}`)
   if (target?.serverEnv) args.push(`--server-env=${target.serverEnv}`)
@@ -68,6 +69,59 @@ export async function launchDesktopApp(target?: Target): Promise<{ id: string; s
     : process.env
   spawn('open', args, { detached: true, stdio: 'ignore', env }).unref()
   return { id: target?.id ?? 'desktop', startedAt: new Date().toISOString() }
+}
+
+export async function findDesktopAppPath(): Promise<string | undefined> {
+  const installations = await readInstallations().catch(() => ({ desktop: undefined }))
+  if (installations.desktop?.path && await isBeeperDesktopApp(installations.desktop.path)) return installations.desktop.path
+
+  if (process.platform === 'darwin') {
+    for (const path of [
+      '/Applications/Beeper.app',
+      '/Applications/Beeper Nightly.app',
+    ]) {
+      if (await isBeeperDesktopApp(path)) return path
+    }
+  }
+
+  if (process.platform === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local')
+    const candidates = [
+      join(localAppData, 'Programs', 'Beeper', 'Beeper.exe'),
+      join(localAppData, 'Programs', 'Beeper Nightly', 'Beeper Nightly.exe'),
+    ]
+    for (const path of candidates) {
+      if (await pathExists(path)) return path
+    }
+  }
+
+  if (process.platform === 'linux') {
+    for (const path of ['/usr/bin/beeper', '/usr/local/bin/beeper']) {
+      if (await pathExists(path)) return path
+    }
+  }
+
+  return undefined
+}
+
+async function isBeeperDesktopApp(path: string): Promise<boolean> {
+  if (!await pathExists(path)) return false
+  if (process.platform !== 'darwin') return true
+  const bundleID = await readBundleID(path)
+  return bundleID === 'com.automattic.beeper.desktop' || bundleID === 'com.automattic.beeper.desktop.nightly'
+}
+
+async function readBundleID(appPath: string): Promise<string | undefined> {
+  try {
+    const { stdout } = await execFileAsync('/usr/libexec/PlistBuddy', [
+      '-c',
+      'Print CFBundleIdentifier',
+      join(appPath, 'Contents', 'Info.plist'),
+    ])
+    return stdout.trim() || undefined
+  } catch {
+    return undefined
+  }
 }
 
 export async function stopProfile(target: Target): Promise<void> {
@@ -326,4 +380,13 @@ async function waitForExit(pid: number, timeoutMs: number): Promise<boolean> {
 
 async function sleep(ms: number): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path)
+    return true
+  } catch {
+    return false
+  }
 }

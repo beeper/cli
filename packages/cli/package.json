@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "beeper": "./bin/run.js"
+    "beeper": "bin/run.js"
   },
   "exports": {
     "./plugin-sdk": {
@@ -27,6 +27,7 @@
     "check:readme": "bun run build && bun scripts/generate-readme.ts --check",
     "clean": "rm -rf dist",
     "dev": "bun ./bin/dev.js",
+    "dev:shim": "node ./bin/run.js",
     "e2e:staging": "bun run build && bun test/e2e-staging.ts",
     "pack:homebrew": "bun run binary && bun scripts/build-homebrew-archive.ts",
     "readme": "bun run build && bun scripts/generate-readme.ts",
@@ -53,7 +54,7 @@
     "scope": "beeper",
     "pluginPrefix": "plugin",
     "jitPlugins": {
-      "@beeper/cli-plugin-cloudflare": "^0.0.0"
+      "@beeper/cli-plugin-cloudflare": "^0.6.0"
     },
     "plugins": [
       "@oclif/plugin-autocomplete",

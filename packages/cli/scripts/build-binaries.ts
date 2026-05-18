@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { createHash } from 'node:crypto'
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -57,7 +58,7 @@ async function hashFile(path) {
 }
 
 async function buildPayload() {
-  const workDir = await mkdtemp(join('/tmp', 'beeper-cli-payload-'))
+  const workDir = await mkdtemp(join(tmpdir(), 'beeper-cli-payload-'))
   try {
     await cp(join(root, 'package.json'), join(workDir, 'package.json'))
     await cp(join(root, 'bin'), join(workDir, 'bin'), { recursive: true })
@@ -79,7 +80,7 @@ async function buildPayload() {
 async function run(command, args, options = {}) {
   const child = Bun.spawn([command, ...args], {
     cwd: options.cwd || root,
-    env: { ...process.env, TMPDIR: '/tmp' },
+    env: process.env,
     stdin: 'inherit',
     stdout: 'inherit',
     stderr: 'inherit',

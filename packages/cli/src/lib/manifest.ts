@@ -126,6 +126,16 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper auth logout'],
   },
   {
+    command: 'auth email start',
+    description: 'Start email sign-in for a target',
+    examples: ['beeper auth email start --email you@example.com --target work --json'],
+  },
+  {
+    command: 'auth email response',
+    description: 'Finish email sign-in with a verification code',
+    examples: ['beeper auth email response --setup-request-id <id> --code <code> --target work --json'],
+  },
+  {
     command: 'verify',
     description: 'Finish setup verification or verify another device',
     examples: ['beeper verify', 'beeper verify --user @alice:beeper.com'],

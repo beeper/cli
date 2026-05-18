@@ -330,6 +330,8 @@ First-party optional plugins:
 | `targets tunnel` | Expose a local Desktop API over a public Cloudflare tunnel |
 | `auth status` | Show stored auth for the selected target |
 | `auth logout` | Clear stored authentication |
+| `auth email start` | Start email sign-in for a target |
+| `auth email response` | Finish email sign-in with a verification code |
 | `verify` | Finish setup verification or verify another device |
 | `verify status` | Show encryption and device-verification readiness |
 | `verify approve` | Approve a pending device verification request |
@@ -421,14 +423,16 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--channel=<stable|nightly>` | option | Install release channel Default: stable |
+| `--channel=<stable\|nightly>` | option | Install release channel Default: stable |
 | `--desktop` | boolean | Set up a local Beeper Desktop target |
+| `--email=<value>` | option | Sign in with an email address |
 | `--install` | boolean | Allow installing missing managed runtime |
 | `--local` | boolean | Use the local Beeper Desktop session on this device |
 | `--oauth` | boolean | Authorize the target with browser OAuth/PKCE |
 | `--remote=<value>` | option | Connect to a remote Beeper Desktop or Server URL |
 | `--server` | boolean | Set up a local Beeper Server target |
-| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--server-env=<production\|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--username=<value>` | option | Username to use if setup creates a new account |
 
 Examples:
 
@@ -453,7 +457,7 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--channel=<stable|nightly>` | option | Desktop release channel Default: stable |
+| `--channel=<stable\|nightly>` | option | Desktop release channel Default: stable |
 
 Examples:
 
@@ -475,8 +479,8 @@ Flags:
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `--channel=<stable|nightly>` | option | Server release channel Default: stable |
-| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--channel=<stable\|nightly>` | option | Server release channel Default: stable |
+| `--server-env=<production\|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Examples:
 
@@ -517,7 +521,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--available` | boolean | Only bridges available to add (--no-available to exclude) |
-| `--provider=<local|cloud|self-hosted>` | option | Limit to bridge provider |
+| `--provider=<local\|cloud\|self-hosted>` | option | Limit to bridge provider |
 
 Examples:
 
@@ -569,7 +573,7 @@ Flags:
 | --- | --- | --- |
 | `--default` | boolean | Set this target as the default after creation |
 | `--port=<value>` | option | TCP port the managed Desktop will expose its API on |
-| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--server-env=<production\|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Examples:
 
@@ -598,7 +602,7 @@ Flags:
 | --- | --- | --- |
 | `--default` | boolean | Set this target as the default after creation |
 | `--port=<value>` | option | TCP port the managed Server will expose its API on |
-| `--server-env=<production|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--server-env=<production\|staging>` | option | Server environment. Staging forces nightly. Default: production |
 
 Examples:
 
@@ -898,6 +902,50 @@ Examples:
 
 ```sh
 beeper auth logout
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
+### `beeper auth email start`
+Start email sign-in for a target
+
+```sh
+beeper auth email start
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--email=<value>` | option | Email address to sign in with Required. |
+
+Examples:
+
+```sh
+beeper auth email start --email you@example.com --target work --json
+```
+
+Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
+
+### `beeper auth email response`
+Finish email sign-in with a verification code
+
+```sh
+beeper auth email response
+```
+
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--code=<value>` | option | Email verification code Required. |
+| `--setup-request-id=<value>` | option | Setup request ID from auth email start Required. |
+| `--username=<value>` | option | Username to use if setup creates a new account |
+
+Examples:
+
+```sh
+beeper auth email response --setup-request-id <id> --code <code> --target work --json
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.
@@ -1202,7 +1250,7 @@ Flags:
 | `--login-id=<value>` | option | Existing login ID to re-login as |
 | `--non-interactive` | boolean | Do not prompt; require --flow, --field, and --cookie values when needed. |
 | `--webview` | boolean | Use Bun.WebView to collect cookie login fields when a cookie step is returned. |
-| `--webview-backend=<auto|chrome|webkit>` | option | Bun.WebView backend for cookie login steps. Default: chrome |
+| `--webview-backend=<auto\|chrome\|webkit>` | option | Bun.WebView backend for cookie login steps. Default: chrome |
 | `--webview-timeout=<value>` | option | Seconds to wait for Bun.WebView cookie collection. Default: 120 |
 
 Examples:
@@ -1583,7 +1631,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
-| `--level=<inbox|low>` | option | Destination: inbox (default mailbox) or low (Low Priority) Required. |
+| `--level=<inbox\|low>` | option | Destination: inbox (default mailbox) or low (Low Priority) Required. |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
 
 Examples:
@@ -1863,12 +1911,12 @@ Flags:
 | `--after=<value>` | option | Only messages at or after this ISO timestamp |
 | `--before=<value>` | option | Only messages at or before this ISO timestamp |
 | `--chat=<value>...` | option | Limit to a chat selector. Repeat for multiple. |
-| `--chat-type=<group|single>` | option | Only group chats or direct messages |
+| `--chat-type=<group\|single>` | option | Only group chats or direct messages |
 | `--exclude-low-priority` | boolean | Exclude low-priority chats |
 | `--ids` | boolean | Print only message IDs |
 | `--include-muted` | boolean | Include muted chats |
 | `--limit=<value>` | option | Maximum results Default: 50 |
-| `--media=<any|video|image|link|file>...` | option | Filter by media type. Repeat for multiple. |
+| `--media=<any\|video\|image\|link\|file>...` | option | Filter by media type. Repeat for multiple. |
 | `--sender=<value>` | option | me, others, or a user ID |
 
 Examples:
@@ -2201,7 +2249,7 @@ Flags:
 | `--chat=<value>` | option | Chat selector (ID, local ID, title, or search text) Required. |
 | `--duration=<value>` | option | When --state is typing, send paused automatically after this many seconds |
 | `--pick=<value>` | option | Pick the Nth result when the selector is ambiguous (1-indexed) |
-| `--state=<typing|paused>` | option | Indicator to send Default: typing |
+| `--state=<typing\|paused>` | option | Indicator to send Default: typing |
 
 Examples:
 
@@ -2367,8 +2415,8 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `-c, --chat=<value>...` | option | Chat ID to subscribe to. Defaults to all chats. |
-| `--exclude-type=<chat.upserted|chat.deleted|message.upserted|message.deleted>...` | option | Drop events of these types. Repeat for multiple. |
-| `--include-type=<chat.upserted|chat.deleted|message.upserted|message.deleted>...` | option | Only forward events of these types. Repeat for multiple. |
+| `--exclude-type=<chat.upserted\|chat.deleted\|message.upserted\|message.deleted>...` | option | Drop events of these types. Repeat for multiple. |
+| `--include-type=<chat.upserted\|chat.deleted\|message.upserted\|message.deleted>...` | option | Only forward events of these types. Repeat for multiple. |
 | `--webhook=<value>` | option | Forward each event to this URL as a POST request (best-effort, fire-and-forget) |
 | `--webhook-queue=<value>` | option | Maximum pending webhook deliveries before dropping events Default: 64 |
 | `--webhook-secret=<value>` | option | HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex> |

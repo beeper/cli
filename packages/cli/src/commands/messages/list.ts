@@ -1,7 +1,6 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { listMatrixMessages, shouldFallbackToMatrix } from '../../lib/matrix-direct.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
@@ -24,14 +23,7 @@ export default class MessagesList extends BeeperCommand {
     const before = flags['before-cursor']
     const after = flags['after-cursor']
     if (before && after) throw new Error('Use only one of --before-cursor or --after-cursor')
-    let items: unknown[]
-    try {
-      items = await collectFiltered(client.messages.list(chatID, { cursor: before ?? after, direction: before ? 'before' : after ? 'after' : undefined }), flags.limit, flags.sender)
-    } catch (error) {
-      if (!shouldFallbackToMatrix(chatID, error)) throw error
-      const matrixItems = await listMatrixMessages(flags, chatID, flags.limit)
-      items = filterBySender(matrixItems, flags.sender)
-    }
+    let items = await collectFiltered(client.messages.list(chatID, { cursor: before ?? after, direction: before ? 'before' : after ? 'after' : undefined }), flags.limit, flags.sender)
     if (flags.asc) items = [...items].reverse()
     if (flags.ids) printIDs(items)
     else await printList(items, flags.json ? 'json' : 'human', { title: 'No messages yet', subtitle: 'This chat is empty.' })
@@ -46,11 +38,6 @@ async function collectFiltered(iterable: AsyncIterable<unknown>, limit: number, 
     if (items.length >= limit) break
   }
   return items
-}
-
-function filterBySender(items: unknown[], sender: string | undefined): unknown[] {
-  if (!sender) return items
-  return items.filter(item => matchesSender(item, sender))
 }
 
 export function matchesSender(item: unknown, sender: string): boolean {
