@@ -417,7 +417,11 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'presence',
     description: 'Send a typing (or paused) indicator to a chat',
-    examples: ['beeper presence --chat "Family"', 'beeper presence --chat "Family" --state paused'],
+    examples: [
+      'beeper presence --chat "Family"',
+      'beeper presence --chat "Family" --state paused',
+      'beeper presence --chat "Family" --duration 5',
+    ],
   },
   {
     command: 'contacts list',

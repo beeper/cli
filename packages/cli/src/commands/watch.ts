@@ -7,12 +7,17 @@ import { getBaseURL } from '../lib/targets.js'
 import { startStream } from '../lib/output.js'
 
 type WebhookConfig = { url: string; secret?: string; queue: Array<{ body: string; signature?: string }>; inflight: number; max: number }
+type EventFilter = { include?: Set<string>; exclude?: Set<string> }
+
+const EVENT_TYPES = ['chat.upserted', 'chat.deleted', 'message.upserted', 'message.deleted'] as const
 
 export default class Watch extends BeeperCommand {
   static override summary = 'Stream Desktop API WebSocket events'
   static override flags = {
     chat: Flags.string({ char: 'c', multiple: true, description: 'Chat ID to subscribe to. Defaults to all chats.' }),
     json: Flags.boolean({ default: false, description: 'Print raw JSON, one event per line' }),
+    'include-type': Flags.string({ multiple: true, options: [...EVENT_TYPES], description: 'Only forward events of these types. Repeat for multiple.' }),
+    'exclude-type': Flags.string({ multiple: true, options: [...EVENT_TYPES], description: 'Drop events of these types. Repeat for multiple.' }),
     webhook: Flags.string({ description: 'Forward each event to this URL as a POST request (best-effort, fire-and-forget)' }),
     'webhook-secret': Flags.string({ description: 'HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex>' }),
     'webhook-queue': Flags.integer({ default: 64, description: 'Maximum pending webhook deliveries before dropping events' }),
@@ -21,6 +26,11 @@ export default class Watch extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(Watch)
     if (flags['webhook-secret'] && !flags.webhook) throw new Error('--webhook-secret requires --webhook URL')
+    if (flags['include-type']?.length && flags['exclude-type']?.length) throw new Error('Use either --include-type or --exclude-type, not both.')
+    const filter: EventFilter = {
+      include: flags['include-type']?.length ? new Set(flags['include-type']) : undefined,
+      exclude: flags['exclude-type']?.length ? new Set(flags['exclude-type']) : undefined,
+    }
     const token = await requireToken()
     const baseURL = await getBaseURL(flags['base-url'])
     const info = await fetch(new URL('/v1/info', baseURL))
