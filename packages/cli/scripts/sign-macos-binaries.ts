@@ -199,11 +199,12 @@ async function findIdentity(team) {
   })
   const [stdout, code] = await Promise.all([new Response(child.stdout).text(), child.exited])
   if (code !== 0) return undefined
-  const match = stdout
-    .split('\n')
-    .map(line => line.match(new RegExp('"([^"]*Developer ID Application:[^"]*\\\\(' + escapeRegExp(team) + '\\\\))"'))?.[1])
-    .find(Boolean)
-  return match
+  for (const line of stdout.split('\n')) {
+    if (!line.includes('Developer ID Application:') || !line.includes(`(${team})`)) continue
+    const match = line.match(/"([^"]+)"/)
+    if (match) return match[1]
+  }
+  return undefined
 }
 
 async function commandExists(command) {
@@ -224,10 +225,6 @@ function parseEnv(source) {
 function shellUnescape(value) {
   if (value.startsWith("'") && value.endsWith("'")) return value.slice(1, -1).replaceAll("'\\''", "'")
   return value.replaceAll(/\\(.)/g, '$1')
-}
-
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 async function hashFile(path) {
