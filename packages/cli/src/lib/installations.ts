@@ -1,6 +1,10 @@
+import { createWriteStream } from 'node:fs'
 import { chmod, cp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
+import type { ReadableStream } from 'node:stream/web'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { beeperDir } from './targets.js'
@@ -361,7 +365,9 @@ function stringField(value: unknown, fields: string[]): string | undefined {
 }
 
 async function writeResponseToFile(response: Response, path: string): Promise<void> {
-  await writeFile(path, Buffer.from(await response.arrayBuffer()))
+  if (!response.body) throw new Error('Download response did not include a body.')
+
+  await pipeline(Readable.fromWeb(response.body as unknown as ReadableStream), createWriteStream(path))
 }
 
 function filenameFromResponse(response: Response): string | undefined {
