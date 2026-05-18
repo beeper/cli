@@ -279,7 +279,7 @@ explicit writes, and names based on what people are trying to do.
 | `chats mark-read` | Mark a chat as read |
 | `chats mark-unread` | Mark a chat as unread |
 | `chats priority` | Move a chat to the Inbox or Low Priority |
-| `chats notify-anyway` | Notify a muted chat |
+| `chats notify-anyway` | Send an iMessage Notify Anyway alert |
 | `chats rename` | Rename a chat |
 | `chats description` | Set a chat description |
 | `chats avatar` | Set a chat avatar |
@@ -1041,7 +1041,7 @@ beeper chats priority --chat '!plUOsWkvMmJmJPVAjS:beeper.com' --level low
 ```
 
 ### `beeper chats notify-anyway`
-Notify a muted chat
+Send an iMessage Notify Anyway alert
 
 ```sh
 beeper chats notify-anyway
