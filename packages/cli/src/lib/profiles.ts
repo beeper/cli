@@ -140,7 +140,7 @@ async function startServerProfile(target: Target): Promise<ProfileRun> {
   if (await isReachable(target)) throw new Error(`Profile "${target.id}" is already reachable at ${target.baseURL}.`)
   const installations = await readInstallations()
   const binary = process.env.BEEPER_SERVER_BIN || installations.server?.path
-  if (!binary) throw new Error('Beeper Server is not installed. Run: beeper setup install server')
+  if (!binary) throw new Error('Beeper Server is not installed. Run: beeper install server')
   await mkdir(profileRunDir(), { recursive: true })
   await mkdir(profileLogDir(), { recursive: true })
   const log = profileLogPath(target.id)
@@ -192,7 +192,7 @@ function isRunning(pid: number): boolean {
 async function writeLaunchAgent(target: Target): Promise<string> {
   const installations = await readInstallations()
   const binary = process.env.BEEPER_SERVER_BIN || installations.server?.path
-  if (!binary) throw new Error('Beeper Server is not installed. Run: beeper setup install server')
+  if (!binary) throw new Error('Beeper Server is not installed. Run: beeper install server')
   const dir = join(process.env.HOME ?? beeperDir(), 'Library', 'LaunchAgents')
   await mkdir(dir, { recursive: true })
   const path = join(dir, launchAgentName(target))
@@ -222,7 +222,7 @@ async function enableSystemdUnit(target: Target): Promise<string> {
 async function writeSystemdUnit(target: Target): Promise<string> {
   const installations = await readInstallations()
   const binary = process.env.BEEPER_SERVER_BIN || installations.server?.path
-  if (!binary) throw new Error('Beeper Server is not installed. Run: beeper setup install server')
+  if (!binary) throw new Error('Beeper Server is not installed. Run: beeper install server')
   const dir = join(process.env.HOME ?? beeperDir(), '.config', 'systemd', 'user')
   await mkdir(dir, { recursive: true })
   const path = join(dir, systemdUnitName(target))

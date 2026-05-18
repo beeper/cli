@@ -35,7 +35,7 @@ export default class Update extends BeeperCommand {
     if ((!selected || flags.desktop) && installations.desktop) {
       results.push({ kind: 'desktop', ...(await checkDesktop(installations.desktop)) })
     } else if ((!selected || flags.desktop) && !installations.desktop) {
-      results.push({ kind: 'desktop', installed: false, action: 'Run: beeper setup install desktop' })
+      results.push({ kind: 'desktop', installed: false, action: 'Run: beeper install desktop' })
     }
 
     if ((!selected || flags.server) && installations.server) {
@@ -54,7 +54,7 @@ export default class Update extends BeeperCommand {
         results.push({ kind: 'server', ...check })
       }
     } else if ((!selected || flags.server) && !installations.server) {
-      results.push({ kind: 'server', installed: false, action: 'Run: beeper setup install server' })
+      results.push({ kind: 'server', installed: false, action: 'Run: beeper install server' })
     }
 
     await printData(results, flags.json ? 'json' : 'human')

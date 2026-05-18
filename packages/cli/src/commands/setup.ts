@@ -22,7 +22,7 @@ import {
 import { printData, printSuccess } from '../lib/output.js'
 
 export default class Setup extends BeeperCommand {
-  static override summary = 'Make the selected target ready'
+  static override summary = 'Make the selected target ready for messaging'
   static override flags = {
     local: Flags.boolean({ default: false, description: 'Use the local Beeper Desktop session on this device' }),
     oauth: Flags.boolean({ default: false, description: 'Authorize the target with browser OAuth/PKCE' }),

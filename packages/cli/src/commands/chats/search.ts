@@ -9,7 +9,7 @@ export default class ChatsSearch extends BeeperCommand {
   static override args = { query: Args.string({ required: true, description: 'Search query (title, participant, or network)' }) }
   static override flags = {
     account: Flags.string({ multiple: true, description: 'Limit to Account ID, network, bridge, or account user' }),
-    ids: Flags.boolean({ default: false, description: 'Print only chat IDs' }),
+    ids: Flags.boolean({ default: false, description: 'Print preferred chat selectors, using numeric local chat IDs when available' }),
     limit: Flags.integer({ default: 20, description: 'Maximum chats to print' }),
   }
   async run(): Promise<void> {

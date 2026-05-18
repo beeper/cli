@@ -9,7 +9,7 @@ export default class ChatsList extends BeeperCommand {
   static override summary = 'List chats'
   static override flags = {
     account: Flags.string({ multiple: true, description: `Limit to ${cliCopy.args.accountSelector}` }),
-    ids: Flags.boolean({ default: false, description: 'Print only chat IDs' }),
+    ids: Flags.boolean({ default: false, description: 'Print preferred chat selectors, using numeric local chat IDs when available' }),
     limit: Flags.integer({ default: 20, description: 'Maximum chats to print' }),
     archived: Flags.boolean({ allowNo: true, description: 'Only archived chats (--no-archived to exclude)' }),
     pinned: Flags.boolean({ allowNo: true, description: 'Only pinned chats (--no-pinned to exclude)' }),

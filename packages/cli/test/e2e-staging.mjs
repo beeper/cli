@@ -206,11 +206,11 @@ async function phaseVerify() {
   await phaseVerifySameAccountDevices(targets)
   for (const target of targets) {
     for (const args of [
-      ['auth', 'verify', 'status', '--target', target.name, '--json'],
-      ['auth', 'verify', 'list', '--target', target.name, '--json'],
-      ['auth', 'verify', 'show', '--target', target.name, '--json'],
-      ['auth', 'verify', 'sas', '--target', target.name, '--json'],
-      ['auth', 'verify', 'sas-confirm', '--target', target.name, '--json'],
+      ['verify', 'status', '--target', target.name, '--json'],
+      ['verify', 'list', '--target', target.name, '--json'],
+      ['verify', 'show', '--target', target.name, '--json'],
+      ['verify', 'sas', '--target', target.name, '--json'],
+      ['verify', 'sas-confirm', '--target', target.name, '--json'],
     ]) {
       const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
       recordCommand('verify', args, result)
@@ -358,8 +358,8 @@ async function phaseCliSurface() {
     ['chats', 'search', runID, '--target', target.name, '--limit', '10', '--json'],
     ['contacts', 'list', '--target', target.name, '--limit', '20', '--json'],
     ['contacts', 'search', 'staging-user', '--target', target.name, '--json'],
-    ['auth', 'verify', 'status', '--target', target.name, '--json'],
-    ['auth', 'verify', 'list', '--target', target.name, '--json'],
+    ['verify', 'status', '--target', target.name, '--json'],
+    ['verify', 'list', '--target', target.name, '--json'],
   ]
 
   if (chatID) {
@@ -393,9 +393,8 @@ async function phaseCliSurface() {
     cases.push(
       ['messages', 'show', '--chat', chatID, '--id', messageID, '--target', target.name, '--json'],
       ['messages', 'context', '--chat', chatID, '--id', messageID, '--target', target.name, '--before', '2', '--after', '2', '--json'],
-      ['messages', 'react', '--chat', chatID, '--id', messageID, '--reaction', '+1', '--target', target.name, '--json'],
       ['send', 'react', '--to', chatID, '--id', messageID, '--reaction', '+1', '--target', target.name, '--json'],
-      ['messages', 'unreact', '--chat', chatID, '--id', messageID, '--reaction', '+1', '--target', target.name, '--json'],
+      ['send', 'unreact', '--to', chatID, '--id', messageID, '--reaction', '+1', '--target', target.name, '--json'],
       ['api', 'request', 'DELETE', `/v1/chats/${encodeURIComponent(chatID)}/messages/${encodeURIComponent(messageID)}/reactions`, '--body', '{"reactionKey":"+1"}', '--target', target.name, '--json'],
     )
   }
@@ -431,15 +430,15 @@ async function phaseVerifySameAccountDevices(targets) {
   }
 
   const [initiator, responder] = await verificationPair(pair)
-  const startArgs = ['auth', 'verify', 'start', '--target', initiator.name, '--user', responder.matrix.userID, '--json']
+  const startArgs = ['verify', 'start', '--target', initiator.name, '--user', responder.matrix.userID, '--json']
   const start = runCli(startArgs, { env: { BEEPER_ACCESS_TOKEN: initiator.accessToken }, allowFailure: true })
   recordCommand('verify-devices', startArgs, start)
 
   const responderResults = await pollResponderVerification(responder)
   const responderVerificationID = verificationIDFromResults(responderResults)
   for (const baseArgs of [
-    ['auth', 'verify', 'approve', '--target', responder.name],
-    ['auth', 'verify', 'sas', '--target', responder.name],
+    ['verify', 'approve', '--target', responder.name],
+    ['verify', 'sas', '--target', responder.name],
   ]) {
     const args = responderVerificationID ? [...baseArgs, '--id', responderVerificationID, '--json'] : [...baseArgs, '--json']
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
@@ -448,17 +447,17 @@ async function phaseVerifySameAccountDevices(targets) {
   await sleep(1000)
 
   const initiatorSASArgs = responderVerificationID
-    ? ['auth', 'verify', 'sas', '--target', initiator.name, '--id', responderVerificationID, '--json']
-    : ['auth', 'verify', 'sas', '--target', initiator.name, '--json']
+    ? ['verify', 'sas', '--target', initiator.name, '--id', responderVerificationID, '--json']
+    : ['verify', 'sas', '--target', initiator.name, '--json']
   const initiatorSAS = runCli(initiatorSASArgs, { env: { BEEPER_ACCESS_TOKEN: initiator.accessToken }, allowFailure: true })
   recordCommand('verify-devices', initiatorSASArgs, initiatorSAS)
   await sleep(1000)
 
   for (const args of [
-    ['auth', 'verify', 'show', '--target', responder.name, '--json'],
-    ['auth', 'verify', 'show', '--target', initiator.name, '--json'],
-    ['auth', 'verify', 'status', '--target', initiator.name, '--json'],
-    ['auth', 'verify', 'status', '--target', responder.name, '--json'],
+    ['verify', 'show', '--target', responder.name, '--json'],
+    ['verify', 'show', '--target', initiator.name, '--json'],
+    ['verify', 'status', '--target', initiator.name, '--json'],
+    ['verify', 'status', '--target', responder.name, '--json'],
   ]) {
     const target = args.includes(initiator.name) ? initiator : responder
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
@@ -467,15 +466,15 @@ async function phaseVerifySameAccountDevices(targets) {
 
   for (const target of [initiator, responder]) {
     const args = responderVerificationID
-      ? ['auth', 'verify', 'sas-confirm', '--target', target.name, '--id', responderVerificationID, '--json']
-      : ['auth', 'verify', 'sas-confirm', '--target', target.name, '--json']
+      ? ['verify', 'sas-confirm', '--target', target.name, '--id', responderVerificationID, '--json']
+      : ['verify', 'sas-confirm', '--target', target.name, '--json']
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
     recordCommand('verify-devices', args, result)
   }
   await sleep(1000)
   for (const args of [
-    ['auth', 'verify', 'status', '--target', initiator.name, '--json'],
-    ['auth', 'verify', 'status', '--target', responder.name, '--json'],
+    ['verify', 'status', '--target', initiator.name, '--json'],
+    ['verify', 'status', '--target', responder.name, '--json'],
   ]) {
     const target = args.includes(initiator.name) ? initiator : responder
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
@@ -486,7 +485,7 @@ async function phaseVerifySameAccountDevices(targets) {
 async function verificationPair(pair) {
   const states = []
   for (const target of pair) {
-    const args = ['auth', 'verify', 'status', '--target', target.name, '--json']
+    const args = ['verify', 'status', '--target', target.name, '--json']
     const result = runCli(args, { env: { BEEPER_ACCESS_TOKEN: target.accessToken }, allowFailure: true })
     recordCommand('verify-devices', args, result)
     const data = parseEnvelope(result.stdout)?.data
@@ -500,12 +499,12 @@ async function verificationPair(pair) {
 async function pollResponderVerification(responder) {
   const results = []
   for (let attempt = 0; attempt < 12; attempt++) {
-    const listArgs = ['auth', 'verify', 'list', '--target', responder.name, '--json']
+    const listArgs = ['verify', 'list', '--target', responder.name, '--json']
     const list = runCli(listArgs, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
     recordCommand('verify-devices', listArgs, list)
     results.push(list)
     if (verificationIDFromResults([list])) {
-      const showArgs = ['auth', 'verify', 'show', '--target', responder.name, '--json']
+      const showArgs = ['verify', 'show', '--target', responder.name, '--json']
       const show = runCli(showArgs, { env: { BEEPER_ACCESS_TOKEN: responder.accessToken }, allowFailure: true })
       recordCommand('verify-devices', showArgs, show)
       results.push(show)

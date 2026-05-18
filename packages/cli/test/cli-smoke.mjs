@@ -26,9 +26,11 @@ const ok = (...args) => {
 
 const expectedCommands = [
   'setup',
-  'setup install desktop',
-  'setup install server',
+  'install desktop',
+  'install server',
   'targets list',
+  'bridges list',
+  'bridges show',
   'targets add desktop',
   'targets add server',
   'targets add remote',
@@ -45,19 +47,19 @@ const expectedCommands = [
   'targets tunnel',
   'auth status',
   'auth logout',
-  'auth verify',
-  'auth verify status',
-  'auth verify approve',
-  'auth verify recovery-key',
-  'auth verify reset-recovery-key',
-  'auth verify cancel',
-  'auth verify list',
-  'auth verify start',
-  'auth verify show',
-  'auth verify sas',
-  'auth verify sas-confirm',
-  'auth verify qr-scan',
-  'auth verify qr-confirm',
+  'verify',
+  'verify status',
+  'verify approve',
+  'verify recovery-key',
+  'verify reset-recovery-key',
+  'verify cancel',
+  'verify list',
+  'verify start',
+  'verify show',
+  'verify sas',
+  'verify sas-confirm',
+  'verify qr-scan',
+  'verify qr-confirm',
   'accounts list',
   'accounts add',
   'accounts show',
@@ -91,8 +93,6 @@ const expectedCommands = [
   'messages context',
   'messages edit',
   'messages delete',
-  'messages react',
-  'messages unreact',
   'messages export',
   'send text',
   'send file',
@@ -144,6 +144,8 @@ assert.match(help, /\bmessages\b/, 'help should expose messages')
 assert.doesNotMatch(help, /^\s{2,}(profile|commands|llm|login|logout)\s/m, 'help must not expose deleted root/internal commands')
 assert.match(help, /\bplugins\b/, 'help should expose plugin management')
 assert.match(help, /\bautocomplete\b/, 'help should expose shell autocomplete')
+assert.match(help, /\bbridges\b/, 'help should expose bridges')
+assert.match(help, /\bverify\b/, 'help should expose verification')
 assert.doesNotMatch(help, /\bassets\b|\bapp\b/, 'help must not expose old API namespaces')
 
 for (const command of expectedCommands) {
@@ -178,6 +180,11 @@ assert.equal(availablePlugins.success, true)
 assert.equal(availablePlugins.data[0].name, '@beeper/cli-plugin-cloudflare')
 assert.equal(availablePlugins.data[0].status, 'not installed')
 assert.deepEqual(availablePlugins.data[0].commands, ['targets tunnel'])
+assert.match(ok('chats', 'list', '--help'), /preferred chat selectors/, 'chats list --ids should describe preferred selectors')
+assert.match(ok('bridges', 'list', '--help'), /connect chat accounts/, 'bridges list should expose bridge catalog')
+assert.match(ok('verify', '--help'), /device verification/, 'verify should be a root command')
+assert.throws(() => ok('auth', 'verify', '--help'), /failed/, 'auth verify must not remain public')
+assert.throws(() => ok('messages', 'react', '--help'), /failed/, 'messages react must not remain public')
 
 rmSync(configDir, { recursive: true, force: true })
 let result = run('targets', 'add', 'remote', 'work', 'http://127.0.0.1:23373', '--default', '--json')
@@ -239,13 +246,13 @@ const fakeClient = {
   },
   chats: {
     retrieve: async id => {
-      if (id === '!exact:beeper.com' || id === 'local-family') return { id: '!family:beeper.com', localChatID: 'local-family', title: 'Family', network: 'iMessage' }
+      if (id === '!exact:beeper.com' || id === '10313') return { id: '!family:beeper.com', localChatID: '10313', title: 'Family', network: 'iMessage' }
       throw new Error('not found')
     },
     search: async function* ({ query }) {
       const rows = [
-        { id: '!family:beeper.com', localChatID: 'local-family', title: 'Family', network: 'iMessage' },
-        { id: '!family-work:beeper.com', localChatID: 'local-family-work', title: 'Family Work', network: 'Telegram' },
+        { id: '!family:beeper.com', localChatID: '10313', title: 'Family', network: 'iMessage' },
+        { id: '!family-work:beeper.com', localChatID: '8951', title: 'Family Work', network: 'Telegram' },
       ].filter(chat => chat.title.toLowerCase().includes(String(query).toLowerCase()))
       for (const row of rows) yield row
     },
@@ -256,9 +263,9 @@ assert.equal(await resolveAccountID(fakeClient, 'imessage'), 'imessage-main')
 assert.deepEqual(await resolveAccountIDs(fakeClient, ['main'], { allowMultiplePerInput: true }), ['imessage-main', 'telegram-main'])
 await assert.rejects(() => resolveAccountID(fakeClient, 'main'), /Ambiguous account/)
 assert.equal(await resolveChatID(fakeClient, '!exact:beeper.com'), '!exact:beeper.com')
-assert.equal(await resolveChatID(fakeClient, 'local-family'), 'local-family')
-assert.equal(await resolveChatID(fakeClient, 'Family Work'), 'local-family-work')
-assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), 'local-family-work')
+assert.equal(await resolveChatID(fakeClient, '10313'), '10313')
+assert.equal(await resolveChatID(fakeClient, 'Family Work'), '8951')
+assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), '8951')
 await assert.rejects(() => resolveChatID(fakeClient, 'fam'), /Ambiguous chat/)
 
 function listCommandFiles(dir) {

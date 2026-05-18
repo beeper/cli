@@ -130,7 +130,7 @@ function normalizeReadinessState(app: AppState): ReadinessState {
 function actionsForState(state: ReadinessState): string[] {
   switch (state) {
     case 'no-target':
-      return ['targets create desktop', 'targets add remote']
+      return ['targets add desktop', 'targets add remote']
     case 'target-unreachable':
       return ['targets status', 'targets start', 'doctor']
     case 'needs-login':
@@ -140,7 +140,7 @@ function actionsForState(state: ReadinessState): string[] {
       return ['verify reset-recovery-key']
     case 'needs-verification':
     case 'verification-in-progress':
-      return ['verify', 'verify list', 'verify sas', 'verify qr scan']
+      return ['verify', 'verify list', 'verify sas', 'verify qr-scan']
     case 'needs-recovery-key':
     case 'needs-secrets':
       return ['verify recovery-key']

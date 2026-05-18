@@ -41,7 +41,7 @@ export const apiCopy = {
 
 export const sdkParamCopy = {
   attachmentFile: 'The file to upload (max 500 MB).',
-  chatID: 'Chat ID. Input routes also accept the local chat ID from this Beeper Desktop installation when available.',
+  chatID: 'Chat selector. Prefer the numeric local chat ID shown by chats list, or use the full Beeper/Matrix chat ID.',
   fileName: 'Original filename. Defaults to the uploaded file name if omitted',
   forEveryone: 'True to request deletion for everyone when the network supports it; false to delete only for the authenticated user when supported.',
   messageID: 'Message ID.',
@@ -56,7 +56,7 @@ export const sdkParamCopy = {
 export const cliCopy = {
   args: {
     accountSelector: 'Account ID, network, bridge, or account user',
-    chatSelector: `${sdkParamCopy.chatID} Also accepts exact chat titles or search text.`,
+    chatSelector: `${sdkParamCopy.chatID} Also accepts exact chat titles or search text for interactive use.`,
   },
   flags: {
     baseURL: 'Beeper Desktop API base URL',

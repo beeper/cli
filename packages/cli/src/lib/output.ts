@@ -59,7 +59,7 @@ export function printIDs(values: unknown[]): void {
   for (const value of values) {
     if (!value || typeof value !== 'object') continue
     const record = value as Record<string, unknown>
-    const id = record.localChatID ?? record.id ?? record.chatID ?? record.messageID
+    const id = record.localChatID ?? record.rowID ?? record.id ?? record.chatID ?? record.messageID
     if (id) process.stdout.write(`${String(id)}\n`)
   }
 }

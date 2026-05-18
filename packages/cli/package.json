@@ -79,7 +79,10 @@
         "description": "Manage connected chat-network accounts"
       },
       "auth": {
-        "description": "Inspect, clear, and verify stored authentication"
+        "description": "Inspect and clear stored authentication"
+      },
+      "bridges": {
+        "description": "List bridges that can connect or reconnect chat accounts"
       },
       "chats": {
         "description": "List, search, manage, and modify chats"
@@ -94,16 +97,22 @@
         "description": "Download message media"
       },
       "messages": {
-        "description": "List, search, show, react to, edit, delete, and export messages"
+        "description": "List, search, show, edit, delete, and export messages"
       },
       "send": {
         "description": "Send text, files, and reactions"
       },
       "setup": {
-        "description": "Make a Beeper target ready (and install Desktop/Server)"
+        "description": "Make a Beeper target ready"
       },
       "targets": {
         "description": "Manage local Desktop, managed Server, and remote Beeper targets"
+      },
+      "verify": {
+        "description": "Finish setup verification or verify another device"
+      },
+      "install": {
+        "description": "Install Beeper Desktop or Beeper Server"
       }
     }
   },

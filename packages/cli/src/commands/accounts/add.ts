@@ -10,9 +10,9 @@ import { printData } from '../../lib/output.js'
 type AccountType = Bridge
 
 export default class AccountsAdd extends BeeperCommand {
-  static override summary = 'Add a Beeper account'
+  static override summary = 'Connect a chat account'
   static override args = {
-    type: Args.string({ description: 'Network type to add (e.g. whatsapp, discord, local-whatsapp). Omit to list available networks.' }),
+    type: Args.string({ description: 'Bridge ID, network, or type to connect. Omit to list available bridges.' }),
   }
   static override flags = {
     cookie: Flags.string({ description: 'Cookie value for non-interactive login, in name=value form. Repeat for multiple cookies.', multiple: true }),
@@ -90,6 +90,7 @@ function printAvailableAccounts(items: AccountType[]): void {
     }
     process.stdout.write('\n')
   }
+  process.stdout.write('Run `beeper bridges list` for the full bridge catalog.\n')
 }
 
 function resolveAccountType(items: AccountType[], input: string): AccountType {
@@ -113,7 +114,7 @@ function resolveAccountType(items: AccountType[], input: string): AccountType {
 
   if (partial.length === 1) return partial[0]!
   if (partial.length > 1) throw ambiguousAccountType(input, partial)
-  throw new Error(`Unknown account type ${input}. Run \`beeper accounts add\` to list available account types.`)
+  throw new Error(`Unknown bridge "${input}". Run \`beeper bridges list\` to list available bridges.`)
 }
 
 function ambiguousAccountType(input: string, matches: AccountType[]): Error {

@@ -80,7 +80,7 @@ node packages/cli/test/e2e-staging.mjs
 The `install-server` phase runs:
 
 ```sh
-beeper setup install server --server-env staging --json
+beeper install server --server-env staging --json
 ```
 
 That command downloads software. It does not install npm, GitHub, or package

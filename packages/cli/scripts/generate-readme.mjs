@@ -5,8 +5,8 @@ import {commandManifest} from '../dist/lib/manifest.js';
 
 const config = await Config.load({root: process.cwd()});
 const check = process.argv.includes('--check');
-// Include hidden commands so manifest-listed commands (e.g. `messages react`, which is hidden
-// in favor of `send react`) still render in the README and pass the manifest match.
+// Include hidden commands so manifest-listed commands still render in the README
+// and pass the manifest match.
 const commandsByID = new Map([...config.commands].map(command => [displayID(command.id), command]));
 // Manifest entries for plugin-shipped commands (e.g. `targets tunnel` from
 // @beeper/cli-plugin-cloudflare) won't be in the built oclif config unless that plugin is
@@ -24,7 +24,7 @@ const commands = commandManifest.map(item => {
   };
 });
 
-const globalFlags = new Set(['base-url', 'debug', 'events', 'full', 'json', 'read-only', 'target', 'timeout', 'yes']);
+const globalFlags = new Set(['base-url', 'debug', 'events', 'full', 'json', 'quiet', 'read-only', 'target', 'timeout', 'yes']);
 const commandList = commands.map(command => {
   const id = displayID(command.id);
   return `| \`${id}\` | ${escapeTable(text(command.summary || command.description || ''))} |`;
@@ -35,10 +35,10 @@ const commandSections = commands.map(command => commandSection(command)).join('\
 
 const readme = `# Beeper CLI - Beeper from your terminal
 
-A scriptable Beeper client for people and agents. It talks to a local Beeper
-Desktop API or a configured Beeper Server target, then gives you setup,
-account management, chat search, message reading, sending, media downloads,
-exports, diagnostics, and raw API access from the command line.
+A scriptable Beeper client for people and agents. It controls Beeper Desktop
+or Beeper Server through a selected target, then gives you setup, verification,
+bridge discovery, account management, chat search, message reading, sending,
+media downloads, exports, diagnostics, and raw API access from the command line.
 
 > Requires a running Beeper Desktop API or a configured Beeper Server target.
 
@@ -46,9 +46,9 @@ Command manual: \`beeper man\`
 
 ## Features
 
-- **Setup + readiness** - \`setup\`, \`status\`, \`doctor\`, and \`auth verify\` guide a target from login through encrypted-message readiness.
-- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper targets with one selected default.
-- **Accounts** - list connected networks, add accounts, switch defaults, inspect details, and remove accounts.
+- **Setup + readiness** - \`setup\`, \`verify\`, \`status\`, and \`doctor\` guide a target from login through encrypted-message readiness.
+- **Targets** - use local Desktop, managed Desktop, managed Server, or remote Beeper API targets with one selected default. A target is an endpoint profile.
+- **Bridges + accounts** - list bridges that can connect chat accounts, connect accounts, switch defaults, inspect details, and remove accounts.
 - **Chats + contacts + labels** - list, search, start, archive, pin, mute, mark, rename, label, focus, and inspect chats across accounts.
 - **Messages + media + presence** - list, search, show, edit, delete, react, send text/files/reactions, send typing indicators, and download message media.
 - **Exports** - heavy \`export\` for full chats/transcripts/attachments and light \`messages export\` for single-chat JSON.
@@ -107,15 +107,16 @@ beeper doctor
 
 # 3. Inspect accounts and chats
 beeper accounts list
+beeper bridges list
 beeper chats list
 
 # 4. Read and search messages
-beeper messages list --chat "Family" --limit 50
+beeper messages list --chat 10313 --limit 50
 beeper messages search "flight"
 
 # 5. Send
-beeper send text --to "Family" --message "on my way"
-beeper send file --to "Family" --file ./photo.jpg --caption "from today"
+beeper send text --to 10313 --message "on my way"
+beeper send file --to 8951 --file ./photo.jpg --caption "from today"
 
 # 6. Export
 beeper export --out ./beeper-export
@@ -126,8 +127,8 @@ Desktop on this device and offers to use the existing Desktop session. Use
 \`setup --local\` for the direct Desktop-session path, \`setup --oauth\` for the
 browser-authorized path, \`setup --remote URL\` for a remote Desktop or Server,
 and \`setup --server --install\` or \`setup --desktop --install\` to orchestrate
-installation and target setup. To install runtimes directly: \`setup install desktop\`
-and \`setup install server\`.
+installation and target setup. To install runtimes directly: \`install desktop\`
+and \`install server\`.
 
 For non-interactive use, pass a token through the environment:
 
@@ -139,9 +140,9 @@ BEEPER_ACCESS_TOKEN=... beeper chats --json
 
 | Topic | Page | Commands |
 | --- | --- | --- |
-| **Setup** | [setup](docs/setup.md) · [auth](docs/auth.md) | \`setup\` · \`setup install desktop\` · \`setup install server\` · \`status\` · \`doctor\` · \`auth status\` · \`auth verify\` |
+| **Setup** | [setup](docs/setup.md) · [auth](docs/auth.md) | \`setup\` · \`install desktop\` · \`install server\` · \`verify\` · \`status\` · \`doctor\` · \`auth status\` |
 | **Targets** | [targets](docs/targets.md) | \`targets list\` · \`targets add desktop\` · \`targets add server\` · \`targets add remote\` · \`targets use\` · \`targets status\` · \`targets logs\` |
-| **Accounts** | [accounts](docs/accounts.md) | \`accounts list\` · \`accounts add\` · \`accounts show\` · \`accounts use\` · \`accounts remove\` |
+| **Bridges + accounts** | [accounts](docs/accounts.md) | \`bridges list\` · \`bridges show\` · \`accounts list\` · \`accounts add\` · \`accounts show\` · \`accounts use\` · \`accounts remove\` |
 | **Chats** | [chats](docs/chats.md) | \`chats list\` · \`chats search\` · \`chats show\` · \`chats start\` · \`chats archive\` · \`chats pin\` · \`chats mute\` · \`chats priority\` · \`chats remind\` · \`chats rename\` · \`chats draft\` · \`chats focus\` |
 | **Messages** | [messages](docs/messages.md) · [send](docs/send.md) · [presence](docs/presence.md) | \`messages list\` · \`messages search\` · \`messages export\` · \`send text\` · \`send file\` · \`send sticker\` · \`send voice\` · \`send react\` · \`presence\` |
 | **Contacts + media** | [contacts](docs/contacts.md) · [media](docs/media.md) · [export](docs/export.md) | \`contacts list\` · \`contacts search\` · \`media download\` · \`export\` |
@@ -178,7 +179,7 @@ First-party optional plugins:
 Default Desktop API target: \`http://127.0.0.1:23373\`.
 
 **Global flags:** \`--base-url\`, \`--target\`, \`--json\`, \`--events\`,
-\`--full\`, \`--timeout\`, \`--read-only\`, \`--debug\`, \`--yes\`.
+\`--full\`, \`--timeout\`, \`--read-only\`, \`--debug\`, \`--yes\`, \`--quiet\`.
 
 **Environment overrides:**
 
@@ -205,7 +206,8 @@ JSON output preserves the same envelope on failure: \`{"success":false,"data":nu
 
 ## Addressing
 
-- Chat arguments accept Beeper chat IDs, local chat IDs, exact titles, or search text.
+- Chat arguments accept numeric local chat IDs, full Beeper/Matrix chat IDs, iMessage chat IDs, exact titles, or search text.
+- For scripts, prefer the numeric local chat ID shown by \`beeper chats list\`, or the full Beeper/Matrix chat ID.
 - Ambiguous chat matches return numbered choices; pass \`--pick N\` to select one.
 - Account arguments accept account IDs, network names, bridge type/id, or account user identity.
 - Account filters can expand a network name to multiple matching accounts.

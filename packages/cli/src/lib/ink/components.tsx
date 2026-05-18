@@ -204,6 +204,13 @@ export const ChatRow: React.FC<RowProps<RecordValue>> = ({ item: chat }) => {
         </Box>
       )}
       <Box marginLeft={2}>
+        {chat.localChatID || chat.rowID ? (
+          <>
+            <Text color={theme.subtle}>local </Text>
+            <Text color={theme.text}>{String(chat.localChatID ?? chat.rowID)}</Text>
+            <Text color={theme.subtle}>  id </Text>
+          </>
+        ) : null}
         <Text color={theme.subtle}>{String(chat.id)}</Text>
       </Box>
     </Box>
@@ -254,6 +261,12 @@ export const ChatDetail: React.FC<RowProps<RecordValue>> = ({ item: chat }) => {
         <Text color={theme.subtle}>id    </Text>
         <Text color={theme.text}>{String(chat.id)}</Text>
       </Box>
+      {chat.localChatID || chat.rowID ? (
+        <Box marginLeft={2}>
+          <Text color={theme.subtle}>local </Text>
+          <Text color={theme.text}>{String(chat.localChatID ?? chat.rowID)}</Text>
+        </Box>
+      ) : null}
       {chat.accountID ? (
         <Box marginLeft={2}>
           <Text color={theme.subtle}>acct  </Text>
@@ -359,11 +372,16 @@ export const UserRow: React.FC<RowProps<RecordValue>> = ({ item: user }) => {
 
 export const AccountRow: React.FC<RowProps<RecordValue>> = ({ item: account }) => {
   const id = account.accountID ?? account.id
+  const bridge = account.bridge && typeof account.bridge === 'object' ? account.bridge as RecordValue : undefined
+  const bridgeLabel = bridge
+    ? compact([stringValue(bridge.id), stringValue(bridge.provider), stringValue(bridge.type)]).join(' ')
+    : stringValue(account.bridge)
   const title = stringValue(account.displayName)
     ?? stringValue(account.name)
     ?? stringValue(account.network)
+    ?? stringValue(bridge?.id)
     ?? String(id)
-  const network = stringValue(account.network)
+  const network = stringValue(account.network) ?? stringValue(bridge?.type)
   const tint = bridgeColor(network)
   const state = stringValue(account.state)
   const stateLow = state?.toLowerCase() ?? ''
@@ -391,7 +409,7 @@ export const AccountRow: React.FC<RowProps<RecordValue>> = ({ item: account }) =
       )}
       <Box marginLeft={2}>
         <Text color={theme.subtle}>{String(id)}</Text>
-        {account.bridge ? <Text color={theme.subtle}>  bridge {String(account.bridge)}</Text> : null}
+        {bridgeLabel ? <Text color={theme.subtle}>  bridge {bridgeLabel}</Text> : null}
       </Box>
     </Box>
   )
