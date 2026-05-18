@@ -101,7 +101,9 @@ import Command99 from './commands/version.js'
 import Command100 from './commands/watch.js'
 
 export const commands = {
+  'accounts': Command1,
   'accounts:add': Command0,
+  'accounts:chats': Command21,
   'accounts:list': Command1,
   'accounts:remove': Command2,
   'accounts:show': Command3,
@@ -114,8 +116,10 @@ export const commands = {
   'auth:logout': Command10,
   'auth:status': Command11,
   'autocomplete': Command12,
+  'bridges': Command13,
   'bridges:list': Command13,
   'bridges:show': Command14,
+  'chats': Command21,
   'chats:archive': Command15,
   'chats:avatar': Command16,
   'chats:description': Command17,
@@ -143,6 +147,7 @@ export const commands = {
   'config:path': Command39,
   'config:reset': Command40,
   'config:set': Command41,
+  'contacts': Command42,
   'contacts:list': Command42,
   'contacts:search': Command43,
   'contacts:show': Command44,
@@ -172,6 +177,7 @@ export const commands = {
   'send:voice': Command68,
   'setup': Command69,
   'status': Command70,
+  'targets': Command76,
   'targets:add:desktop': Command71,
   'targets:add:remote': Command72,
   'targets:add:server': Command73,

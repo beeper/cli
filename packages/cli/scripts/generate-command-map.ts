@@ -7,16 +7,29 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const commandsDir = join(root, 'src', 'commands')
 const outPath = join(root, 'src', 'commands.generated.ts')
 
+const listAliases: Record<string, string[]> = {
+  'accounts:list': ['accounts'],
+  'bridges:list': ['bridges'],
+  'chats:list': ['chats', 'accounts:chats'],
+  'contacts:list': ['contacts'],
+  'targets:list': ['targets'],
+}
+
 const files = await listCommandFiles(commandsDir)
-const entries = files
+const canonicalEntries = files
   .map(file => ({
     command: fileToCommand(file),
     importPath: `./commands/${relative(commandsDir, file).split(sep).join('/').replace(/\.(ts|tsx)$/, '.js')}`,
   }))
   .sort((a, b) => a.command.localeCompare(b.command))
+const entries = canonicalEntries
+  .flatMap(entry => [entry, ...(listAliases[entry.command] ?? []).map(command => ({ command, importPath: entry.importPath }))])
+  .sort((a, b) => a.command.localeCompare(b.command))
 
-const imports = entries.map((entry, index) => `import Command${index} from '${entry.importPath}'`).join('\n')
-const mapEntries = entries.map((entry, index) => `  '${entry.command}': Command${index},`).join('\n')
+const importPaths = canonicalEntries.map(entry => entry.importPath)
+const commandImports = new Map(importPaths.map((importPath, index) => [importPath, `Command${index}`]))
+const imports = importPaths.map((importPath, index) => `import Command${index} from '${importPath}'`).join('\n')
+const mapEntries = entries.map(entry => `  '${entry.command}': ${commandImports.get(entry.importPath)},`).join('\n')
 
 await writeFile(
   outPath,
