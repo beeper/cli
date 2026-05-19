@@ -30,6 +30,7 @@
     "eslint": "^9.39.4",
     "eslint-config-oclif": "^6.0.165",
     "eslint-config-prettier": "^10.1.8",
+    "terser": "^5.44.1",
     "tsdown": "^0.21.10",
     "typescript": "^5.7.2"
   }

@@ -1,5 +1,8 @@
 import { createInterface } from 'node:readline/promises'
+import { spawnSync } from 'node:child_process'
+import { existsSync, realpathSync } from 'node:fs'
 import { stdin as input, stdout as output } from 'node:process'
+import { delimiter, join } from 'node:path'
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import type { Bridge, LoginFlow } from '@beeper/desktop-api/resources/bridges.js'
@@ -30,6 +33,7 @@ export default class AccountsAdd extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsAdd)
     ensureWritable(flags)
+    if (flags.webview) reexecWithBunForWebViewIfNeeded()
     const client = await createClient(flags)
 
     if (!args.bridge) {
@@ -81,6 +85,67 @@ export default class AccountsAdd extends BeeperCommand {
     }) : step
     if (flags.json) await printData(result, 'json')
     else await printAccountLoginStep(result)
+  }
+}
+
+function reexecWithBunForWebViewIfNeeded(): void {
+  if ((globalThis as { Bun?: unknown }).Bun) return
+  if (process.env.BEEPER_CLI_WEBVIEW_REEXEC === '1') {
+    throw new Error('Account web views are unavailable because this Bun runtime does not expose Bun.WebView.')
+  }
+
+  const entrypoint = process.argv[1]
+  if (!entrypoint) throw new Error('Account web views require Bun. Install Bun and retry, or provide cookies manually with --cookie.')
+
+  const binary = findInstalledBeeperBinary(entrypoint)
+  if (binary) {
+    const child = spawnSync(binary, process.argv.slice(2), {
+      env: {
+        ...process.env,
+        BEEPER_CLI_WEBVIEW_REEXEC: '1',
+      },
+      stdio: 'inherit',
+    })
+    if (child.error) throw child.error
+    process.exit(child.status ?? 1)
+  }
+
+  const probe = spawnSync('bun', ['--version'], { encoding: 'utf8', stdio: ['ignore', 'ignore', 'ignore'] })
+  if (probe.error || probe.status !== 0) {
+    throw new Error('Account web views require Bun or an installed Beeper CLI binary. Install Bun, install the prebuilt CLI, or provide cookies manually with --cookie.')
+  }
+
+  const child = spawnSync('bun', [entrypoint, ...process.argv.slice(2)], {
+    env: {
+      ...process.env,
+      BEEPER_CLI_WEBVIEW_REEXEC: '1',
+    },
+    stdio: 'inherit',
+  })
+  if (child.error) throw child.error
+  process.exit(child.status ?? 1)
+}
+
+function findInstalledBeeperBinary(currentEntrypoint: string): string | undefined {
+  const current = realpathOrSelf(currentEntrypoint)
+  const seen = new Set<string>()
+  for (const directory of (process.env.PATH ?? '').split(delimiter)) {
+    if (!directory) continue
+    const candidate = join(directory, process.platform === 'win32' ? 'beeper.exe' : 'beeper')
+    if (!existsSync(candidate)) continue
+    const realCandidate = realpathOrSelf(candidate)
+    if (seen.has(realCandidate) || realCandidate === current) continue
+    seen.add(realCandidate)
+    return candidate
+  }
+  return undefined
+}
+
+function realpathOrSelf(path: string): string {
+  try {
+    return realpathSync(path)
+  } catch {
+    return path
   }
 }
 
