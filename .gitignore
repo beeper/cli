@@ -5,3 +5,6 @@ node_modules/
 /beeper-desktop-cli
 .upstream/
 *.exe
+/bin/
+dist/
+/.cache/
