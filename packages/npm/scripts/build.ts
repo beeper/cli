@@ -57,29 +57,40 @@ const expectedBinarySha256 = artifact.binarySha256 || artifact.sha256
 if (!existsSync(binPath) || await sha256(binPath).catch(() => '') !== expectedBinarySha256) {
   const tempDir = join(tmpdir(), \`beeper-cli-\${manifest.version}-\${process.pid}\`)
   const archivePath = join(tempDir, artifact.file)
+  const downloadURL = \`https://github.com/beeper/cli/releases/download/v\${manifest.version}/\${artifact.file}\`
+  logStep(\`installing beeper-cli \${manifest.version} for \${platform}\`)
   await rm(tempDir, { recursive: true, force: true })
   await mkdir(tempDir, { recursive: true })
-  await download(\`https://github.com/beeper/cli/releases/download/v\${manifest.version}/\${artifact.file}\`, archivePath)
+  await download(downloadURL, archivePath)
+  logStep('verifying download')
   const actual = await sha256(archivePath)
   if (actual !== artifact.sha256) {
     await rm(tempDir, { recursive: true, force: true })
     console.error(\`beeper-cli binary checksum mismatch for \${artifact.file}.\`)
     process.exit(1)
   }
+  logStep('extracting binary')
   await extract(archivePath, tempDir)
   const extractedBin = join(tempDir, 'bin', manifest.command || 'beeper')
   await chmod(extractedBin, 0o755)
+  logStep(\`caching binary in \${cacheDir}\`)
   await rm(cacheDir, { recursive: true, force: true })
   await mkdir(dirname(binPath), { recursive: true })
   await rename(extractedBin, binPath)
   await rm(tempDir, { recursive: true, force: true })
+  logStep('ready')
 }
 
+if (process.env.BEEPER_CLI_LAUNCHER_DEBUG === '1') logStep(\`starting \${binPath}\`)
 const child = spawn(binPath, process.argv.slice(2), { stdio: 'inherit', env: process.env })
 child.on('exit', (code, signal) => {
   if (signal) process.kill(process.pid, signal)
   process.exit(code ?? 1)
 })
+
+function logStep(message) {
+  console.error(\`beeper-cli: \${message}\`)
+}
 
 function targetPlatform() {
   const os = osPlatform()
@@ -96,11 +107,14 @@ async function sha256(path) {
 }
 
 async function download(url, destination) {
+  logStep(\`downloading \${artifact.file}\`)
   await new Promise((resolve, reject) => {
     get(url, response => {
       if ([301, 302, 303, 307, 308].includes(response.statusCode ?? 0) && response.headers.location) {
         response.resume()
-        download(response.headers.location, destination).then(resolve, reject)
+        const nextURL = new URL(response.headers.location, url).toString()
+        logStep(\`redirecting to \${new URL(nextURL).host}\`)
+        download(nextURL, destination).then(resolve, reject)
         return
       }
       if (response.statusCode !== 200) {
@@ -108,7 +122,20 @@ async function download(url, destination) {
         reject(new Error(\`Download failed with HTTP \${response.statusCode}: \${url}\`))
         return
       }
+      const total = Number(response.headers['content-length'] ?? 0)
+      let downloaded = 0
+      let nextLoggedPercent = 25
       const file = createWriteStream(destination, { mode: 0o755 })
+      response.on('data', chunk => {
+        downloaded += chunk.length
+        if (!total) return
+        const percent = Math.floor(downloaded / total * 100)
+        if (percent >= nextLoggedPercent || percent === 100) {
+          const milestone = percent === 100 ? 100 : nextLoggedPercent
+          logStep(\`downloaded \${milestone}%\`)
+          nextLoggedPercent = milestone + 25
+        }
+      })
       response.pipe(file)
       file.on('finish', () => file.close(resolve))
       file.on('error', reject)

@@ -2415,8 +2415,8 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `-c, --chat=<value>...` | option | Chat ID to subscribe to. Defaults to all chats. |
-| `--exclude-type=<chat.upserted\|chat.deleted\|message.upserted\|message.deleted>...` | option | Drop events of these types. Repeat for multiple. |
-| `--include-type=<chat.upserted\|chat.deleted\|message.upserted\|message.deleted>...` | option | Only forward events of these types. Repeat for multiple. |
+| `--exclude-type=<chat.upserted\|chat.deleted\|message.upserted\|message.deleted\|message.stream>...` | option | Drop events of these types. Repeat for multiple. |
+| `--include-type=<chat.upserted\|chat.deleted\|message.upserted\|message.deleted\|message.stream>...` | option | Only forward events of these types. Repeat for multiple. |
 | `--webhook=<value>` | option | Forward each event to this URL as a POST request (best-effort, fire-and-forget) |
 | `--webhook-queue=<value>` | option | Maximum pending webhook deliveries before dropping events Default: 64 |
 | `--webhook-secret=<value>` | option | HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex> |

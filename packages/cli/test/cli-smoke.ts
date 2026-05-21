@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { commandManifest } from '../dist/lib/manifest.js'
@@ -234,6 +234,31 @@ assert.notEqual(result.status, 0)
 envelope = JSON.parse(result.stderr)
 assert.equal(envelope.success, false)
 assert.match(envelope.error, /Unknown Beeper target/)
+
+rmSync(configDir, { recursive: true, force: true })
+const fakeServerPath = join(configDir, 'bin', 'beeper-server')
+mkdirSync(join(configDir, 'bin'), { recursive: true })
+writeFileSync(fakeServerPath, '#!/bin/sh\n', { mode: 0o755 })
+writeFileSync(join(configDir, 'installations.json'), `${JSON.stringify({
+  server: {
+    kind: 'server',
+    channel: 'stable',
+    serverEnv: 'production',
+    bundleID: 'com.automattic.beeper.server',
+    version: 'test',
+    path: fakeServerPath,
+    feedURL: 'https://example.invalid/feed',
+    downloadURL: 'https://example.invalid/download',
+    installedAt: '2026-05-18T00:00:00.000Z',
+    updatedAt: '2026-05-18T00:00:00.000Z',
+  },
+}, null, 2)}\n`)
+result = run('setup', '--json')
+assert.equal(result.status, 0, result.stderr)
+envelope = JSON.parse(result.stdout)
+assert.equal(envelope.success, true)
+assert(envelope.data.availableActions.some(action => action.id === 'use-installed-server' && action.command === 'beeper setup --server --yes'))
+assert(!envelope.data.availableActions.some(action => action.id === 'install-server'), 'setup must not offer to reinstall an already installed Server')
 
 const rpcResult = spawnSync(process.execPath, ['./bin/dev.js', 'rpc'], {
   cwd: root,
