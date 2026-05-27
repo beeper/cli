@@ -12,6 +12,8 @@ target file under `~/.beeper/targets/`; `BEEPER_ACCESS_TOKEN` overrides it.
 ```sh
 beeper auth status
 beeper auth logout
+beeper auth email start     --email <addr>              # start headless email sign-in
+beeper auth email response  --code <code> --setup-request-id <id>  # finish email sign-in
 beeper auth verify [--user @id]                         # interactive happy-path
 beeper auth verify start    [--user @id]                # individual steps
 beeper auth verify status
@@ -30,6 +32,7 @@ beeper auth verify cancel
 
 - `auth status` reports the token source (env vs. target file) and metadata; it does not call the network.
 - `auth logout` revokes the token at the Desktop OAuth endpoint and clears the local copy.
+- `auth email start` + `auth email response` provide a two-step email-based sign-in that works without a browser — ideal for headless servers and VPS environments. See [setup — Headless server setup](setup.md#headless-server-setup) for a full walkthrough.
 - `auth verify` (no subcommand) walks the most common SAS/emoji verification flow interactively.
 - For agents, drive the explicit subcommands (`start` → `sas` → `sas-confirm`) and use `--json` to inspect state.
 - `verify status` returns the encryption-readiness state (`ready`, `needs-verification`, `verification-in-progress`).
@@ -39,6 +42,8 @@ beeper auth verify cancel
 
 ```sh
 beeper auth status --json
+beeper auth email start --email you@example.com -t server
+beeper auth email response --code 123456 --setup-request-id <id> -t server --yes
 beeper auth verify
 beeper auth verify recovery-key --code ABCD-EFGH-IJKL-MNOP
 beeper auth verify reset-recovery-key
