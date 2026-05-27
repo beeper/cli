@@ -23,7 +23,7 @@ beeper auth verify sas
 beeper auth verify sas-confirm
 beeper auth verify qr-scan --payload <data>
 beeper auth verify qr-confirm
-beeper auth verify recovery-key       [--code KEY]
+beeper verify recovery-key             --key <value>
 beeper auth verify reset-recovery-key
 beeper auth verify cancel
 ```
@@ -45,7 +45,7 @@ beeper auth status --json
 beeper auth email start --email you@example.com -t server
 beeper auth email response --code 123456 --setup-request-id <id> -t server --yes
 beeper auth verify
-beeper auth verify recovery-key --code ABCD-EFGH-IJKL-MNOP
+beeper verify recovery-key -t server --key "ABCD-EFGH-IJKL-MNOP"
 beeper auth verify reset-recovery-key
 beeper auth logout
 ```

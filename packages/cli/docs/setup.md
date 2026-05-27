@@ -11,7 +11,7 @@ Server / remote targets.
 ## Commands
 
 ```sh
-beeper setup [--local | --oauth | --remote URL | --desktop | --server] [--install] [--channel stable|nightly]
+beeper setup [--local | --oauth | --email | --remote URL | --desktop | --server] [--install] [--channel stable|nightly]
 beeper install desktop [--channel stable|nightly]
 beeper install server  [--channel stable|nightly] [--server-env production|staging]
 ```
