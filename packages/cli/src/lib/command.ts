@@ -26,6 +26,7 @@ export abstract class BeeperCommand extends Command {
     if (this.argv.includes('--quiet') || this.argv.includes('-q')) {
       process.env.BEEPER_QUIET = '1'
     }
+
     const format = outputFormatFromArgv(this.argv)
     if (format) {
       process.env.BEEPER_OUTPUT_FORMAT = format
@@ -34,6 +35,7 @@ export abstract class BeeperCommand extends Command {
     } else if (process.env.BEEPER_AGENT === '1' || !process.stdout.isTTY) {
       process.env.BEEPER_OUTPUT_FORMAT = 'json'
     }
+
     const select = stringFlagFromArgv(this.argv, '--select')
     if (select) process.env.BEEPER_OUTPUT_SELECT = select
     if (this.argv.includes('--results-only')) process.env.BEEPER_OUTPUT_RESULTS_ONLY = '1'
@@ -47,7 +49,7 @@ export abstract class BeeperCommand extends Command {
     const code = inferredCode ?? error.exitCode ?? ExitCodes.Generic
     process.exitCode = process.exitCode ?? code
     const tryMessage = error instanceof CLIError ? error.tryMessage : undefined
-    const isBug = error instanceof BugError || !(error instanceof CLIError)
+    const isBug = error instanceof BugError || (!(error instanceof CLIError) && inferredCode === undefined)
 
     if (this.argv.includes('--events')) {
       writeEvent('error', { message, exitCode: code, kind: isBug ? 'bug' : 'abort', tryMessage })
@@ -75,7 +77,7 @@ function inferExitCode(message: string): number | undefined {
   if (/\b401\b|unauthorized|invalid token|auth(?:entication)? required/i.test(message)) return ExitCodes.AuthRequired
   if (/\b404\b|not\s+found|unknown .*target|no .*matches/i.test(message)) return ExitCodes.NotFound
   if (/ECONNREFUSED|ENOTFOUND|ETIMEDOUT|fetch failed|not reachable|not ready/i.test(message)) return ExitCodes.NotReady
-  if (/usage|invalid|must provide|required|unknown flag|parse/i.test(message)) return ExitCodes.Usage
+  if (/\busage\b|\binvalid (?:argument|option|flag|value|input)\b|\bmust provide\b|\brequired (?:flag|argument|option|value)\b|\bunknown flag\b|\bparse error\b/i.test(message)) return ExitCodes.Usage
   return undefined
 }
 
@@ -98,7 +100,7 @@ function formatBugPanel(error: Error, version: string): string {
 
 export function ensureWritable(flags: { 'read-only'?: boolean }): void {
   const env = process.env.BEEPER_READONLY
-  const readOnly = flags['read-only'] || ['1', 'true', 'yes', 'on'].includes(String(env ?? '').toLowerCase())
+  const readOnly = flags['read-only'] || ['1', 'on', 'true', 'yes'].includes(String(env ?? '').toLowerCase())
   if (readOnly) throw new CLIError('read-only mode: command would modify Beeper or local CLI state', ExitCodes.Usage)
 }
 
@@ -128,6 +130,7 @@ function stringFlagFromArgv(argv: string[], name: string): string | undefined {
     if (arg === name) return argv[i + 1]
     if (arg?.startsWith(`${name}=`)) return arg.slice(name.length + 1)
   }
+
   return undefined
 }
 
@@ -142,21 +145,27 @@ function errorCode(code: number, isBug: boolean): string {
     case ExitCodes.Ambiguous: {
       return 'ambiguous_selector'
     }
+
     case ExitCodes.AuthRequired: {
       return 'auth_required'
     }
+
     case ExitCodes.CommandNotFound: {
       return 'command_not_found'
     }
+
     case ExitCodes.NotFound: {
       return 'not_found'
     }
+
     case ExitCodes.NotReady: {
       return 'not_ready'
     }
+
     case ExitCodes.Usage: {
       return 'usage_error'
     }
+
     default: {
       return 'runtime_error'
     }
