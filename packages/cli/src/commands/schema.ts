@@ -16,15 +16,17 @@ type RawCommand = {
 }
 
 export default class Schema extends BeeperCommand {
+  static override strict = false
   static override summary = 'Print machine-readable command/flag schema'
   static override description = 'Agent-first schema for commands, flags, args, examples, mutation metadata, selectors, output shapes, and related commands.'
   static override args = {
-    command: Args.string({ required: false, description: 'Optional command path, such as "messages search"', multiple: true }),
+    command: Args.string({ required: false, description: 'Optional command path, such as "messages search"' }),
   }
 
   async run(): Promise<void> {
-    const { args } = await this.parse(Schema)
-    const requested = Array.isArray(args.command) ? args.command.join(' ') : undefined
+    await this.parse(Schema)
+    const pathArgs = this.argv.filter(arg => !arg.startsWith('-'))
+    const requested = pathArgs.length > 0 ? pathArgs.join(' ') : undefined
     const manifestByCommand = new Map(commandManifest.map(item => [item.command, item]))
     const commands = (this.config.commands as RawCommand[])
       .filter(command => !command.hidden)
@@ -116,10 +118,20 @@ function typeName(record: Record<string, unknown>): string {
 function outputShape(kind: string): Record<string, unknown> {
   const envelope = { ok: true, data: '<payload>', error: null, meta: '<metadata>' }
   switch (kind) {
-    case 'list': return { kind, envelope, data: 'array' }
-    case 'stream': return { kind, data: 'jsonl events or RPC lines' }
-    case 'success': return { kind, envelope, data: { message: 'string', detail: 'string?', entity: 'object?' } }
-    case 'send-result': return { kind, envelope, data: { chatID: 'string', pendingMessageID: 'string?', state: 'string?' } }
-    default: return { kind, envelope, data: 'object' }
+    case 'list': {
+      return { kind, envelope, data: 'array' }
+    }
+    case 'send-result': {
+      return { kind, envelope, data: { chatID: 'string', pendingMessageID: 'string?', state: 'string?' } }
+    }
+    case 'stream': {
+      return { kind, data: 'jsonl events or RPC lines' }
+    }
+    case 'success': {
+      return { kind, envelope, data: { message: 'string', detail: 'string?', data: 'object?' } }
+    }
+    default: {
+      return { kind, envelope, data: 'object' }
+    }
   }
 }
