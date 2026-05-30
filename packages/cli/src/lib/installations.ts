@@ -8,12 +8,14 @@ import type { ReadableStream } from 'node:stream/web'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { beeperDir } from './targets.js'
+import { SERVER_ENV_API_BASE_URLS, normalizeServerEnv, type ServerEnv } from './server-env.js'
+
+export type { ServerEnv } from './server-env.js'
 
 const execFileAsync = promisify(execFile)
 
 export type InstallKind = 'desktop' | 'server'
 export type InstallChannel = 'stable' | 'nightly'
-export type ServerEnv = 'production' | 'staging'
 
 export type Installation = {
   kind: InstallKind
@@ -101,7 +103,7 @@ export function normalizeInstallRequest(options: {
     feedPlatform,
     arch,
     bundleID,
-    apiBaseURL: serverEnv === 'staging' ? 'https://api.beeper-staging.com' : 'https://api.beeper.com',
+    apiBaseURL: SERVER_ENV_API_BASE_URLS[serverEnv],
   }
 }
 
@@ -146,7 +148,7 @@ export async function checkInstallationUpdate(installation: Installation): Promi
 
 export async function installDesktop(options: { channel?: InstallChannel; serverEnv?: string } = {}): Promise<Installation> {
   const request = normalizeInstallRequest({ kind: 'desktop', channel: options.channel, serverEnv: options.serverEnv })
-  if (request.serverEnv === 'staging') throw new Error('Desktop staging installs are not supported by the CLI.')
+  if (request.serverEnv !== 'prod') throw new Error('Desktop non-production installs are not supported by the CLI.')
   const feedURL = feedURLFor(request)
   const feed = await fetchFeed(feedURL)
   const downloadURL = feed.url
@@ -320,12 +322,6 @@ async function findServerExecutable(dir: string): Promise<string> {
     }
   }
   throw new Error('Downloaded Beeper Server artifact did not contain a beeper-server executable.')
-}
-
-function normalizeServerEnv(value?: string): ServerEnv {
-  if (!value || value === 'production' || value === 'prod') return 'production'
-  if (value === 'staging') return 'staging'
-  throw new Error(`Unsupported server env "${value}". Expected production or staging.`)
 }
 
 function normalizeDownloadPlatform(platform: NodeJS.Platform): 'macos' | 'windows' | 'linux' {

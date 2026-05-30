@@ -3,6 +3,7 @@ import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promise
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { notFound } from './errors.js'
+import { normalizeServerEnv } from './server-env.js'
 
 export type AuthSource = 'desktop-db' | 'desktop-cache' | 'desktop-oauth' | 'remote-oauth' | 'manual'
 
@@ -201,7 +202,7 @@ function normalizeLocalTarget(target: Target): Target {
 }
 
 export async function createProfileTarget(type: ManagedTargetType, id: string, options: { serverEnv?: string; port?: number } = {}): Promise<Target> {
-  const serverEnv = options.serverEnv ?? 'production'
+  const serverEnv = normalizeServerEnv(options.serverEnv)
   const port = options.port ?? await nextPort()
   const target: Target = {
     id,

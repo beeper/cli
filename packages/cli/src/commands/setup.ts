@@ -9,6 +9,7 @@ import { loginWithPKCE } from '../lib/oauth.js'
 import { findDesktopAppPath, launchDesktopApp, startProfile } from '../lib/profiles.js'
 import { interactiveEmailSetup } from '../lib/setup-login.js'
 import { renderStartupLogo } from '../lib/logo.js'
+import { SERVER_ENVIRONMENTS, SERVER_ENV_API_BASE_URLS, normalizeServerEnv } from '../lib/server-env.js'
 import {
   builtInDesktopTargetID,
   createProfileTarget,
@@ -35,7 +36,7 @@ export default class Setup extends BeeperCommand {
     desktop: Flags.boolean({ default: false, description: 'Set up a local Beeper Desktop target' }),
     install: Flags.boolean({ default: false, description: 'Allow installing missing managed runtime' }),
     channel: Flags.string({ options: ['stable', 'nightly'], default: 'stable', description: 'Install release channel' }),
-    'server-env': Flags.string({ options: ['production', 'staging'], default: 'production', description: 'Server feed environment' }),
+    'server-env': Flags.string({ options: SERVER_ENVIRONMENTS, default: 'prod', description: 'Server feed environment' }),
     email: Flags.string({ description: 'Sign in with an email address' }),
     username: Flags.string({ description: 'Username to use if setup creates a new account' }),
   }
@@ -285,7 +286,7 @@ export default class Setup extends BeeperCommand {
     if (choice === '2') {
       if (!serverInstalled) {
         if (!await promptYesNoDefaultYes('Install local Beeper Server stable from beeper.com?')) return
-        await installWithCopy('server', { ...flags, channel: 'stable', 'server-env': 'production' })
+        await installWithCopy('server', { ...flags, channel: 'stable', 'server-env': 'prod' })
       }
       await this.setupManaged('server', { ...flags, install: false, server: true, channel: 'stable' })
       return
@@ -314,7 +315,7 @@ export default class Setup extends BeeperCommand {
     if (choice === '3') {
       if (!serverInstalled) {
         if (!await promptYesNoDefaultYes('Install local Beeper Server stable from beeper.com?')) return true
-        await installWithCopy('server', { ...flags, channel: 'stable', 'server-env': 'production' })
+        await installWithCopy('server', { ...flags, channel: 'stable', 'server-env': 'prod' })
       }
       await this.setupManaged('server', { ...flags, install: false, server: true, channel: 'stable' })
       return true
@@ -619,8 +620,9 @@ async function maybeDriveOnboarding(result: SetupResult, flags: SetupFlags): Pro
 async function installWithCopy(type: 'desktop' | 'server', flags: SetupFlags): Promise<void> {
   const label = type === 'desktop' ? 'Beeper Desktop' : 'local Beeper Server'
   const channel = flags.channel === 'nightly' ? 'nightly' : 'stable'
-  const serverEnv = flags['server-env'] === 'staging' ? 'staging' : 'production'
-  if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installing ${label} ${channel} from beeper.com...\n`)
+  const serverEnv = normalizeServerEnv(flags['server-env'])
+  const source = type === 'server' ? new URL(SERVER_ENV_API_BASE_URLS[serverEnv]).host : 'beeper.com'
+  if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installing ${label} ${channel} from ${source}...\n`)
   if (type === 'desktop') await installDesktop({ channel, serverEnv })
   else await installServer({ channel, serverEnv })
   if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installed ${label} ${channel}.\n\n`)

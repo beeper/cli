@@ -18,8 +18,8 @@ commands use it unless `--target <name>` overrides.
 
 ```sh
 beeper targets list
-beeper targets add desktop [name] [--port N] [--server-env production|staging] [--default]
-beeper targets add server  [name] [--port N] [--server-env production|staging] [--default]
+beeper targets add desktop [name] [--port N] [--server-env local|dev|staging|prod] [--default]
+beeper targets add server  [name] [--port N] [--server-env local|dev|staging|prod] [--default]
 beeper targets add remote  <name> <url> [--default]
 beeper targets use <name>
 beeper targets show [name]
@@ -48,7 +48,7 @@ beeper targets remove <name>
 ```sh
 beeper targets list --json
 beeper targets add desktop work --default
-beeper targets add server prod --server-env production --default
+beeper targets add server prod --server-env prod --default
 beeper targets add remote office https://desktop.office.example.com --default
 beeper targets use work
 beeper targets logs work | less

@@ -249,7 +249,7 @@ writeFileSync(join(configDir, 'installations.json'), `${JSON.stringify({
   server: {
     kind: 'server',
     channel: 'stable',
-    serverEnv: 'production',
+    serverEnv: 'prod',
     bundleID: 'com.automattic.beeper.server',
     version: 'test',
     path: fakeServerPath,
@@ -287,11 +287,22 @@ assert.equal(stagingServerRequest.bundleID, 'com.automattic.beeper.server')
 assert.equal(feedURLFor(stagingServerRequest), 'https://api.beeper-staging.com/desktop/update-feed.json?bundleID=com.automattic.beeper.server&platform=darwin&channel=stable&arch=arm64')
 assert.equal(downloadURLFor(stagingServerRequest), 'https://api.beeper-staging.com/desktop/download/macos/arm64/stable/com.automattic.beeper.server')
 
-const productionServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'production', channel: 'stable', platform: 'darwin', arch: 'arm64' })
-assert.equal(productionServerRequest.channel, 'stable')
-assert.equal(productionServerRequest.bundleID, 'com.automattic.beeper.server')
-assert.equal(feedURLFor(productionServerRequest), 'https://api.beeper.com/desktop/update-feed.json?bundleID=com.automattic.beeper.server&platform=darwin&channel=stable&arch=arm64')
-assert.equal(downloadURLFor(productionServerRequest), 'https://api.beeper.com/desktop/download/macos/arm64/stable/com.automattic.beeper.server')
+const prodServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'prod', channel: 'stable', platform: 'darwin', arch: 'arm64' })
+assert.equal(prodServerRequest.channel, 'stable')
+assert.equal(prodServerRequest.bundleID, 'com.automattic.beeper.server')
+assert.equal(feedURLFor(prodServerRequest), 'https://api.beeper.com/desktop/update-feed.json?bundleID=com.automattic.beeper.server&platform=darwin&channel=stable&arch=arm64')
+assert.equal(downloadURLFor(prodServerRequest), 'https://api.beeper.com/desktop/download/macos/arm64/stable/com.automattic.beeper.server')
+
+const productionAliasServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'production', channel: 'stable', platform: 'darwin', arch: 'arm64' })
+assert.equal(productionAliasServerRequest.serverEnv, 'prod')
+
+const localServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'local', channel: 'stable', platform: 'darwin', arch: 'arm64' })
+assert.equal(feedURLFor(localServerRequest), 'https://api.beeper.localtest.me/desktop/update-feed.json?bundleID=com.automattic.beeper.server&platform=darwin&channel=stable&arch=arm64')
+assert.equal(downloadURLFor(localServerRequest), 'https://api.beeper.localtest.me/desktop/download/macos/arm64/stable/com.automattic.beeper.server')
+
+const devServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'dev', channel: 'stable', platform: 'darwin', arch: 'arm64' })
+assert.equal(feedURLFor(devServerRequest), 'https://api.beeper-dev.com/desktop/update-feed.json?bundleID=com.automattic.beeper.server&platform=darwin&channel=stable&arch=arm64')
+assert.equal(downloadURLFor(devServerRequest), 'https://api.beeper-dev.com/desktop/download/macos/arm64/stable/com.automattic.beeper.server')
 
 const stagingNightlyServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'staging', channel: 'nightly', platform: 'darwin', arch: 'arm64' })
 assert.equal(stagingNightlyServerRequest.channel, 'nightly')

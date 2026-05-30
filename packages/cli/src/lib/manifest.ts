@@ -49,7 +49,7 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'targets add server',
     description: 'Add a managed Beeper Server target',
-    examples: ['beeper targets add server prod --server-env production --default'],
+    examples: ['beeper targets add server prod --server-env prod --default'],
   },
   {
     command: 'targets add remote',
