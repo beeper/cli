@@ -34,6 +34,7 @@ export default class SendFile extends BeeperCommand {
       await printDryRun('send.file', request, flags.json ? 'json' : 'human')
       return
     }
+
     await printData(await sendMessage(client, request), flags.json ? 'json' : 'human')
   }
 }

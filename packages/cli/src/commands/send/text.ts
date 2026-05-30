@@ -33,6 +33,7 @@ export default class SendText extends BeeperCommand {
       await printDryRun('send.text', request, flags.json ? 'json' : 'human')
       return
     }
+
     await printData(await sendMessage(client, request), flags.json ? 'json' : 'human')
   }
 }

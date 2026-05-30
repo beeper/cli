@@ -21,9 +21,11 @@ export default class TargetsStart extends BeeperCommand {
       await printSuccess({ message: 'Opened Beeper Desktop', detail: target.baseURL, data: { target, result } }, flags.json ? 'json' : 'human')
       return
     }
+
     if (!target.managed || target.type !== 'server') {
       throw new Error(`Target "${target.id}" is not a local Beeper Server install.`)
     }
+
     if (flags['dry-run']) {
       await printDryRun('targets.start', { target, startProfile: true }, flags.json ? 'json' : 'human')
       return
