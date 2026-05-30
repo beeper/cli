@@ -99,7 +99,7 @@ export async function printSuccess(
 ): Promise<void> {
   format = effectiveFormat(format)
   if (format === 'json' || format === 'jsonl') {
-    writeJSON(jsonPayload({ message: opts.message, detail: opts.detail, entity: opts.entity, ...(opts.data ?? {}) }), format)
+    writeJSON(jsonPayload({ message: opts.message, detail: opts.detail, entity: opts.entity, ...opts.data }), format)
     return
   }
   if (format === 'ids') {
@@ -122,6 +122,14 @@ export async function printFailure(
   format = effectiveFormat(format)
   if (format === 'json' || format === 'jsonl') {
     writeJSON({ ok: false, data: opts.data ?? null, error: { message: opts.message, detail: opts.detail } }, format)
+    return
+  }
+  if (format === 'text') {
+    process.stdout.write(`${opts.message}${opts.detail ? `\t${opts.detail}` : ''}\n`)
+    return
+  }
+  if (format === 'ids') {
+    if (opts.data) printIDs([opts.data])
     return
   }
   const { renderFailure } = await loadInk()
@@ -278,7 +286,7 @@ function printText(value: unknown): void {
     return
   }
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-    if (item == null) continue
+    if (item === null || item === undefined) continue
     process.stdout.write(`${key}\t${typeof item === 'object' ? JSON.stringify(item) : String(item)}\n`)
   }
 }
