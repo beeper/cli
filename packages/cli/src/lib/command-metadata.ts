@@ -9,16 +9,16 @@ export type CommandMetadata = {
 export function metadataForCommand(command: string): CommandMetadata {
   const parts = command.split(' ')
   const root = parts[0] ?? ''
-  const mutatingRoots = new Set(['setup', 'install', 'send', 'update', 'export', 'presence'])
+  const mutatingRoots = new Set(['export', 'install', 'presence', 'send', 'setup', 'update'])
   const mutatingVerbs = new Set([
-    'add', 'archive', 'unarchive', 'pin', 'unpin', 'mute', 'unmute', 'mark-read', 'mark-unread',
-    'priority', 'notify-anyway', 'rename', 'description', 'avatar', 'draft', 'disappear', 'remind',
-    'unremind', 'focus', 'edit', 'delete', 'remove', 'use', 'set', 'reset', 'logout', 'start', 'stop',
-    'restart', 'enable', 'disable', 'download', 'export', 'post', 'response', 'approve', 'recovery-key', 'reset-recovery-key', 'cancel', 'sas',
-    'sas-confirm', 'qr-scan', 'qr-confirm',
+    'add', 'approve', 'archive', 'avatar', 'cancel', 'delete', 'description', 'disable', 'disappear', 'download',
+    'draft', 'edit', 'enable', 'export', 'focus', 'logout', 'mark-read', 'mark-unread', 'mute', 'notify-anyway',
+    'pin', 'post', 'priority', 'qr-confirm', 'qr-scan', 'recovery-key', 'remind', 'remove', 'rename', 'reset',
+    'reset-recovery-key', 'response', 'restart', 'sas', 'sas-confirm', 'set', 'start', 'stop', 'unarchive',
+    'unmute', 'unpin', 'unremind', 'use',
   ])
   const mutates = command === 'verify' || command === 'api request' || mutatingRoots.has(root) || parts.some(part => mutatingVerbs.has(part ?? ''))
-  const localOnly = new Set(['config', 'completion', 'docs', 'version', 'man', 'schema'])
+  const localOnly = new Set(['completion', 'config', 'docs', 'man', 'schema', 'version'])
   const requiresAuth = !localOnly.has(root) && command !== 'targets list' && !command.startsWith('targets add') && !command.startsWith('install ')
   const selectors = [
     command.includes('chats ') || command.includes('messages ') || command.startsWith('send ') || command === 'presence' || command.startsWith('resolve chat') ? 'chat' : undefined,
@@ -26,7 +26,7 @@ export function metadataForCommand(command: string): CommandMetadata {
     command.includes('targets ') || command === 'status' || command === 'doctor' || command.startsWith('auth ') || command.startsWith('verify') || command.startsWith('resolve target') ? 'target' : undefined,
     command.startsWith('bridges ') || command === 'accounts add' || command.startsWith('resolve bridge') ? 'bridge' : undefined,
     command.includes('messages ') || command.startsWith('send react') || command.startsWith('send unreact') ? 'message' : undefined,
-  ].filter((value): value is string => Boolean(value))
+  ].filter(Boolean) as string[]
   const output = command === 'schema' ? 'schema'
     : command.startsWith('send ') ? 'send-result'
       : command === 'watch' || command === 'rpc' ? 'stream'
