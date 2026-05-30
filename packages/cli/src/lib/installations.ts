@@ -87,11 +87,8 @@ export function normalizeInstallRequest(options: {
   bundleID: string
   apiBaseURL: string
 } {
-  // TODO: switch Server installs back to production once the production download
-  // endpoint returns a beeper-server artifact instead of the Desktop app bundle.
-  const serverEnv = options.kind === 'server' ? 'staging' : normalizeServerEnv(options.serverEnv)
-  let channel = options.channel ?? 'stable'
-  if (serverEnv === 'staging') channel = 'nightly'
+  const serverEnv = normalizeServerEnv(options.serverEnv)
+  const channel = options.channel ?? 'stable'
   const platform = normalizeDownloadPlatform(options.platform ?? process.platform)
   const feedPlatform = normalizeFeedPlatform(options.platform ?? process.platform)
   const arch = normalizeArch(options.arch ?? process.arch)
@@ -104,7 +101,7 @@ export function normalizeInstallRequest(options: {
     feedPlatform,
     arch,
     bundleID,
-    apiBaseURL: options.kind === 'server' || serverEnv === 'staging' ? 'https://api.beeper-staging.com' : 'https://api.beeper.com',
+    apiBaseURL: serverEnv === 'staging' ? 'https://api.beeper-staging.com' : 'https://api.beeper.com',
   }
 }
 
@@ -118,8 +115,7 @@ export function feedURLFor(options: ReturnType<typeof normalizeInstallRequest>):
 }
 
 export function downloadURLFor(options: ReturnType<typeof normalizeInstallRequest>): string {
-  const channelSegment = options.serverEnv === 'staging' && options.kind === 'server' ? 'stable' : options.channel
-  return `${options.apiBaseURL}/desktop/download/${options.platform}/${options.arch}/${channelSegment}/${options.bundleID}`
+  return `${options.apiBaseURL}/desktop/download/${options.platform}/${options.arch}/${options.channel}/${options.bundleID}`
 }
 
 export async function fetchFeed(feedURL: string): Promise<FeedInfo> {

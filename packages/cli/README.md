@@ -449,7 +449,7 @@ Flags:
 | `--oauth` | boolean | Authorize the target with browser OAuth/PKCE |
 | `--remote=<value>` | option | Connect to a remote Beeper Desktop or Server URL |
 | `--server` | boolean | Set up a local Beeper Server target |
-| `--server-env=<production\|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--server-env=<production\|staging>` | option | Server feed environment Default: production |
 | `--username=<value>` | option | Username to use if setup creates a new account |
 
 Examples:
@@ -498,7 +498,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--channel=<stable\|nightly>` | option | Server release channel Default: stable |
-| `--server-env=<production\|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--server-env=<production\|staging>` | option | Server feed environment Default: production |
 
 Examples:
 
@@ -591,7 +591,7 @@ Flags:
 | --- | --- | --- |
 | `--default` | boolean | Set this target as the default after creation |
 | `--port=<value>` | option | TCP port the managed Desktop will expose its API on |
-| `--server-env=<production\|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--server-env=<production\|staging>` | option | Server feed environment Default: production |
 
 Examples:
 
@@ -620,7 +620,7 @@ Flags:
 | --- | --- | --- |
 | `--default` | boolean | Set this target as the default after creation |
 | `--port=<value>` | option | TCP port the managed Server will expose its API on |
-| `--server-env=<production\|staging>` | option | Server environment. Staging forces nightly. Default: production |
+| `--server-env=<production\|staging>` | option | Server feed environment Default: production |
 
 Examples:
 
