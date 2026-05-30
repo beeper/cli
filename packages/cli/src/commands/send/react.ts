@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class SendReact extends BeeperCommand {
@@ -18,6 +18,11 @@ export default class SendReact extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
+    const request = { chatID, messageID: flags.id, reactionKey: flags.reaction, transactionID: flags.transaction }
+    if (flags['dry-run']) {
+      await printDryRun('send.react', request, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(
       await client.chats.messages.reactions.add(flags.id, { chatID, reactionKey: flags.reaction, transactionID: flags.transaction }),
       flags.json ? 'json' : 'human',

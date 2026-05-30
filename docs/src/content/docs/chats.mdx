@@ -1,8 +1,15 @@
-# chats
+---
+title: Chats
+description: List, search, inspect, and change chat state — archive, pin, mute, mark-read, priority, rename, draft, focus, disappearing timer, reminders.
+---
 
-Read when: listing, searching, inspecting, or changing chat state — archive,
-pin, mute, mark-read, priority (Inbox vs Low Priority), rename, draft, focus,
-disappear timer, reminders.
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="tip" title="Read when">
+  Listing, searching, inspecting, or changing chat state — archive, pin, mute,
+  mark-read, priority (Inbox vs Low Priority), rename, draft, focus, disappear
+  timer, reminders.
+</Aside>
 
 ## Commands
 
@@ -27,15 +34,23 @@ beeper chats unremind     --chat SEL [--pick N]
 beeper chats focus        --chat SEL [--message MSG_ID] [--draft TEXT] [--attachment PATH] [--pick N]
 ```
 
+## Selecting a chat
+
+All `--chat` flags accept a **Beeper chat ID, a local chat ID, the exact title,
+or search text**. Ambiguous matches return numbered choices; pass `--pick N` to
+select one in scripts.
+
 ## Notes
 
-- All `--chat` flags accept a Beeper chat ID, a local chat ID, the exact title, or search text.
-- Ambiguous matches return numbered choices; pass `--pick N` to select one.
-- `chats list` filters compose: e.g. `--unread --no-muted --pinned` returns only pinned, unread, non-muted chats.
-- `chats mute` is currently boolean — the Desktop API does not yet expose a mute duration.
-- `chats focus` opens Beeper Desktop on the selected chat (and optionally scrolls to a message or prefills the composer).
+- `chats list` filters compose: e.g. `--unread --no-muted --pinned` returns only
+  pinned, unread, non-muted chats.
+- `chats mute` is currently boolean — the Desktop API does not yet expose a mute
+  duration.
+- `chats focus` opens Beeper Desktop on the selected chat (and optionally scrolls
+  to a message or prefills the composer).
 - `chats disappear --seconds 0` turns disappearing messages off.
-- Labels are not yet supported by the Desktop API; there is no `chats label` command in this CLI.
+- Labels are not yet supported by the Desktop API; there is no `chats label`
+  command in this CLI.
 
 ## Examples
 

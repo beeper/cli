@@ -5,7 +5,7 @@ import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import type { Bridge, LoginFlow } from '@beeper/desktop-api/resources/bridges.js'
 import { createClient } from '../../lib/client.js'
 import { printAccountLoginStep, runGuidedAccountLogin } from '../../lib/account-login.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 
 type AccountType = Bridge
 
@@ -29,7 +29,6 @@ export default class AccountsAdd extends BeeperCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsAdd)
-    ensureWritable(flags)
     const client = await createClient(flags)
 
     if (!args.bridge) {
@@ -67,6 +66,23 @@ export default class AccountsAdd extends BeeperCommand {
       if (!flags.json && loginFlows.length > 1) this.log(`Using flow ${flowID}`)
     }
 
+    if (flags['dry-run']) {
+      await printDryRun('accounts.add', {
+        bridgeID: accountType.id,
+        bridgeName: accountType.displayName,
+        flowID,
+        loginID: flags['login-id'],
+        guided: flags.guided,
+        nonInteractive: flags['non-interactive'],
+        cookieKeys: Object.keys(parseKeyValueFlags(flags.cookie, '--cookie')),
+        fieldKeys: Object.keys(parseKeyValueFlags(flags.field, '--field')),
+        webview: flags.webview,
+        webviewBackend: flags['webview-backend'],
+      }, flags.json ? 'json' : 'human')
+      return
+    }
+
+    ensureWritable(flags)
     const step = await client.bridges.loginSessions.create(accountType.id, {
       flowID,
       loginID: flags['login-id'],

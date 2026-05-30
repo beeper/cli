@@ -76,8 +76,7 @@ export function senderColor(id: string | undefined | null): string {
   if (!id) return theme.text
   let hash = 0
   for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0
-  const palette = groupSenderPalette
-  return palette[Math.abs(hash) % palette.length]!
+  return groupSenderPalette[Math.abs(hash) % groupSenderPalette.length]!
 }
 
 // Glyphs — every visual cue we use sits in this map so a single audit covers them.

@@ -1,8 +1,7 @@
 import { Flags } from '@oclif/core'
-import { createReadStream } from 'node:fs'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData, printSuccess } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsMarkUnread extends BeeperCommand {
@@ -14,6 +13,10 @@ export default class ChatsMarkUnread extends BeeperCommand {
     
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
+    if (flags['dry-run']) {
+      await printDryRun('chats.mark-unread', { chatID, messageID: flags.message }, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.chats.markUnread(chatID, { messageID: flags.message }), flags.json ? 'json' : 'human')
   }
 }

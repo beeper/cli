@@ -60,45 +60,51 @@ import Command58 from './commands/messages/show.js'
 import Command59 from './commands/plugins.js'
 import Command60 from './commands/plugins/available.js'
 import Command61 from './commands/presence.js'
-import Command62 from './commands/rpc.js'
-import Command63 from './commands/send/file.js'
-import Command64 from './commands/send/react.js'
-import Command65 from './commands/send/sticker.js'
-import Command66 from './commands/send/text.js'
-import Command67 from './commands/send/unreact.js'
-import Command68 from './commands/send/voice.js'
-import Command69 from './commands/setup.js'
-import Command70 from './commands/status.js'
-import Command71 from './commands/targets/add/desktop.js'
-import Command72 from './commands/targets/add/remote.js'
-import Command73 from './commands/targets/add/server.js'
-import Command74 from './commands/targets/disable.js'
-import Command75 from './commands/targets/enable.js'
-import Command76 from './commands/targets/list.js'
-import Command77 from './commands/targets/logs.js'
-import Command78 from './commands/targets/remove.js'
-import Command79 from './commands/targets/restart.js'
-import Command80 from './commands/targets/show.js'
-import Command81 from './commands/targets/start.js'
-import Command82 from './commands/targets/status.js'
-import Command83 from './commands/targets/stop.js'
-import Command84 from './commands/targets/use.js'
-import Command85 from './commands/update.js'
-import Command86 from './commands/verify.js'
-import Command87 from './commands/verify/approve.js'
-import Command88 from './commands/verify/cancel.js'
-import Command89 from './commands/verify/list.js'
-import Command90 from './commands/verify/qr-confirm.js'
-import Command91 from './commands/verify/qr-scan.js'
-import Command92 from './commands/verify/recovery-key.js'
-import Command93 from './commands/verify/reset-recovery-key.js'
-import Command94 from './commands/verify/sas.js'
-import Command95 from './commands/verify/sas-confirm.js'
-import Command96 from './commands/verify/show.js'
-import Command97 from './commands/verify/start.js'
-import Command98 from './commands/verify/status.js'
-import Command99 from './commands/version.js'
-import Command100 from './commands/watch.js'
+import Command62 from './commands/resolve/account.js'
+import Command63 from './commands/resolve/bridge.js'
+import Command64 from './commands/resolve/chat.js'
+import Command65 from './commands/resolve/contact.js'
+import Command66 from './commands/resolve/target.js'
+import Command67 from './commands/rpc.js'
+import Command68 from './commands/schema.js'
+import Command69 from './commands/send/file.js'
+import Command70 from './commands/send/react.js'
+import Command71 from './commands/send/sticker.js'
+import Command72 from './commands/send/text.js'
+import Command73 from './commands/send/unreact.js'
+import Command74 from './commands/send/voice.js'
+import Command75 from './commands/setup.js'
+import Command76 from './commands/status.js'
+import Command77 from './commands/targets/add/desktop.js'
+import Command78 from './commands/targets/add/remote.js'
+import Command79 from './commands/targets/add/server.js'
+import Command80 from './commands/targets/disable.js'
+import Command81 from './commands/targets/enable.js'
+import Command82 from './commands/targets/list.js'
+import Command83 from './commands/targets/logs.js'
+import Command84 from './commands/targets/remove.js'
+import Command85 from './commands/targets/restart.js'
+import Command86 from './commands/targets/show.js'
+import Command87 from './commands/targets/start.js'
+import Command88 from './commands/targets/status.js'
+import Command89 from './commands/targets/stop.js'
+import Command90 from './commands/targets/use.js'
+import Command91 from './commands/update.js'
+import Command92 from './commands/verify.js'
+import Command93 from './commands/verify/approve.js'
+import Command94 from './commands/verify/cancel.js'
+import Command95 from './commands/verify/list.js'
+import Command96 from './commands/verify/qr-confirm.js'
+import Command97 from './commands/verify/qr-scan.js'
+import Command98 from './commands/verify/recovery-key.js'
+import Command99 from './commands/verify/reset-recovery-key.js'
+import Command100 from './commands/verify/sas.js'
+import Command101 from './commands/verify/sas-confirm.js'
+import Command102 from './commands/verify/show.js'
+import Command103 from './commands/verify/start.js'
+import Command104 from './commands/verify/status.js'
+import Command105 from './commands/version.js'
+import Command106 from './commands/watch.js'
 
 export const commands = {
   'accounts': Command1,
@@ -156,6 +162,7 @@ export const commands = {
   'export': Command47,
   'install:desktop': Command48,
   'install:server': Command49,
+  'ls': Command21,
   'man': Command50,
   'media:download': Command51,
   'messages:context': Command52,
@@ -168,44 +175,52 @@ export const commands = {
   'plugins': Command59,
   'plugins:available': Command60,
   'presence': Command61,
-  'rpc': Command62,
-  'send:file': Command63,
-  'send:react': Command64,
-  'send:sticker': Command65,
-  'send:text': Command66,
-  'send:unreact': Command67,
-  'send:voice': Command68,
-  'setup': Command69,
-  'status': Command70,
-  'targets': Command76,
-  'targets:add:desktop': Command71,
-  'targets:add:remote': Command72,
-  'targets:add:server': Command73,
-  'targets:disable': Command74,
-  'targets:enable': Command75,
-  'targets:list': Command76,
-  'targets:logs': Command77,
-  'targets:remove': Command78,
-  'targets:restart': Command79,
-  'targets:show': Command80,
-  'targets:start': Command81,
-  'targets:status': Command82,
-  'targets:stop': Command83,
-  'targets:use': Command84,
-  'update': Command85,
-  'verify': Command86,
-  'verify:approve': Command87,
-  'verify:cancel': Command88,
-  'verify:list': Command89,
-  'verify:qr-confirm': Command90,
-  'verify:qr-scan': Command91,
-  'verify:recovery-key': Command92,
-  'verify:reset-recovery-key': Command93,
-  'verify:sas': Command94,
-  'verify:sas-confirm': Command95,
-  'verify:show': Command96,
-  'verify:start': Command97,
-  'verify:status': Command98,
-  'version': Command99,
-  'watch': Command100,
+  'resolve:account': Command62,
+  'resolve:bridge': Command63,
+  'resolve:chat': Command64,
+  'resolve:contact': Command65,
+  'resolve:target': Command66,
+  'rpc': Command67,
+  'schema': Command68,
+  'search': Command57,
+  'send': Command72,
+  'send:file': Command69,
+  'send:react': Command70,
+  'send:sticker': Command71,
+  'send:text': Command72,
+  'send:unreact': Command73,
+  'send:voice': Command74,
+  'setup': Command75,
+  'status': Command76,
+  'targets': Command82,
+  'targets:add:desktop': Command77,
+  'targets:add:remote': Command78,
+  'targets:add:server': Command79,
+  'targets:disable': Command80,
+  'targets:enable': Command81,
+  'targets:list': Command82,
+  'targets:logs': Command83,
+  'targets:remove': Command84,
+  'targets:restart': Command85,
+  'targets:show': Command86,
+  'targets:start': Command87,
+  'targets:status': Command88,
+  'targets:stop': Command89,
+  'targets:use': Command90,
+  'update': Command91,
+  'verify': Command92,
+  'verify:approve': Command93,
+  'verify:cancel': Command94,
+  'verify:list': Command95,
+  'verify:qr-confirm': Command96,
+  'verify:qr-scan': Command97,
+  'verify:recovery-key': Command98,
+  'verify:reset-recovery-key': Command99,
+  'verify:sas': Command100,
+  'verify:sas-confirm': Command101,
+  'verify:show': Command102,
+  'verify:start': Command103,
+  'verify:status': Command104,
+  'version': Command105,
+  'watch': Command106,
 }

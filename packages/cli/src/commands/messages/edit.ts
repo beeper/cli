@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData, printSuccess } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesEdit extends BeeperCommand {
@@ -17,6 +17,10 @@ export default class MessagesEdit extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
+    if (flags['dry-run']) {
+      await printDryRun('messages.edit', { chatID, messageID: flags.id, text: flags.message }, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.messages.update(flags.id, { chatID, text: flags.message }), flags.json ? 'json' : 'human')
   }
 }

@@ -1,7 +1,16 @@
-# send
+---
+title: Sending
+description: Send text, files, reactions, stickers, or voice notes from scripts or interactive use.
+sidebar:
+  label: Sending
+---
 
-Read when: sending text, files, reactions, stickers, or voice notes from
-scripts or interactive use.
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="tip" title="Read when">
+  Sending text, files, reactions, stickers, or voice notes from scripts or
+  interactive use.
+</Aside>
 
 ## Commands
 
@@ -14,21 +23,30 @@ beeper send react   --to SEL --id MSG_ID --reaction KEY [--transaction TX_ID] [-
 beeper send unreact --to SEL --id MSG_ID --reaction KEY [--pick N]
 ```
 
+## Addressing
+
+`--to` accepts a chat ID, local chat ID, exact title, or search text. Prefer
+numeric local chat IDs from `beeper chats list` when scripting against the same
+target/profile; use full Beeper/Matrix chat IDs for selectors that need to work
+across targets or profiles.
+
+## Confirming delivery
+
+Send commands return when Desktop **accepts** the send request. Use `--wait` when
+you need to know whether the message left the pending state or failed — it blocks
+until the message leaves pending (or fails). Default poll cap: `--wait-timeout
+30000` ms.
+
 ## Notes
 
-- `--to` accepts a chat ID, local chat ID, exact title, or search text.
-- Prefer numeric local chat IDs from `beeper chats list` when scripting against
-  the same target/profile. Use full Beeper/Matrix chat IDs for selectors that
-  need to work across targets or profiles.
-- Send commands return when Desktop accepts the send request. Use `--wait` when
-  you need to know whether the message left the pending state or failed.
-- `--wait` blocks until the message leaves the pending state (or fails). Default poll cap: `--wait-timeout 30000` ms.
 - `--reply-to` quotes an existing message ID.
-- `send text --mention <userID>` adds a Matrix mention; repeat for multiple users.
-- `send text --no-preview` disables automatic link previews.
+- `send text --mention <userID>` adds a Matrix mention; repeat for multiple
+  users. `send text --no-preview` disables automatic link previews.
 - `send sticker` defaults `--mime` to `image/webp`; stickers should be 512×512.
-- `send voice` defaults `--mime` to `audio/ogg`; pass `--duration` to override the detected length.
-- `send file` accepts any file up to 500 MB. MIME type is detected from the upload if `--mime` is omitted.
+- `send voice` defaults `--mime` to `audio/ogg`; pass `--duration` to override
+  the detected length.
+- `send file` accepts any file up to 500 MB. MIME type is detected from the
+  upload if `--mime` is omitted.
 
 ## Examples
 

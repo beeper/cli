@@ -29,8 +29,9 @@ export async function finishEmailSetup(target: Target, options: {
   const client = setupClient(target)
   let output = await client.app.login.response({ setupRequestID: options.setupRequestID, response: options.code })
   if (isRegistrationRequired(output)) {
-    if ((options.json || !process.stdin.isTTY) && !options.yes) throw new Error('Registration requires --yes to accept the Beeper terms in non-interactive setup.')
-    const username = options.username ?? (options.json || !process.stdin.isTTY ? undefined : await promptUsername(output.usernameSuggestions))
+    const nonInteractive = options.json || !process.stdin.isTTY
+    if (nonInteractive && !options.yes) throw new Error('Registration requires --yes to accept the Beeper terms in non-interactive setup.')
+    const username = options.username ?? (nonInteractive ? undefined : await promptUsername(output.usernameSuggestions))
     if (!username) throw new Error('Registration requires --username.')
     if (!options.yes && !await promptYesNoDefaultYes('Accept the Beeper terms and create this account?')) throw new Error('Registration cancelled.')
     output = await client.app.login.register({

@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsRename extends BeeperCommand {
@@ -16,6 +16,10 @@ export default class ChatsRename extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
+    if (flags['dry-run']) {
+      await printDryRun('chats.rename', { chatID, title: flags.title }, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.chats.update(chatID, { title: flags.title }), flags.json ? 'json' : 'human')
   }
 }

@@ -1,10 +1,7 @@
-import { Args, Flags } from '@oclif/core'
-import { readFile } from 'node:fs/promises'
-import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { createProfileTarget, listTargets, readConfig, readTarget, removeTarget, resolveTarget, updateConfig, writeTarget, type Target } from '../../lib/targets.js'
-import { disableProfile, enableProfile, profileErrorLogPath, profileLogPath, profileStatus, startProfile, stopProfile } from '../../lib/profiles.js'
-import { targetLiveStatus } from '../../lib/target-status.js'
-import { printData, printSuccess } from '../../lib/output.js'
+import { Args } from '@oclif/core'
+import { BeeperCommand } from '../../lib/command.js'
+import { resolveTarget } from '../../lib/targets.js'
+import { printData } from '../../lib/output.js'
 
 export default class TargetsShow extends BeeperCommand {
   static override summary = 'Show target details'

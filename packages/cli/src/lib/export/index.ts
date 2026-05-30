@@ -6,8 +6,6 @@ import { fileURLToPath } from 'node:url'
 import type { Chat } from '@beeper/desktop-api/resources/chats/chats'
 import type { Attachment, Message } from '@beeper/desktop-api/resources/shared'
 
-type AnyRecord = Record<string, any>
-
 export type ExportOptions = {
   accountIDs?: string[]
   chatIDs?: string[]

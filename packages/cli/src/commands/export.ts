@@ -1,7 +1,8 @@
 import { Flags } from '@oclif/core'
-import { BeeperCommand } from '../lib/command.js'
+import { BeeperCommand, ensureWritable } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
 import { exportBeeperData } from '../lib/export/index.js'
+import { printDryRun } from '../lib/output.js'
 import { resolveAccountIDs, resolveChatID } from '../lib/resolve.js'
 
 export default class Export extends BeeperCommand {
@@ -26,11 +27,25 @@ export default class Export extends BeeperCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Export)
+    ensureWritable(flags)
     const client = await createClient(flags)
     const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true })
     const chatIDs = flags.chat?.length
       ? await Promise.all(flags.chat.map(chat => resolveChatID(client, chat, { accountIDs, pick: flags.pick })))
       : undefined
+    if (flags['dry-run']) {
+      await printDryRun('export', {
+        accountIDs,
+        chatIDs,
+        downloadAttachments: !flags['no-attachments'],
+        force: flags.force,
+        limitChats: flags['limit-chats'],
+        limitMessages: flags['limit-messages'],
+        maxParticipants: flags['max-participants'],
+        outDir: flags.out,
+      }, flags.json ? 'json' : 'human')
+      return
+    }
 
     const manifest = await exportBeeperData(client, {
       accountIDs,

@@ -1,7 +1,7 @@
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
 import { readTarget, updateConfig, writeTarget, type Target } from '../../../lib/targets.js'
-import { printSuccess } from '../../../lib/output.js'
+import { printDryRun, printSuccess } from '../../../lib/output.js'
 
 export default class TargetsAddRemote extends BeeperCommand {
   static override summary = 'Add a remote Beeper Desktop or Server target'
@@ -17,6 +17,10 @@ export default class TargetsAddRemote extends BeeperCommand {
     ensureWritable(flags)
     if (await readTarget(args.name)) throw new Error(`Target "${args.name}" already exists.`)
     const target: Target = { id: args.name, name: args.name, type: 'remote', baseURL: args.url, managed: false }
+    if (flags['dry-run']) {
+      await printDryRun('targets.add.remote', { target, default: flags.default }, flags.json ? 'json' : 'human')
+      return
+    }
     await writeTarget(target)
     if (flags.default) await updateConfig(config => ({ ...config, defaultTarget: target.id }))
     await printSuccess({ message: `Added target: ${target.id}`, detail: target.baseURL, data: target }, flags.json ? 'json' : 'human')

@@ -1,7 +1,14 @@
-# messages
+---
+title: Messages
+description: List, search, show, contextualize, edit, delete, react to, or export messages from chats.
+---
 
-Read when: listing, searching, showing, contextualizing, editing, deleting,
-reacting to, or exporting messages from chats.
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="tip" title="Read when">
+  Listing, searching, showing, contextualizing, editing, deleting, reacting to,
+  or exporting messages from chats.
+</Aside>
 
 ## Commands
 
@@ -17,19 +24,28 @@ beeper messages unreact  --chat SEL --id MSG_ID --reaction KEY [--pick N]   # hi
 beeper messages export   --chat SEL [--before-cursor MSG_ID | --after-cursor MSG_ID] [--after ISO] [--before ISO] [--limit N] [--output PATH | -o -] [--asc] [--pick N]
 ```
 
+## Pagination & filtering
+
+- `--before-cursor` / `--after-cursor` paginate by message ID (the SDK's cursor
+  model).
+- `--before` / `--after` in `messages search` and `messages export` filter by
+  ISO timestamp.
+- `messages list --sender` filters client-side: `me` (your own messages),
+  `others`, or an exact user ID.
+- `messages list --asc` reverses the default newest-first order.
+
 ## Notes
 
-- `--before-cursor` / `--after-cursor` paginate by message ID (the SDK's cursor model).
-- `--before` / `--after` in `messages search` and `messages export` filter by ISO timestamp.
-- `messages search` rejects an empty query *and* no filter flags with exit code 2 (`usageError`).
-- `messages list --sender` filters client-side: `me` (your own messages), `others`, or an exact user ID.
-- `messages list --asc` reverses the default newest-first order.
-- `messages export` writes one chat to JSON. Use top-level `export` for a full
-  export with transcripts, attachments, and multiple chats.
-- `messages export --output -` writes JSON to stdout for piping.
-- `messages delete --for-everyone` requires the network supports it; otherwise it falls back to delete-for-you.
+- `messages search` rejects an empty query *and* no filter flags with exit code
+  `2` (usage error).
+- `messages export` writes one chat to JSON. Use top-level [`export`](/export/)
+  for a full export with transcripts, attachments, and multiple chats.
+  `messages export --output -` writes JSON to stdout for piping.
+- `messages delete --for-everyone` requires the network to support it; otherwise
+  it falls back to delete-for-you.
 - `messages edit` only succeeds on your own text messages with no attachments.
-- `messages react`/`unreact` are hidden in `--help` in favor of `send react`/`send unreact`.
+- `messages react` / `unreact` are hidden in `--help` in favor of
+  [`send react`](/send/) / `send unreact`.
 
 ## Examples
 

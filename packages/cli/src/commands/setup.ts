@@ -9,6 +9,7 @@ import { loginWithPKCE } from '../lib/oauth.js'
 import { findDesktopAppPath, launchDesktopApp, startProfile } from '../lib/profiles.js'
 import { interactiveEmailSetup } from '../lib/setup-login.js'
 import { renderStartupLogo } from '../lib/logo.js'
+import { SERVER_ENVIRONMENTS, SERVER_ENV_API_BASE_URLS, normalizeServerEnv } from '../lib/server-env.js'
 import {
   builtInDesktopTargetID,
   createProfileTarget,
@@ -16,13 +17,14 @@ import {
   readConfig,
   readTarget,
   listTargets,
+  pathExists,
   saveTargetAuth,
   updateConfig,
   writeTarget,
   type AuthSource,
   type Target,
 } from '../lib/targets.js'
-import { printData, printSuccess } from '../lib/output.js'
+import { printData, printDryRun, printSuccess } from '../lib/output.js'
 
 export default class Setup extends BeeperCommand {
   static override summary = 'Make the selected target ready for messaging'
@@ -34,7 +36,7 @@ export default class Setup extends BeeperCommand {
     desktop: Flags.boolean({ default: false, description: 'Set up a local Beeper Desktop target' }),
     install: Flags.boolean({ default: false, description: 'Allow installing missing managed runtime' }),
     channel: Flags.string({ options: ['stable', 'nightly'], default: 'stable', description: 'Install release channel' }),
-    'server-env': Flags.string({ options: ['production', 'staging'], default: 'production', description: 'Server environment. Staging forces nightly.' }),
+    'server-env': Flags.string({ default: 'prod', description: 'Server environment: local, dev, staging, or prod', options: [...SERVER_ENVIRONMENTS], parse: async value => normalizeServerEnv(value) }),
     email: Flags.string({ description: 'Sign in with an email address' }),
     username: Flags.string({ description: 'Username to use if setup creates a new account' }),
   }
@@ -56,6 +58,22 @@ export default class Setup extends BeeperCommand {
     if (authModeCount > 1) throw new Error('Specify at most one of --local, --oauth, or --email')
     if ((flags.local || flags.oauth) && (flags.remote || flags.server || flags.desktop)) {
       throw new Error('Use --local or --oauth with an existing target, not with --remote, --server, or --desktop.')
+    }
+    if (flags['dry-run']) {
+      await printDryRun('setup', {
+        target: flags.target,
+        baseURL: flags['base-url'],
+        targetMode: flags.remote ? 'remote' : flags.server ? 'server' : flags.desktop ? 'desktop' : 'selected',
+        authMode: flags.local ? 'local' : flags.oauth ? 'oauth' : flags.email ? 'email' : 'auto',
+        remote: flags.remote,
+        install: flags.install,
+        channel: flags.channel,
+        serverEnv: flags['server-env'],
+        email: flags.email,
+        username: flags.username,
+        yes: flags.yes,
+      }, flags.json ? 'json' : 'human')
+      return
     }
     if (flags.events) writeEvent('setup_step', { step: 'start', target: flags.target })
 
@@ -102,7 +120,7 @@ export default class Setup extends BeeperCommand {
           return
         }
         if (flags.json || !process.stdin.isTTY) {
-          await printData(setupSessionFoundOutput(local, setupCmd), flags.json ? 'json' : 'human')
+          await printData(setupSessionFoundOutput(local, setupCmd, detected.serverInstalled), flags.json ? 'json' : 'human')
           return
         }
         printLocalDesktopPreview(local)
@@ -119,21 +137,21 @@ export default class Setup extends BeeperCommand {
       } else if (flags.json || !process.stdin.isTTY) {
         await printData(setupStateOutput(detected, target), flags.json ? 'json' : 'human')
         return
-      } else if (detected.kind === 'installed-not-running' && !flags.json && process.stdin.isTTY) {
+      } else if (detected.kind === 'installed-not-running') {
         printStatus('Found Beeper Desktop on this device.', 'installed, not running')
         const shouldLaunch = flags.yes || await promptYesNoDefaultYes('Launch Beeper Desktop now?')
         if (shouldLaunch) {
           await launchAndPoll(target, setupCmd, flags)
           return
         }
-      } else if (detected.kind === 'running-signed-out' && !flags.json && process.stdin.isTTY) {
+      } else if (detected.kind === 'running-signed-out') {
         printStatus('Found Beeper Desktop on this device.', 'running, signed out')
         const shouldOpen = flags.yes || await promptYesNoDefaultYes('Open Beeper Desktop so you can sign in?')
         if (shouldOpen) {
           await launchAndPoll(target, setupCmd, flags)
           return
         }
-      } else if (detected.kind === 'session-unreadable' && !flags.json && process.stdin.isTTY) {
+      } else if (detected.kind === 'session-unreadable') {
         printStatus('Found Beeper Desktop on this device.', 'signed in, but CLI could not read the local session')
         process.stdout.write('You can still connect through Beeper Desktop.\n')
         if (flags.debug) process.stdout.write(`\n${detected.reason}\n`)
@@ -143,7 +161,7 @@ export default class Setup extends BeeperCommand {
           await this.setupOAuth(target, flags)
           return
         }
-      } else if (detected.kind === 'not-installed' && !flags.json && process.stdin.isTTY) {
+      } else if (detected.kind === 'not-installed') {
         await this.setupFromChoice(flags)
         return
       }
@@ -152,7 +170,8 @@ export default class Setup extends BeeperCommand {
     const readiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id })
     if (readiness.state === 'target-unreachable' && target.type !== 'desktop') {
       if (flags.json || !process.stdin.isTTY) {
-        await printData(currentTargetBrokenOutput(target, readiness), flags.json ? 'json' : 'human')
+        const serverInstalled = await isServerInstalled()
+        await printData(currentTargetBrokenOutput(target, readiness, serverInstalled), flags.json ? 'json' : 'human')
         return
       }
       if (await this.handleBrokenCurrentTarget(target, readiness, flags)) return
@@ -215,8 +234,7 @@ export default class Setup extends BeeperCommand {
   private async setupManaged(type: 'desktop' | 'server', flags: SetupFlags): Promise<void> {
     if (flags.install) {
       if ((flags.json || !process.stdin.isTTY) && !flags.yes) throw new Error('Install requires --install --yes in non-interactive mode.')
-      if (type === 'desktop') await installWithCopy('desktop', flags)
-      else await installWithCopy('server', flags)
+      await installWithCopy(type, flags)
     }
     const id = flags.target ?? type
     const target = await readTarget(id) ?? await createProfileTarget(type, id, { serverEnv: flags['server-env'], port: undefined })
@@ -250,12 +268,14 @@ export default class Setup extends BeeperCommand {
   }
 
   private async setupFromChoice(flags: SetupFlags): Promise<void> {
+    const serverInstalled = await isServerInstalled()
     process.stdout.write('No usable Beeper Desktop session was found on this device.\n\n')
     process.stdout.write('How do you want to connect Beeper CLI?\n\n')
     process.stdout.write('  1. Install Beeper Desktop\n')
-    process.stdout.write('  2. Install local Beeper Server\n')
+    process.stdout.write(`  2. ${serverInstalled ? 'Use installed local Beeper Server' : 'Install local Beeper Server'}\n`)
     process.stdout.write('  3. Connect with Desktop API on another device\n\n')
-    const choice = await promptChoice('Choose [1]: ', ['1', '2', '3'], '1')
+    const defaultChoice = serverInstalled ? '2' : '1'
+    const choice = await promptChoice(`Choose [${defaultChoice}]: `, ['1', '2', '3'], defaultChoice)
     if (choice === '1') {
       if (!await promptYesNoDefaultYes('Install Beeper Desktop stable from beeper.com?')) return
       await installWithCopy('desktop', { ...flags, channel: 'stable' })
@@ -264,8 +284,10 @@ export default class Setup extends BeeperCommand {
       return
     }
     if (choice === '2') {
-      if (!await promptYesNoDefaultYes('Install local Beeper Server stable from beeper.com?')) return
-      await installWithCopy('server', { ...flags, channel: 'stable', 'server-env': 'production' })
+      if (!serverInstalled) {
+        if (!await promptYesNoDefaultYes('Install local Beeper Server stable from beeper.com?')) return
+        await installWithCopy('server', { ...flags, channel: 'stable', 'server-env': 'prod' })
+      }
       await this.setupManaged('server', { ...flags, install: false, server: true, channel: 'stable' })
       return
     }
@@ -275,12 +297,13 @@ export default class Setup extends BeeperCommand {
   }
 
   private async handleBrokenCurrentTarget(target: Target, readiness: Readiness, flags: SetupFlags): Promise<boolean> {
+    const serverInstalled = await isServerInstalled()
     process.stdout.write(`Beeper CLI is set up for ${target.name ?? target.id}, but it is not reachable.\n\n`)
     if (readiness.message) process.stdout.write(`${readiness.message}\n\n`)
     process.stdout.write('What do you want to do?\n\n')
     process.stdout.write(`  1. Retry ${target.name ?? target.id}\n`)
     process.stdout.write('  2. Use Beeper Desktop on this device\n')
-    process.stdout.write('  3. Install local Beeper Server\n')
+    process.stdout.write(`  3. ${serverInstalled ? 'Use installed local Beeper Server' : 'Install local Beeper Server'}\n`)
     process.stdout.write('  4. Connect with Desktop API on another device\n\n')
     const choice = await promptChoice('Choose [1]: ', ['1', '2', '3', '4'], '1')
     if (choice === '1') return false
@@ -290,8 +313,10 @@ export default class Setup extends BeeperCommand {
       return true
     }
     if (choice === '3') {
-      if (!await promptYesNoDefaultYes('Install local Beeper Server stable from beeper.com?')) return true
-      await installWithCopy('server', { ...flags, channel: 'stable', 'server-env': 'production' })
+      if (!serverInstalled) {
+        if (!await promptYesNoDefaultYes('Install local Beeper Server stable from beeper.com?')) return true
+        await installWithCopy('server', { ...flags, channel: 'stable', 'server-env': 'prod' })
+      }
       await this.setupManaged('server', { ...flags, install: false, server: true, channel: 'stable' })
       return true
     }
@@ -336,11 +361,11 @@ type PreparedLocalDesktopSetup = {
 }
 
 type DesktopSetupDetection =
-  | { kind: 'session-found'; local: PreparedLocalDesktopSetup }
-  | { kind: 'installed-not-running' }
-  | { kind: 'running-signed-out'; readiness?: Readiness }
-  | { kind: 'session-unreadable'; reason: string; readiness?: Readiness }
-  | { kind: 'not-installed' }
+  | { kind: 'session-found'; local: PreparedLocalDesktopSetup; serverInstalled: boolean }
+  | { kind: 'installed-not-running'; serverInstalled: boolean }
+  | { kind: 'running-signed-out'; readiness?: Readiness; serverInstalled: boolean }
+  | { kind: 'session-unreadable'; reason: string; readiness?: Readiness; serverInstalled: boolean }
+  | { kind: 'not-installed'; serverInstalled: boolean }
 
 async function setupTarget(flags: SetupFlags): Promise<Target> {
   if (flags['base-url']) return { id: customTargetID, type: 'desktop', baseURL: flags['base-url'] }
@@ -397,29 +422,33 @@ async function prepareLocalDesktopSetup(target: Target, flags: SetupFlags): Prom
 
 async function detectDesktopSetup(target: Target, flags: SetupFlags): Promise<DesktopSetupDetection> {
   printProgress(flags, 'Checking Beeper Desktop')
-  const appInstalled = await isDesktopAppInstalled()
+  const installations = await readInstallations().catch((): Awaited<ReturnType<typeof readInstallations>> => ({}))
+  const serverInstalled = await isServerInstalled(installations)
+  const appInstalled = Boolean(installations.desktop?.path || await findDesktopAppPath())
   printProgress(flags, 'Reading local Desktop session')
   const local = await prepareLocalDesktopSetup(target, flags).catch(error => ({ error }))
-  if (!('error' in local)) return { kind: 'session-found', local }
+  if (!('error' in local)) return { kind: 'session-found', local, serverInstalled }
 
   printProgress(flags, 'Checking Desktop readiness')
   const desktop = await findLocalDesktop({ baseURL: target.baseURL, scan: target.id === builtInDesktopTargetID, timeoutMs: 500 }).catch(() => undefined)
   if (desktop) {
     const readiness = await evaluateReadiness({ baseURL: desktop.baseURL, target: target.id, token: false })
-    if (readiness.state === 'needs-login') return { kind: 'running-signed-out', readiness }
+    if (readiness.state === 'needs-login') return { kind: 'running-signed-out', readiness, serverInstalled }
     return {
       kind: 'session-unreadable',
       reason: local.error instanceof Error ? local.error.message : String(local.error),
       readiness,
+      serverInstalled,
     }
   }
 
-  return appInstalled ? { kind: 'installed-not-running' } : { kind: 'not-installed' }
+  return appInstalled ? { kind: 'installed-not-running', serverInstalled } : { kind: 'not-installed', serverInstalled }
 }
 
-async function isDesktopAppInstalled(): Promise<boolean> {
-  const installations = await readInstallations().catch((): Awaited<ReturnType<typeof readInstallations>> => ({}))
-  return Boolean(installations.desktop?.path || await findDesktopAppPath())
+async function isServerInstalled(installations?: Awaited<ReturnType<typeof readInstallations>>): Promise<boolean> {
+  if (process.env.BEEPER_SERVER_BIN) return true
+  const installation = installations ?? await readInstallations().catch((): Awaited<ReturnType<typeof readInstallations>> => ({}))
+  return Boolean(installation.server?.path && await pathExists(installation.server.path))
 }
 
 async function commitLocalDesktopSetup(prepared: PreparedLocalDesktopSetup): Promise<SetupResult> {
@@ -498,7 +527,13 @@ function printLocalDesktopPreview(prepared: PreparedLocalDesktopSetup): void {
   process.stdout.write('\n')
 }
 
-function setupSessionFoundOutput(local: PreparedLocalDesktopSetup, setupCmd: string): Record<string, unknown> {
+function setupSessionFoundOutput(local: PreparedLocalDesktopSetup, setupCmd: string, serverInstalled: boolean): Record<string, unknown> {
+  const availableActions = [
+    action('use-desktop-session', `${setupCmd} --local`),
+    action('desktop-oauth', `${setupCmd} --oauth`),
+    action('connect-remote', 'beeper setup --remote <url>'),
+  ]
+  if (serverInstalled) availableActions.push(installedServerAction(true))
   return {
     state: local.readiness.state === 'ready' ? 'desktop-ready' : 'desktop-session-found',
     message: local.readiness.state === 'ready'
@@ -508,11 +543,7 @@ function setupSessionFoundOutput(local: PreparedLocalDesktopSetup, setupCmd: str
     readiness: local.readiness,
     localDesktop: localDesktopPreview(local),
     recommendedAction: action('use-desktop-session', `${setupCmd} --local`),
-    availableActions: [
-      action('use-desktop-session', `${setupCmd} --local`),
-      action('desktop-oauth', `${setupCmd} --oauth`),
-      action('connect-remote', 'beeper setup --remote <url>'),
-    ],
+    availableActions,
   }
 }
 
@@ -589,8 +620,9 @@ async function maybeDriveOnboarding(result: SetupResult, flags: SetupFlags): Pro
 async function installWithCopy(type: 'desktop' | 'server', flags: SetupFlags): Promise<void> {
   const label = type === 'desktop' ? 'Beeper Desktop' : 'local Beeper Server'
   const channel = flags.channel === 'nightly' ? 'nightly' : 'stable'
-  const serverEnv = flags['server-env'] === 'staging' ? 'staging' : 'production'
-  if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installing ${label} ${channel} from beeper.com...\n`)
+  const serverEnv = normalizeServerEnv(flags['server-env'])
+  const source = type === 'server' ? new URL(SERVER_ENV_API_BASE_URLS[serverEnv]).host : 'beeper.com'
+  if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installing ${label} ${channel} from ${source}...\n`)
   if (type === 'desktop') await installDesktop({ channel, serverEnv })
   else await installServer({ channel, serverEnv })
   if (!flags.json && process.stdin.isTTY) process.stdout.write(`Installed ${label} ${channel}.\n\n`)
@@ -611,6 +643,7 @@ function printNextSteps(): void {
 
 function setupStateOutput(detected: Exclude<DesktopSetupDetection, { kind: 'session-found' }>, target: Target): Record<string, unknown> {
   if (detected.kind === 'installed-not-running') {
+    const serverAction = installedServerAction(detected.serverInstalled)
     return setupActionEnvelope({
       state: 'desktop-installed-not-running',
       message: 'Beeper Desktop is installed but not running.',
@@ -619,24 +652,31 @@ function setupStateOutput(detected: Exclude<DesktopSetupDetection, { kind: 'sess
       availableActions: [
         action('launch-desktop', 'beeper setup --desktop --yes'),
         action('connect-remote', 'beeper setup --remote <url>'),
-        action('install-server', 'beeper setup --server --install --yes'),
+        serverAction,
       ],
     })
   }
   if (detected.kind === 'running-signed-out') {
+    const availableActions = [
+      action('open-desktop', 'beeper setup --desktop --yes'),
+      action('connect-remote', 'beeper setup --remote <url>'),
+    ]
+    if (detected.serverInstalled) availableActions.push(installedServerAction(true))
     return setupActionEnvelope({
       state: 'desktop-running-signed-out',
       message: 'Beeper Desktop is running but not signed in.',
       target,
       readiness: detected.readiness,
       recommendedAction: action('open-desktop', 'beeper setup --desktop --yes'),
-      availableActions: [
-        action('open-desktop', 'beeper setup --desktop --yes'),
-        action('connect-remote', 'beeper setup --remote <url>'),
-      ],
+      availableActions,
     })
   }
   if (detected.kind === 'session-unreadable') {
+    const availableActions = [
+      action('desktop-oauth', 'beeper setup --oauth --yes'),
+      action('connect-remote', 'beeper setup --remote <url>'),
+    ]
+    if (detected.serverInstalled) availableActions.push(installedServerAction(true))
     return setupActionEnvelope({
       state: 'desktop-running-session-unreadable',
       message: 'Beeper Desktop is running, but CLI could not read the local session.',
@@ -644,26 +684,30 @@ function setupStateOutput(detected: Exclude<DesktopSetupDetection, { kind: 'sess
       readiness: detected.readiness,
       detail: detected.reason,
       recommendedAction: action('desktop-oauth', 'beeper setup --oauth --yes'),
-      availableActions: [
-        action('desktop-oauth', 'beeper setup --oauth --yes'),
-        action('connect-remote', 'beeper setup --remote <url>'),
-      ],
+      availableActions,
     })
   }
+  const serverAction = installedServerAction(detected.serverInstalled)
   return setupActionEnvelope({
     state: 'desktop-not-installed',
     message: 'No Beeper Desktop installation was found on this device.',
     target,
-    recommendedAction: action('install-desktop', 'beeper setup --desktop --install --yes'),
+    recommendedAction: detected.serverInstalled ? serverAction : action('install-desktop', 'beeper setup --desktop --install --yes'),
     availableActions: [
       action('install-desktop', 'beeper setup --desktop --install --yes'),
-      action('install-server', 'beeper setup --server --install --yes'),
+      serverAction,
       action('connect-remote', 'beeper setup --remote <url>'),
     ],
   })
 }
 
-function currentTargetBrokenOutput(target: Target, readiness: Readiness): Record<string, unknown> {
+function installedServerAction(installed: boolean): { id: string; command: string } {
+  return installed
+    ? action('use-installed-server', 'beeper setup --server --yes')
+    : action('install-server', 'beeper setup --server --install --yes')
+}
+
+function currentTargetBrokenOutput(target: Target, readiness: Readiness, serverInstalled: boolean): Record<string, unknown> {
   return {
     state: 'current-target-unreachable',
     message: `Beeper CLI is set up for ${target.name ?? target.id}, but it is not reachable.`,
@@ -673,7 +717,7 @@ function currentTargetBrokenOutput(target: Target, readiness: Readiness): Record
     availableActions: [
       action('retry-current', `beeper setup -t ${target.id}`),
       action('use-desktop', 'beeper setup --desktop'),
-      action('install-server', 'beeper setup --server --install --yes'),
+      installedServerAction(serverInstalled),
       action('connect-remote', 'beeper setup --remote <url>'),
     ],
   }

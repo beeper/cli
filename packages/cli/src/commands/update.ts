@@ -9,7 +9,7 @@ import {
 import { profileStatus, startProfile, stopProfile } from '../lib/profiles.js'
 import { listTargets } from '../lib/targets.js'
 import { pathSetupHint } from '../lib/env.js'
-import { printData } from '../lib/output.js'
+import { printData, printDryRun } from '../lib/output.js'
 import pkg from '../../package.json' with { type: 'json' }
 
 export default class Update extends BeeperCommand {
@@ -23,8 +23,12 @@ export default class Update extends BeeperCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Update)
-    if (!flags.check) ensureWritable(flags)
+    if (!flags.check && !flags['dry-run']) ensureWritable(flags)
     const selected = flags.cli || flags.desktop || flags.server
+    if (flags['dry-run'] && !flags.check) {
+      await printDryRun('update', { cli: !selected || flags.cli, desktop: !selected || flags.desktop, server: !selected || flags.server }, flags.json ? 'json' : 'human')
+      return
+    }
     const installations = await readInstallations()
     const results: Array<Record<string, unknown>> = []
 

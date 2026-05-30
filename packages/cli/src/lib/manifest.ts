@@ -49,7 +49,7 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'targets add server',
     description: 'Add a managed Beeper Server target',
-    examples: ['beeper targets add server prod --server-env production --default'],
+    examples: ['beeper targets add server prod --server-env prod --default'],
   },
   {
     command: 'targets add remote',
@@ -236,7 +236,8 @@ export const commandManifest: ManifestCommand[] = [
     examples: [
       'beeper chats list',
       'beeper chats list --pinned --limit 50',
-      'beeper chats list --unread --no-muted --json',
+      'beeper chats list --unread --no-muted --format json',
+      'beeper ls --format ids',
     ],
   },
   {
@@ -370,6 +371,7 @@ export const commandManifest: ManifestCommand[] = [
     description: 'Search messages across chats',
     examples: [
       'beeper messages search invoice',
+      'beeper search invoice --format jsonl --select id,chatID,text',
       'beeper messages search --chat 10313 --sender me --media image',
       'beeper messages search "flight" --after 2026-01-01 --before 2026-02-01',
     ],
@@ -407,6 +409,7 @@ export const commandManifest: ManifestCommand[] = [
     command: 'send text',
     description: 'Send a text message',
     examples: [
+      'beeper send --to 10313 --message "on my way" --dry-run --format json',
       'beeper send text --to 10313 --message "on my way"',
       'beeper send text --to 8951 --message "hi"',
       'beeper send text --to "Family" --message "hi" --pick 1',
@@ -465,6 +468,31 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper contacts show "Alice" --account whatsapp'],
   },
   {
+    command: 'resolve chat',
+    description: 'Resolve a chat selector to concrete chat candidates',
+    examples: ['beeper resolve chat Family --format json', 'beeper resolve chat Family --pick 1 --results-only'],
+  },
+  {
+    command: 'resolve account',
+    description: 'Resolve an account selector',
+    examples: ['beeper resolve account whatsapp --format json'],
+  },
+  {
+    command: 'resolve contact',
+    description: 'Resolve a contact selector',
+    examples: ['beeper resolve contact Alice --account whatsapp --format json'],
+  },
+  {
+    command: 'resolve target',
+    description: 'Resolve a target selector',
+    examples: ['beeper resolve target desktop --format json'],
+  },
+  {
+    command: 'resolve bridge',
+    description: 'Resolve a bridge selector',
+    examples: ['beeper resolve bridge whatsapp --format json'],
+  },
+  {
     command: 'media download',
     description: 'Download message media',
     examples: [
@@ -495,7 +523,16 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'man',
     description: 'Print the command manual',
-    examples: ['beeper man', 'beeper man --json'],
+    examples: ['beeper man', 'beeper man --format json', 'beeper man --format ids'],
+  },
+  {
+    command: 'schema',
+    description: 'Print machine-readable command/flag schema',
+    examples: [
+      'beeper schema',
+      'beeper schema send --results-only',
+      'beeper schema --select commands.path,commands.flags.name --results-only',
+    ],
   },
   {
     command: 'doctor',

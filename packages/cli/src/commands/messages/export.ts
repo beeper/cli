@@ -1,7 +1,8 @@
 import { writeFile } from 'node:fs/promises'
 import { Flags } from '@oclif/core'
-import { BeeperCommand } from '../../lib/command.js'
+import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
+import { printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesExport extends BeeperCommand {
@@ -22,6 +23,21 @@ export default class MessagesExport extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesExport)
     if (flags['before-cursor'] && flags['after-cursor']) throw new Error('Use only one of --before-cursor or --after-cursor')
+    if (flags['dry-run']) {
+      await printDryRun('messages.export', {
+        chat: flags.chat,
+        pick: flags.pick,
+        output: flags.output,
+        beforeCursor: flags['before-cursor'],
+        afterCursor: flags['after-cursor'],
+        after: flags.after,
+        before: flags.before,
+        limit: flags.limit,
+        asc: flags.asc,
+      }, flags.json ? 'json' : 'human')
+      return
+    }
+    if (flags.output !== '-') ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     const cursor = flags['before-cursor'] ?? flags['after-cursor']

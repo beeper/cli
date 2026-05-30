@@ -1,7 +1,7 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printSuccess } from '../../lib/output.js'
+import { printDryRun, printSuccess } from '../../lib/output.js'
 import { resolveAccountID } from '../../lib/resolve.js'
 import { updateConfig } from '../../lib/targets.js'
 
@@ -15,12 +15,20 @@ export default class AccountsUse extends BeeperCommand {
     const { args, flags } = await this.parse(AccountsUse)
     ensureWritable(flags)
     if (args.account === '') {
+      if (flags['dry-run']) {
+        await printDryRun('accounts.use', { defaultAccount: undefined }, flags.json ? 'json' : 'human')
+        return
+      }
       await updateConfig(config => ({ ...config, defaultAccount: undefined }))
       await printSuccess({ message: 'Cleared default account' }, flags.json ? 'json' : 'human')
       return
     }
     const client = await createClient(flags)
     const accountID = await resolveAccountID(client, args.account)
+    if (flags['dry-run']) {
+      await printDryRun('accounts.use', { defaultAccount: accountID }, flags.json ? 'json' : 'human')
+      return
+    }
     await updateConfig(config => ({ ...config, defaultAccount: accountID }))
     await printSuccess({ message: `Default account: ${accountID}`, data: { accountID } }, flags.json ? 'json' : 'human')
   }

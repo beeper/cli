@@ -4,7 +4,7 @@ import WebSocket from 'ws'
 import { BeeperCommand, writeEvent } from '../lib/command.js'
 import { requireToken } from '../lib/client.js'
 import { getBaseURL } from '../lib/targets.js'
-import { startStream } from '../lib/output.js'
+import { isMachineReadableOutput, startStream } from '../lib/output.js'
 
 type WebhookConfig = { url: string; secret?: string; queue: Array<{ body: string; signature?: string }>; inflight: number; max: number }
 export type EventFilter = { include?: Set<string>; exclude?: Set<string> }
@@ -14,8 +14,8 @@ export default class Watch extends BeeperCommand {
   static override flags = {
     chat: Flags.string({ char: 'c', multiple: true, description: 'Chat ID to subscribe to. Defaults to all chats.' }),
     json: Flags.boolean({ default: false, description: 'Print raw JSON, one event per line' }),
-    'include-type': Flags.string({ multiple: true, options: ['chat.upserted', 'chat.deleted', 'message.upserted', 'message.deleted'], description: 'Only forward events of these types. Repeat for multiple.' }),
-    'exclude-type': Flags.string({ multiple: true, options: ['chat.upserted', 'chat.deleted', 'message.upserted', 'message.deleted'], description: 'Drop events of these types. Repeat for multiple.' }),
+    'include-type': Flags.string({ multiple: true, options: ['chat.upserted', 'chat.deleted', 'message.upserted', 'message.deleted', 'message.stream'], description: 'Only forward events of these types. Repeat for multiple.' }),
+    'exclude-type': Flags.string({ multiple: true, options: ['chat.upserted', 'chat.deleted', 'message.upserted', 'message.deleted', 'message.stream'], description: 'Drop events of these types. Repeat for multiple.' }),
     webhook: Flags.string({ description: 'Forward each event to this URL as a POST request (best-effort, fire-and-forget)' }),
     'webhook-secret': Flags.string({ description: 'HMAC-SHA256 secret. Signs payloads with X-Beeper-Signature: sha256=<hex>' }),
     'webhook-queue': Flags.integer({ default: 64, description: 'Maximum pending webhook deliveries before dropping events' }),
@@ -44,7 +44,7 @@ export default class Watch extends BeeperCommand {
       ? { url: flags.webhook, secret: flags['webhook-secret'], queue: [], inflight: 0, max: flags['webhook-queue'] }
       : undefined
 
-    if (flags.json) {
+    if (flags.json || isMachineReadableOutput('human')) {
       await this.runJSON(ws, subscribed, flags.events, webhook, filter)
       return
     }

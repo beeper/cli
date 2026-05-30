@@ -10,7 +10,11 @@ export default class Doctor extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(Doctor)
     const target = await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
-    const checks = { target: await targetLiveStatus(target), readiness: await evaluateReadiness({ baseURL: target.baseURL, target: target.id }) }
+    const [targetStatus, readiness] = await Promise.all([
+      targetLiveStatus(target),
+      evaluateReadiness({ baseURL: target.baseURL, target: target.id }),
+    ])
+    const checks = { target: targetStatus, readiness }
     await printData({ ok: checks.readiness.state === 'ready', checks }, flags.json ? 'json' : 'human')
     if (checks.readiness.state !== 'ready') this.exit(ExitCodes.NotReady)
   }

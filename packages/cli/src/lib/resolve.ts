@@ -1,6 +1,7 @@
 import { readConfig } from './targets.js'
 import { ambiguous, notFound } from './errors.js'
 import { confirmSuggestion, declineWithExit127, rankSuggestions } from './did-you-mean.js'
+import { collectPage } from './output.js'
 
 type AnyRecord = Record<string, any>
 
@@ -31,9 +32,13 @@ export async function resolveAccountIDs(
   const resolved: string[] = []
   for (const input of effectiveInputs) {
     const matches = matchAccounts(accounts, input)
-    if (matches.length === 0) throw notFound(`No account matches "${input}"`)
+    if (matches.length === 0) throw notFound(`No account matches "${input}"`, { selector: input, kind: 'account' })
     if (matches.length > 1 && !options.allowMultiplePerInput) {
-      throw ambiguous(formatAmbiguous(`account "${input}"`, matches.map(formatAccount)))
+      throw ambiguous(formatAmbiguous(`account "${input}"`, matches.map(formatAccount)), {
+        selector: input,
+        kind: 'account',
+        candidates: matches.map((account, index) => ({ pick: index + 1, id: String(account.accountID ?? account.id), label: formatAccount(account) })),
+      })
     }
     resolved.push(...matches.map(account => String(account.accountID)))
   }
@@ -43,7 +48,7 @@ export async function resolveAccountIDs(
 
 export async function resolveAccountID(client: any, input: string): Promise<string> {
   const [accountID] = await resolveAccountIDs(client, [input]) ?? []
-  if (!accountID) throw notFound(`No account matches "${input}"`)
+  if (!accountID) throw notFound(`No account matches "${input}"`, { selector: input, kind: 'account' })
   return accountID
 }
 
@@ -57,7 +62,7 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
   const exact = await retrieveChat(client, input)
   if (exact) return chatInputID(exact)
 
-  const candidates = await collect<AnyRecord>(client.chats.search({
+  const candidates = await collectPage<AnyRecord>(client.chats.search({
     accountIDs: options.accountIDs,
     query: input,
     scope: 'titles',
@@ -73,23 +78,35 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
   if (matches.length === 0) {
     const suggestion = await suggestChat(client, input, options)
     if (suggestion) return suggestion
-    return input
+    throw notFound(`No chat matches "${input}"`, { selector: input, kind: 'chat' })
   }
   if (matches.length === 1) return chatInputID(matches[0]!)
 
   if (options.pick) {
     const selected = matches[options.pick - 1]
-    if (!selected) throw notFound(`--pick ${options.pick} is outside the ${matches.length} matching chats`)
+    if (!selected) throw notFound(`--pick ${options.pick} is outside the ${matches.length} matching chats`, { selector: input, kind: 'chat', pick: options.pick, count: matches.length })
     return chatInputID(selected)
   }
 
-  throw ambiguous(formatAmbiguous(`chat "${input}"`, matches.map(formatChat)))
+  throw ambiguous(formatAmbiguous(`chat "${input}"`, matches.map(formatChat)), {
+    selector: input,
+    kind: 'chat',
+    candidates: matches.map((chat, index) => ({
+      pick: index + 1,
+      id: String(chat.id),
+      localChatID: chat.localChatID ? String(chat.localChatID) : undefined,
+      title: chat.title ? String(chat.title) : undefined,
+      network: chat.network ? String(chat.network) : undefined,
+      label: formatChat(chat),
+    })),
+  })
 }
 
 async function suggestChat(client: any, input: string, options: ChatResolutionOptions): Promise<string | undefined> {
+  if (process.env.BEEPER_NO_INPUT === '1') return undefined
   let pool: AnyRecord[]
   try {
-    pool = await collect<AnyRecord>(client.chats.list({ accountIDs: options.accountIDs, limit: 100 }), 100)
+    pool = await collectPage<AnyRecord>(client.chats.list({ accountIDs: options.accountIDs, limit: 100 }), 100)
   } catch {
     return undefined
   }
@@ -145,15 +162,6 @@ async function retrieveChat(client: any, input: string): Promise<AnyRecord | und
     if (/not\s*found|404/i.test(message)) return undefined
     throw error
   }
-}
-
-async function collect<T>(iterable: AsyncIterable<T>, limit: number): Promise<T[]> {
-  const items: T[] = []
-  for await (const item of iterable) {
-    items.push(item)
-    if (items.length >= limit) break
-  }
-  return items
 }
 
 function normalize(value: unknown): string {

@@ -2,7 +2,7 @@ import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
 import { resolveTarget } from '../../../lib/targets.js'
 import { finishEmailSetup } from '../../../lib/setup-login.js'
-import { printData } from '../../../lib/output.js'
+import { printData, printDryRun } from '../../../lib/output.js'
 
 export default class AuthEmailResponse extends BeeperCommand {
   static override summary = 'Finish email sign-in with a verification code'
@@ -16,7 +16,12 @@ export default class AuthEmailResponse extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthEmailResponse)
     ensureWritable(flags)
+    const format = flags.json ? 'json' : 'human'
     const target = await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
+    if (flags['dry-run']) {
+      await printDryRun('auth.email.response', { target: target.id, baseURL: target.baseURL, setupRequestID: flags['setup-request-id'], username: flags.username, yes: flags.yes }, format)
+      return
+    }
     const data = await finishEmailSetup(target, {
       code: flags.code,
       json: flags.json,
@@ -24,6 +29,6 @@ export default class AuthEmailResponse extends BeeperCommand {
       username: flags.username,
       yes: flags.yes,
     })
-    await printData(data, flags.json ? 'json' : 'human')
+    await printData(data, format)
   }
 }

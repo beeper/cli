@@ -1,7 +1,7 @@
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { appRequest, type AppRequestMethod } from '../../lib/app-api.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 
 export default class ApiRequest extends BeeperCommand {
   static override summary = 'Call a raw Desktop API path with any supported HTTP method'
@@ -19,11 +19,16 @@ export default class ApiRequest extends BeeperCommand {
     const { args, flags } = await this.parse(ApiRequest)
     const method = args.method as AppRequestMethod
     if (method !== 'GET') ensureWritable(flags)
+    const format = flags.json ? 'json' : 'human'
     const body = flags.body ? JSON.parse(flags.body) as Record<string, unknown> : undefined
-    if (flags['no-auth']) {
-      await printData(await appRequest(method, args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), flags.json ? 'json' : 'human')
+    if (flags['dry-run'] && method !== 'GET') {
+      await printDryRun('api.request', { method, path: args.path, body, noAuth: flags['no-auth'], target: flags.target, baseURL: flags['base-url'] }, format)
       return
     }
-    await printData(await appRequest(method, args.path, { baseURL: flags['base-url'], body, target: flags.target }), flags.json ? 'json' : 'human')
+    if (flags['no-auth']) {
+      await printData(await appRequest(method, args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), format)
+      return
+    }
+    await printData(await appRequest(method, args.path, { baseURL: flags['base-url'], body, target: flags.target }), format)
   }
 }

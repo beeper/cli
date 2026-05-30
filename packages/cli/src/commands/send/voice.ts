@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 import { sendMessage } from '../../lib/send-message.js'
 
@@ -21,22 +21,29 @@ export default class SendVoice extends BeeperCommand {
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(SendVoice)
+    const dryRunRequest = {
+      chat: flags.to,
+      pick: flags.pick,
+      file: flags.file,
+      fileName: flags.filename,
+      mimeType: flags.mime,
+      replyTo: flags['reply-to'],
+      text: '',
+      attachmentType: 'voice-note' as const,
+      duration: flags.duration,
+      wait: flags.wait,
+      waitTimeoutMs: flags['wait-timeout'],
+    }
+    if (flags['dry-run']) {
+      await printDryRun('send.voice', dryRunRequest, flags.json ? 'json' : 'human')
+      return
+    }
+
     ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
     await printData(
-      await sendMessage(client, {
-        chatID,
-        file: flags.file,
-        fileName: flags.filename,
-        mimeType: flags.mime,
-        replyTo: flags['reply-to'],
-        text: '',
-        attachmentType: 'voice-note',
-        duration: flags.duration,
-        wait: flags.wait,
-        waitTimeoutMs: flags['wait-timeout'],
-      }),
+      await sendMessage(client, { ...dryRunRequest, chatID }),
       flags.json ? 'json' : 'human',
     )
   }

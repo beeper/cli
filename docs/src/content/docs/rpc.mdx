@@ -1,7 +1,14 @@
-# rpc
+---
+title: RPC
+description: Drive many CLI commands from a long-lived process over newline-delimited JSON on stdin/stdout — no new process per command.
+---
 
-Read when: scripting many CLI commands from a long-lived process (an agent, a
-web server) without spawning a new node process per command.
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="tip" title="Read when">
+  Scripting many CLI commands from a long-lived process (an agent, a web server)
+  without spawning a new process per command.
+</Aside>
 
 ## Command
 
@@ -9,8 +16,8 @@ web server) without spawning a new node process per command.
 beeper rpc
 ```
 
-Reads newline-delimited JSON requests on stdin and writes one response line
-per request on stdout.
+Reads newline-delimited JSON requests on stdin and writes one response line per
+request on stdout.
 
 ## Request shape
 
@@ -21,9 +28,9 @@ per request on stdout.
 
 Each request must include one of:
 
-- `command` — a single string parsed with shell-like quoting
-- `args`    — an explicit `argv` array
-- `argv`    — alias for `args`
+- `command` — a single string parsed with shell-like quoting;
+- `args` — an explicit `argv` array;
+- `argv` — alias for `args`.
 
 `id` is echoed back in the response (string, number, or null).
 
@@ -40,7 +47,8 @@ Each request must include one of:
 
 - Nesting `rpc` or `shell` is rejected to avoid recursion.
 - `--json` on inner commands produces the standard envelope inside `stdout`.
-- Exit codes use the same table as direct CLI invocation; see [exit codes](../README.md#exit-codes).
+- Exit codes use the same table as direct CLI invocation; see [Exit
+  codes](/exit-codes/).
 
 ## Examples
 

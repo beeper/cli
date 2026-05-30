@@ -2,7 +2,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
-import { printSuccess } from '../lib/output.js'
+import { printDryRun, printSuccess } from '../lib/output.js'
 import { resolveChatID } from '../lib/resolve.js'
 
 export default class Presence extends BeeperCommand {
@@ -17,9 +17,14 @@ export default class Presence extends BeeperCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Presence)
-    ensureWritable(flags)
     if (flags.duration !== undefined && flags.duration <= 0) throw new Error('--duration must be a positive integer (seconds)')
     if (flags.duration !== undefined && flags.state !== 'typing') throw new Error('--duration only applies when --state is typing')
+    if (flags['dry-run']) {
+      await printDryRun('presence', { chat: flags.chat, pick: flags.pick, state: flags.state, durationSeconds: flags.duration }, flags.json ? 'json' : 'human')
+      return
+    }
+
+    ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     const post = (state: 'typing' | 'paused') =>
@@ -32,6 +37,7 @@ export default class Presence extends BeeperCommand {
       await printSuccess({ message: `Sent typing then paused after ${flags.duration}s`, data: { chatID, state: 'paused', durationSeconds: flags.duration } }, flags.json ? 'json' : 'human')
       return
     }
+
     await printSuccess({ message: `Sent ${flags.state} indicator`, data: { chatID, state: flags.state } }, flags.json ? 'json' : 'human')
   }
 }

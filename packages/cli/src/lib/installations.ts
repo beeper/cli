@@ -1,5 +1,5 @@
 import { createWriteStream } from 'node:fs'
-import { chmod, cp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, cp, mkdir, readFile, readdir, rename, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -8,12 +8,14 @@ import type { ReadableStream } from 'node:stream/web'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { beeperDir } from './targets.js'
+import { SERVER_ENV_API_BASE_URLS, normalizeServerEnv, type ServerEnv } from './server-env.js'
+
+export type { ServerEnv } from './server-env.js'
 
 const execFileAsync = promisify(execFile)
 
 export type InstallKind = 'desktop' | 'server'
 export type InstallChannel = 'stable' | 'nightly'
-export type ServerEnv = 'production' | 'staging'
 
 export type Installation = {
   kind: InstallKind
@@ -87,11 +89,8 @@ export function normalizeInstallRequest(options: {
   bundleID: string
   apiBaseURL: string
 } {
-  // TODO: switch Server installs back to production once the production download
-  // endpoint returns a beeper-server artifact instead of the Desktop app bundle.
-  const serverEnv = options.kind === 'server' ? 'staging' : normalizeServerEnv(options.serverEnv)
-  let channel = options.channel ?? 'stable'
-  if (serverEnv === 'staging') channel = 'nightly'
+  const serverEnv = normalizeServerEnv(options.serverEnv)
+  const channel = options.channel ?? 'stable'
   const platform = normalizeDownloadPlatform(options.platform ?? process.platform)
   const feedPlatform = normalizeFeedPlatform(options.platform ?? process.platform)
   const arch = normalizeArch(options.arch ?? process.arch)
@@ -104,7 +103,7 @@ export function normalizeInstallRequest(options: {
     feedPlatform,
     arch,
     bundleID,
-    apiBaseURL: options.kind === 'server' || serverEnv === 'staging' ? 'https://api.beeper-staging.com' : 'https://api.beeper.com',
+    apiBaseURL: SERVER_ENV_API_BASE_URLS[serverEnv],
   }
 }
 
@@ -118,8 +117,7 @@ export function feedURLFor(options: ReturnType<typeof normalizeInstallRequest>):
 }
 
 export function downloadURLFor(options: ReturnType<typeof normalizeInstallRequest>): string {
-  const channelSegment = options.serverEnv === 'staging' && options.kind === 'server' ? 'stable' : options.channel
-  return `${options.apiBaseURL}/desktop/download/${options.platform}/${options.arch}/${channelSegment}/${options.bundleID}`
+  return `${options.apiBaseURL}/desktop/download/${options.platform}/${options.arch}/${options.channel}/${options.bundleID}`
 }
 
 export async function fetchFeed(feedURL: string): Promise<FeedInfo> {
@@ -150,8 +148,13 @@ export async function checkInstallationUpdate(installation: Installation): Promi
 
 export async function installDesktop(options: { channel?: InstallChannel; serverEnv?: string } = {}): Promise<Installation> {
   const request = normalizeInstallRequest({ kind: 'desktop', channel: options.channel, serverEnv: options.serverEnv })
-  if (request.serverEnv === 'staging') throw new Error('Desktop staging installs are not supported by the CLI.')
-  const feedURL = feedURLFor(request)
+  const feedRequest = request.serverEnv === 'prod'
+    ? request
+    : { ...request, serverEnv: 'prod' as const, apiBaseURL: SERVER_ENV_API_BASE_URLS.prod }
+  if (request.serverEnv !== feedRequest.serverEnv) {
+    process.stderr.write(`Desktop ${request.serverEnv} installs use the production update feed; the app will still launch against ${request.serverEnv}.\n`)
+  }
+  const feedURL = feedURLFor(feedRequest)
   const feed = await fetchFeed(feedURL)
   const downloadURL = feed.url
   if (!downloadURL) throw new Error('Desktop update feed did not include a download URL.')
@@ -296,7 +299,6 @@ async function copyPath(source: string, destination: string): Promise<void> {
 }
 
 async function findAppBundle(dir: string): Promise<string> {
-  const { readdir, stat } = await import('node:fs/promises')
   const entries = await readdir(dir)
   for (const entry of entries) {
     const path = join(dir, entry)
@@ -311,7 +313,6 @@ async function findAppBundle(dir: string): Promise<string> {
 }
 
 async function findServerExecutable(dir: string): Promise<string> {
-  const { readdir, stat } = await import('node:fs/promises')
   const entries = await readdir(dir)
   for (const entry of entries) {
     const path = join(dir, entry)
@@ -324,12 +325,6 @@ async function findServerExecutable(dir: string): Promise<string> {
     }
   }
   throw new Error('Downloaded Beeper Server artifact did not contain a beeper-server executable.')
-}
-
-function normalizeServerEnv(value?: string): ServerEnv {
-  if (!value || value === 'production' || value === 'prod') return 'production'
-  if (value === 'staging') return 'staging'
-  throw new Error(`Unsupported server env "${value}". Expected production or staging.`)
 }
 
 function normalizeDownloadPlatform(platform: NodeJS.Platform): 'macos' | 'windows' | 'linux' {

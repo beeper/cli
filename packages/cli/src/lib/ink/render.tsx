@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Box, render as inkRender, Static, Text, useApp, useInput } from 'ink'
 import Spinner from 'ink-spinner'
 import {
@@ -28,7 +28,7 @@ import {
   UserRow,
 } from './components.js'
 import type { RecordValue } from './format.js'
-import { glyphs, theme } from './theme.js'
+import { theme } from './theme.js'
 
 const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { exit } = useApp()
@@ -127,7 +127,7 @@ export async function renderValue(value: unknown): Promise<void> {
       await renderOnce(<InfoCard info={record} />)
       return
     case 'doctor': {
-      const rawChecks = Array.isArray(record.checks)
+      const checks = Array.isArray(record.checks)
         ? record.checks as Array<{ ok: boolean; name: string; detail?: string }>
         : record.checks && typeof record.checks === 'object'
           ? Object.entries(record.checks as Record<string, unknown>).map(([name, value]) => {
@@ -140,7 +140,6 @@ export async function renderValue(value: unknown): Promise<void> {
             return { ok, name, detail }
           })
           : []
-      const checks = rawChecks
       await renderOnce(<DoctorCard checks={checks} ok={Boolean(record.ok)} />)
       return
     }

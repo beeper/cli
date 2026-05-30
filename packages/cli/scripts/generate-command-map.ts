@@ -10,8 +10,10 @@ const outPath = join(root, 'src', 'commands.generated.ts')
 const listAliases: Record<string, string[]> = {
   'accounts:list': ['accounts'],
   'bridges:list': ['bridges'],
-  'chats:list': ['chats', 'accounts:chats'],
+  'chats:list': ['chats', 'accounts:chats', 'ls'],
   'contacts:list': ['contacts'],
+  'messages:search': ['search'],
+  'send:text': ['send'],
   'targets:list': ['targets'],
 }
 
