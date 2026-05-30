@@ -1,11 +1,11 @@
 import { spawn } from 'node:child_process'
 import { execFile } from 'node:child_process'
 import { closeSync, openSync } from 'node:fs'
-import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { beeperDir, type Target } from './targets.js'
+import { beeperDir, pathExists, type Target } from './targets.js'
 import { readInstallations } from './installations.js'
 import { usageError } from './errors.js'
 
@@ -148,9 +148,7 @@ export async function stopProfile(target: Target): Promise<void> {
 export async function profileStatus(target: Target): Promise<Record<string, unknown>> {
   assertProfile(target)
   const run = await readRun(target.id)
-  const reachable = await fetch(new URL('/v1/info', target.baseURL), { signal: AbortSignal.timeout(1000) })
-    .then(response => response.ok)
-    .catch(() => false)
+  const reachable = await isReachable(target)
   return {
     id: target.id,
     type: target.type,
@@ -380,13 +378,4 @@ async function waitForExit(pid: number, timeoutMs: number): Promise<boolean> {
 
 async function sleep(ms: number): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, ms))
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await access(path)
-    return true
-  } catch {
-    return false
-  }
 }

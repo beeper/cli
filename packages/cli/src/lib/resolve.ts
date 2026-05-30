@@ -1,6 +1,7 @@
 import { readConfig } from './targets.js'
 import { ambiguous, notFound } from './errors.js'
 import { confirmSuggestion, declineWithExit127, rankSuggestions } from './did-you-mean.js'
+import { collectPage } from './output.js'
 
 type AnyRecord = Record<string, any>
 
@@ -61,7 +62,7 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
   const exact = await retrieveChat(client, input)
   if (exact) return chatInputID(exact)
 
-  const candidates = await collect<AnyRecord>(client.chats.search({
+  const candidates = await collectPage<AnyRecord>(client.chats.search({
     accountIDs: options.accountIDs,
     query: input,
     scope: 'titles',
@@ -105,7 +106,7 @@ async function suggestChat(client: any, input: string, options: ChatResolutionOp
   if (process.env.BEEPER_NO_INPUT === '1') return undefined
   let pool: AnyRecord[]
   try {
-    pool = await collect<AnyRecord>(client.chats.list({ accountIDs: options.accountIDs, limit: 100 }), 100)
+    pool = await collectPage<AnyRecord>(client.chats.list({ accountIDs: options.accountIDs, limit: 100 }), 100)
   } catch {
     return undefined
   }
@@ -161,15 +162,6 @@ async function retrieveChat(client: any, input: string): Promise<AnyRecord | und
     if (/not\s*found|404/i.test(message)) return undefined
     throw error
   }
-}
-
-async function collect<T>(iterable: AsyncIterable<T>, limit: number): Promise<T[]> {
-  const items: T[] = []
-  for await (const item of iterable) {
-    items.push(item)
-    if (items.length >= limit) break
-  }
-  return items
 }
 
 function normalize(value: unknown): string {

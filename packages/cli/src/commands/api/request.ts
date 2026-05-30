@@ -19,15 +19,16 @@ export default class ApiRequest extends BeeperCommand {
     const { args, flags } = await this.parse(ApiRequest)
     const method = args.method as AppRequestMethod
     if (method !== 'GET') ensureWritable(flags)
+    const format = flags.json ? 'json' : 'human'
     const body = flags.body ? JSON.parse(flags.body) as Record<string, unknown> : undefined
     if (flags['dry-run'] && method !== 'GET') {
-      await printDryRun('api.request', { method, path: args.path, body, noAuth: flags['no-auth'], target: flags.target, baseURL: flags['base-url'] }, flags.json ? 'json' : 'human')
+      await printDryRun('api.request', { method, path: args.path, body, noAuth: flags['no-auth'], target: flags.target, baseURL: flags['base-url'] }, format)
       return
     }
     if (flags['no-auth']) {
-      await printData(await appRequest(method, args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), flags.json ? 'json' : 'human')
+      await printData(await appRequest(method, args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), format)
       return
     }
-    await printData(await appRequest(method, args.path, { baseURL: flags['base-url'], body, target: flags.target }), flags.json ? 'json' : 'human')
+    await printData(await appRequest(method, args.path, { baseURL: flags['base-url'], body, target: flags.target }), format)
   }
 }

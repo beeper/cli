@@ -119,12 +119,7 @@ export function isForce(flags?: { force?: boolean; yes?: boolean }): boolean {
 }
 
 function outputFormatFromArgv(argv: string[]): string | undefined {
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]
-    if (arg === '--format') return argv[i + 1]
-    if (arg?.startsWith('--format=')) return arg.slice('--format='.length)
-  }
-  return undefined
+  return stringFlagFromArgv(argv, '--format')
 }
 
 function stringFlagFromArgv(argv: string[], name: string): string | undefined {

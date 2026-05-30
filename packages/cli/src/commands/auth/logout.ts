@@ -8,10 +8,11 @@ export default class AuthLogout extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthLogout)
     if (!flags['dry-run']) ensureWritable(flags)
+    const format = flags.json ? 'json' : 'human'
     const target = await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
     const token = target.auth?.accessToken
     if (flags['dry-run']) {
-      await printDryRun('auth.logout', { target: target.id, baseURL: target.baseURL, hadToken: Boolean(token), revokeToken: Boolean(token) }, flags.json ? 'json' : 'human')
+      await printDryRun('auth.logout', { target: target.id, baseURL: target.baseURL, hadToken: Boolean(token), revokeToken: Boolean(token) }, format)
       return
     }
     if (process.env.BEEPER_ACCESS_TOKEN && !target.auth?.accessToken) {
@@ -28,6 +29,6 @@ export default class AuthLogout extends BeeperCommand {
       revoked = Boolean(response?.ok)
       await clearTargetAuth(target)
     }
-    await printSuccess({ message: 'Logged out', detail: token ? 'local token cleared' : 'no token was stored', data: { revoked, hadToken: Boolean(token) } }, flags.json ? 'json' : 'human')
+    await printSuccess({ message: 'Logged out', detail: token ? 'local token cleared' : 'no token was stored', data: { revoked, hadToken: Boolean(token) } }, format)
   }
 }

@@ -1,6 +1,6 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { customTargetID, readTarget, resolveTarget } from '../../lib/targets.js'
+import { customTargetID, resolveTarget } from '../../lib/targets.js'
 import { launchDesktopApp, startProfile } from '../../lib/profiles.js'
 import { printDryRun, printSuccess } from '../../lib/output.js'
 

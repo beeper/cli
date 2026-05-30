@@ -1,10 +1,7 @@
-import { Args, Flags } from '@oclif/core'
-import { readFile } from 'node:fs/promises'
-import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { builtInDesktopTargetID, createProfileTarget, listTargets, readConfig, readTarget, removeTarget, resolveTarget, updateConfig, writeTarget, type Target } from '../../lib/targets.js'
-import { disableProfile, enableProfile, profileErrorLogPath, profileLogPath, profileStatus, startProfile, stopProfile } from '../../lib/profiles.js'
+import { BeeperCommand } from '../../lib/command.js'
+import { builtInDesktopTargetID, listTargets, readConfig, type Target } from '../../lib/targets.js'
 import { targetLiveStatus } from '../../lib/target-status.js'
-import { printData, printSuccess } from '../../lib/output.js'
+import { printData } from '../../lib/output.js'
 
 export default class TargetsList extends BeeperCommand {
   static override summary = 'List configured Beeper targets'

@@ -13,9 +13,10 @@ export default class ConfigSet extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ConfigSet)
     ensureWritable(flags)
+    const format = flags.json ? 'json' : 'human'
     const nextValue = args.value === '' ? undefined : args.value
     if (flags['dry-run']) {
-      await printDryRun('config.set', { [args.key]: nextValue }, flags.json ? 'json' : 'human')
+      await printDryRun('config.set', { [args.key]: nextValue }, format)
       return
     }
     await updateConfig(config => ({ ...config, [args.key]: nextValue }))
@@ -23,6 +24,6 @@ export default class ConfigSet extends BeeperCommand {
       message: nextValue === undefined ? `Cleared ${args.key}` : `Set ${args.key}`,
       detail: nextValue,
       data: { [args.key]: nextValue },
-    }, flags.json ? 'json' : 'human')
+    }, format)
   }
 }

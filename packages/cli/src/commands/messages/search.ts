@@ -60,11 +60,12 @@ export default class MessagesSearch extends BeeperCommand {
     }
     const useSpinner = !isMachineReadableOutput(flags.ids ? 'ids' : flags.json ? 'json' : 'human')
     const label = args.query ? `Searching messages for "${args.query}"…` : 'Searching messages…'
+    const collect = () => collectPage(client.messages.search(params), flags.limit)
     const items = useSpinner
-      ? await withSpinner(label, () => collectPage(client.messages.search(params), flags.limit), {
+      ? await withSpinner(label, collect, {
         done: value => `${value.length} match${value.length === 1 ? '' : 'es'}`,
       })
-      : await collectPage(client.messages.search(params), flags.limit)
+      : await collect()
     if (flags.ids) {
       printIDs(items)
       return

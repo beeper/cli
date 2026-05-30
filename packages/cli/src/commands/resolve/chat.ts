@@ -2,7 +2,7 @@ import { Args, Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { notFound } from '../../lib/errors.js'
-import { printData } from '../../lib/output.js'
+import { collectPage, printData } from '../../lib/output.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
 
 export default class ResolveChat extends BeeperCommand {
@@ -20,7 +20,7 @@ export default class ResolveChat extends BeeperCommand {
     const { args, flags } = await this.parse(ResolveChat)
     const client = await createClient(flags)
     const accountIDs = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true })
-    const candidates = await collect(client.chats.search({ accountIDs, query: args.selector, scope: 'titles' }), flags.limit)
+    const candidates = await collectPage<Chat>(client.chats.search({ accountIDs, query: args.selector, scope: 'titles' }), flags.limit)
     const normalized = normalize(args.selector)
     const exact = candidates.filter(chat =>
       normalize(chat.id) === normalized ||
@@ -41,15 +41,6 @@ export default class ResolveChat extends BeeperCommand {
 }
 
 type Chat = Record<string, any>
-
-async function collect(iterable: AsyncIterable<unknown>, limit: number): Promise<Chat[]> {
-  const items: Chat[] = []
-  for await (const item of iterable) {
-    items.push(item as Chat)
-    if (items.length >= limit) break
-  }
-  return items
-}
 
 function chatCandidate(chat: Chat, pick: number): Record<string, unknown> {
   return {

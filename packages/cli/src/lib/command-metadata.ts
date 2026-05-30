@@ -6,19 +6,20 @@ export type CommandMetadata = {
   related: string[]
 }
 
+const mutatingRoots = new Set(['export', 'install', 'presence', 'send', 'setup', 'update'])
+const mutatingVerbs = new Set([
+  'add', 'approve', 'archive', 'avatar', 'cancel', 'delete', 'description', 'disable', 'disappear', 'download',
+  'draft', 'edit', 'enable', 'export', 'focus', 'logout', 'mark-read', 'mark-unread', 'mute', 'notify-anyway',
+  'pin', 'post', 'priority', 'qr-confirm', 'qr-scan', 'recovery-key', 'remind', 'remove', 'rename', 'reset',
+  'reset-recovery-key', 'response', 'restart', 'sas', 'sas-confirm', 'set', 'start', 'stop', 'unarchive',
+  'unmute', 'unpin', 'unremind', 'use',
+])
+const localOnly = new Set(['completion', 'config', 'docs', 'man', 'schema', 'version'])
+
 export function metadataForCommand(command: string): CommandMetadata {
   const parts = command.split(' ')
   const root = parts[0] ?? ''
-  const mutatingRoots = new Set(['export', 'install', 'presence', 'send', 'setup', 'update'])
-  const mutatingVerbs = new Set([
-    'add', 'approve', 'archive', 'avatar', 'cancel', 'delete', 'description', 'disable', 'disappear', 'download',
-    'draft', 'edit', 'enable', 'export', 'focus', 'logout', 'mark-read', 'mark-unread', 'mute', 'notify-anyway',
-    'pin', 'post', 'priority', 'qr-confirm', 'qr-scan', 'recovery-key', 'remind', 'remove', 'rename', 'reset',
-    'reset-recovery-key', 'response', 'restart', 'sas', 'sas-confirm', 'set', 'start', 'stop', 'unarchive',
-    'unmute', 'unpin', 'unremind', 'use',
-  ])
   const mutates = command === 'verify' || command === 'api request' || mutatingRoots.has(root) || parts.some(part => mutatingVerbs.has(part ?? ''))
-  const localOnly = new Set(['completion', 'config', 'docs', 'man', 'schema', 'version'])
   const requiresAuth = !localOnly.has(root) && command !== 'targets list' && !command.startsWith('targets add') && !command.startsWith('install ')
   const selectors = [
     command.includes('chats ') || command.includes('messages ') || command.startsWith('send ') || command === 'presence' || command.startsWith('resolve chat') ? 'chat' : undefined,

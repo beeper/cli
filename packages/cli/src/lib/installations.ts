@@ -1,5 +1,5 @@
 import { createWriteStream } from 'node:fs'
-import { chmod, cp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, cp, mkdir, readFile, readdir, rename, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, extname, join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -299,7 +299,6 @@ async function copyPath(source: string, destination: string): Promise<void> {
 }
 
 async function findAppBundle(dir: string): Promise<string> {
-  const { readdir, stat } = await import('node:fs/promises')
   const entries = await readdir(dir)
   for (const entry of entries) {
     const path = join(dir, entry)
@@ -314,7 +313,6 @@ async function findAppBundle(dir: string): Promise<string> {
 }
 
 async function findServerExecutable(dir: string): Promise<string> {
-  const { readdir, stat } = await import('node:fs/promises')
   const entries = await readdir(dir)
   for (const entry of entries) {
     const path = join(dir, entry)

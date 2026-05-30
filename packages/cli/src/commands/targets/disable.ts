@@ -1,6 +1,6 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { readTarget, resolveTarget } from '../../lib/targets.js'
+import { resolveTarget } from '../../lib/targets.js'
 import { assertServerProfile, disableProfile } from '../../lib/profiles.js'
 import { printDryRun, printSuccess } from '../../lib/output.js'
 

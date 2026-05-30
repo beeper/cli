@@ -1,9 +1,6 @@
-import { Args, Flags } from '@oclif/core'
-import { readFile } from 'node:fs/promises'
+import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
-import { createProfileTarget, listTargets, readConfig, readTarget, removeTarget, resolveTarget, updateConfig, writeTarget, type Target } from '../../lib/targets.js'
-import { disableProfile, enableProfile, profileErrorLogPath, profileLogPath, profileStatus, startProfile, stopProfile } from '../../lib/profiles.js'
-import { targetLiveStatus } from '../../lib/target-status.js'
+import { removeTarget } from '../../lib/targets.js'
 import { printDryRun, printSuccess } from '../../lib/output.js'
 
 export default class TargetsRemove extends BeeperCommand {

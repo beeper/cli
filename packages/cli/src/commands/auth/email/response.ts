@@ -16,9 +16,10 @@ export default class AuthEmailResponse extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthEmailResponse)
     ensureWritable(flags)
+    const format = flags.json ? 'json' : 'human'
     const target = await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
     if (flags['dry-run']) {
-      await printDryRun('auth.email.response', { target: target.id, baseURL: target.baseURL, setupRequestID: flags['setup-request-id'], username: flags.username, yes: flags.yes }, flags.json ? 'json' : 'human')
+      await printDryRun('auth.email.response', { target: target.id, baseURL: target.baseURL, setupRequestID: flags['setup-request-id'], username: flags.username, yes: flags.yes }, format)
       return
     }
     const data = await finishEmailSetup(target, {
@@ -28,6 +29,6 @@ export default class AuthEmailResponse extends BeeperCommand {
       username: flags.username,
       yes: flags.yes,
     })
-    await printData(data, flags.json ? 'json' : 'human')
+    await printData(data, format)
   }
 }

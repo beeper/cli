@@ -12,9 +12,10 @@ export default class MediaDownload extends BeeperCommand {
   }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(MediaDownload)
+    const format = flags.json ? 'json' : 'human'
     if (flags['dry-run'] && flags.out !== '-') {
       ensureWritable(flags)
-      await printDryRun('media.download', { url: args.url, out: flags.out }, flags.json ? 'json' : 'human')
+      await printDryRun('media.download', { url: args.url, out: flags.out }, format)
       return
     }
     const client = await createClient(flags)
@@ -28,6 +29,6 @@ export default class MediaDownload extends BeeperCommand {
     await mkdir(flags.out, { recursive: true })
     const path = join(flags.out, basename(new URL(args.url).pathname) || 'media')
     await writeFile(path, buffer)
-    await printSuccess({ message: 'Downloaded media', detail: path, data: { path, bytes: buffer.length } }, flags.json ? 'json' : 'human')
+    await printSuccess({ message: 'Downloaded media', detail: path, data: { path, bytes: buffer.length } }, format)
   }
 }

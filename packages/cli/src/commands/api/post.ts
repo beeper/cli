@@ -18,6 +18,7 @@ export default class ApiPost extends BeeperCommand {
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ApiPost)
     ensureWritable(flags)
+    const format = flags.json ? 'json' : 'human'
     let body: Record<string, unknown>
     try {
       body = JSON.parse(flags.body) as Record<string, unknown>
@@ -25,14 +26,14 @@ export default class ApiPost extends BeeperCommand {
       throw new Error(`--body is not valid JSON: ${flags.body}`)
     }
     if (flags['dry-run']) {
-      await printDryRun('api.post', { method: 'POST', path: args.path, body, noAuth: flags['no-auth'], target: flags.target, baseURL: flags['base-url'] }, flags.json ? 'json' : 'human')
+      await printDryRun('api.post', { method: 'POST', path: args.path, body, noAuth: flags['no-auth'], target: flags.target, baseURL: flags['base-url'] }, format)
       return
     }
     if (flags['no-auth']) {
-      await printData(await appRequest('POST', args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), flags.json ? 'json' : 'human')
+      await printData(await appRequest('POST', args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), format)
       return
     }
     const client = await createClient(flags)
-    await printData(await client.post(args.path, { body }), flags.json ? 'json' : 'human')
+    await printData(await client.post(args.path, { body }), format)
   }
 }

@@ -30,21 +30,13 @@ export default class BridgesShow extends BeeperCommand {
 
 function resolveBridge(items: Array<Record<string, unknown>>, input: string): Record<string, unknown> {
   const normalizedInput = normalize(input)
-  const exact = items.filter(item => [
-    item.id,
-    item.displayName,
-    item.network,
-    item.type,
-  ].some(value => normalize(value) === normalizedInput))
+  const fields = (item: Record<string, unknown>): unknown[] => [item.id, item.displayName, item.network, item.type]
+
+  const exact = items.filter(item => fields(item).some(value => normalize(value) === normalizedInput))
   if (exact.length === 1) return exact[0]!
   if (exact.length > 1) throw ambiguousBridge(input, exact)
 
-  const partial = items.filter(item => [
-    item.id,
-    item.displayName,
-    item.network,
-    item.type,
-  ].some(value => normalize(value).includes(normalizedInput)))
+  const partial = items.filter(item => fields(item).some(value => normalize(value).includes(normalizedInput)))
   if (partial.length === 1) return partial[0]!
   if (partial.length > 1) throw ambiguousBridge(input, partial)
 

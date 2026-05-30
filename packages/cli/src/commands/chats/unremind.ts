@@ -1,5 +1,4 @@
 import { Flags } from '@oclif/core'
-import { createReadStream } from 'node:fs'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { printDryRun, printSuccess } from '../../lib/output.js'

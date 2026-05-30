@@ -16,11 +16,12 @@ export default class ApiGet extends BeeperCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(ApiGet)
+    const format = flags.json ? 'json' : 'human'
     if (flags['no-auth']) {
-      await printData(await appRequest('GET', args.path, { baseURL: flags['base-url'], target: flags.target, token: false }), flags.json ? 'json' : 'human')
+      await printData(await appRequest('GET', args.path, { baseURL: flags['base-url'], target: flags.target, token: false }), format)
       return
     }
     const client = await createClient(flags)
-    await printData(await client.get(args.path), flags.json ? 'json' : 'human')
+    await printData(await client.get(args.path), format)
   }
 }

@@ -137,21 +137,21 @@ export default class Setup extends BeeperCommand {
       } else if (flags.json || !process.stdin.isTTY) {
         await printData(setupStateOutput(detected, target), flags.json ? 'json' : 'human')
         return
-      } else if (detected.kind === 'installed-not-running' && !flags.json && process.stdin.isTTY) {
+      } else if (detected.kind === 'installed-not-running') {
         printStatus('Found Beeper Desktop on this device.', 'installed, not running')
         const shouldLaunch = flags.yes || await promptYesNoDefaultYes('Launch Beeper Desktop now?')
         if (shouldLaunch) {
           await launchAndPoll(target, setupCmd, flags)
           return
         }
-      } else if (detected.kind === 'running-signed-out' && !flags.json && process.stdin.isTTY) {
+      } else if (detected.kind === 'running-signed-out') {
         printStatus('Found Beeper Desktop on this device.', 'running, signed out')
         const shouldOpen = flags.yes || await promptYesNoDefaultYes('Open Beeper Desktop so you can sign in?')
         if (shouldOpen) {
           await launchAndPoll(target, setupCmd, flags)
           return
         }
-      } else if (detected.kind === 'session-unreadable' && !flags.json && process.stdin.isTTY) {
+      } else if (detected.kind === 'session-unreadable') {
         printStatus('Found Beeper Desktop on this device.', 'signed in, but CLI could not read the local session')
         process.stdout.write('You can still connect through Beeper Desktop.\n')
         if (flags.debug) process.stdout.write(`\n${detected.reason}\n`)
@@ -161,7 +161,7 @@ export default class Setup extends BeeperCommand {
           await this.setupOAuth(target, flags)
           return
         }
-      } else if (detected.kind === 'not-installed' && !flags.json && process.stdin.isTTY) {
+      } else if (detected.kind === 'not-installed') {
         await this.setupFromChoice(flags)
         return
       }
@@ -234,8 +234,7 @@ export default class Setup extends BeeperCommand {
   private async setupManaged(type: 'desktop' | 'server', flags: SetupFlags): Promise<void> {
     if (flags.install) {
       if ((flags.json || !process.stdin.isTTY) && !flags.yes) throw new Error('Install requires --install --yes in non-interactive mode.')
-      if (type === 'desktop') await installWithCopy('desktop', flags)
-      else await installWithCopy('server', flags)
+      await installWithCopy(type, flags)
     }
     const id = flags.target ?? type
     const target = await readTarget(id) ?? await createProfileTarget(type, id, { serverEnv: flags['server-env'], port: undefined })

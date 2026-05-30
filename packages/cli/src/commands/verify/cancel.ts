@@ -10,11 +10,11 @@ export default class AuthVerifyCancel extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthVerifyCancel)
     ensureWritable(flags)
-    const client = await createClient(flags)
     if (flags['dry-run']) {
       await printDryRun('verify.cancel', { id: flags.id ?? 'active' }, flags.json ? 'json' : 'human')
       return
     }
+    const client = await createClient(flags)
     await printData(await client.app.verifications.cancel(flags.id ?? 'active', {}), flags.json ? 'json' : 'human')
   }
 }

@@ -2,7 +2,7 @@ import { Args, Flags } from '@oclif/core'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { BeeperCommand } from '../../lib/command.js'
-import { customTargetID, readTarget, resolveTarget } from '../../lib/targets.js'
+import { customTargetID, resolveTarget } from '../../lib/targets.js'
 import { desktopLogDir, profileErrorLogPath, profileLogPath } from '../../lib/profiles.js'
 
 export default class TargetsLogs extends BeeperCommand {
@@ -26,8 +26,7 @@ export default class TargetsLogs extends BeeperCommand {
     }
     const files = await listLogFiles(desktopLogDir(target.managed ? target : undefined))
     const selected = flags.all ? files : files.slice(0, flags.files)
-    for (const file of files) {
-      if (!selected.includes(file)) continue
+    for (const file of selected) {
       await printLogFile(file, flags.lines)
     }
   }
