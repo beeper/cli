@@ -22,8 +22,9 @@ export default class ResolveAccount extends BeeperCommand {
     const ids = await resolveAccountIDs(client, [args.selector], { allowMultiplePerInput: true, applyDefault: false })
     const candidates = rows.filter((row: any) => ids?.includes(String(row.accountID ?? row.id)))
     if (!candidates.length) throw notFound(`No account matches "${args.selector}"`, { selector: args.selector, kind: 'account' })
-    const selected = flags.pick ? candidates[flags.pick - 1] : candidates.length === 1 ? candidates[0] : undefined
-    if (flags.pick && !selected) throw notFound(`--pick ${flags.pick} is outside the ${candidates.length} matching accounts`, { selector: args.selector, pick: flags.pick, count: candidates.length })
+    const pick = flags.pick
+    const selected = pick !== undefined ? candidates[pick - 1] : candidates.length === 1 ? candidates[0] : undefined
+    if (pick !== undefined && !selected) throw notFound(`--pick ${pick} is outside the ${candidates.length} matching accounts`, { selector: args.selector, pick, count: candidates.length })
     await printData({
       selector: args.selector,
       kind: 'account',

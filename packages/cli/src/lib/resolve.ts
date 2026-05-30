@@ -36,7 +36,7 @@ export async function resolveAccountIDs(
       throw ambiguous(formatAmbiguous(`account "${input}"`, matches.map(formatAccount)), {
         selector: input,
         kind: 'account',
-        candidates: matches.map((account, index) => ({ pick: index + 1, id: String(account.accountID ?? account.id), label: formatAccount(account), raw: account })),
+        candidates: matches.map((account, index) => ({ pick: index + 1, id: String(account.accountID ?? account.id), label: formatAccount(account) })),
       })
     }
     resolved.push(...matches.map(account => String(account.accountID)))
@@ -97,7 +97,6 @@ export async function resolveChatID(client: any, input: string, options: ChatRes
       title: chat.title ? String(chat.title) : undefined,
       network: chat.network ? String(chat.network) : undefined,
       label: formatChat(chat),
-      raw: chat,
     })),
   })
 }

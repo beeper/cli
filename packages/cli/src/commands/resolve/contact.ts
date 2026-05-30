@@ -25,13 +25,15 @@ export default class ResolveContact extends BeeperCommand {
       try {
         const result = await client.accounts.contacts.search(accountID, { query: args.selector })
         candidates.push(...result.items.slice(0, flags.limit).map((item: unknown) => ({ ...(item as Record<string, unknown>), accountID })))
-      } catch {
-        // Keep searching accounts that support lookup for this selector shape.
+      } catch (error) {
+        if (shouldIgnoreLookupError(error)) continue
+        throw error
       }
     }
     if (!candidates.length) throw notFound(`No contact matches "${args.selector}"`, { selector: args.selector, kind: 'contact' })
-    const selected = flags.pick ? candidates[flags.pick - 1] : candidates.length === 1 ? candidates[0] : undefined
-    if (flags.pick && !selected) throw notFound(`--pick ${flags.pick} is outside the ${candidates.length} matching contacts`, { selector: args.selector, pick: flags.pick, count: candidates.length })
+    const pick = flags.pick
+    const selected = pick !== undefined ? candidates[pick - 1] : candidates.length === 1 ? candidates[0] : undefined
+    if (pick !== undefined && !selected) throw notFound(`--pick ${pick} is outside the ${candidates.length} matching contacts`, { selector: args.selector, pick, count: candidates.length })
     await printData({
       selector: args.selector,
       kind: 'contact',
@@ -50,6 +52,12 @@ function contactCandidate(contact: Record<string, unknown>, pick: number): Recor
     username: contact.username,
     phoneNumber: contact.phoneNumber,
     email: contact.email,
-    raw: contact,
   }
+}
+
+function shouldIgnoreLookupError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const status = (error as Error & { status?: number; statusCode?: number }).status ?? (error as Error & { status?: number; statusCode?: number }).statusCode
+  if (status === 400 || status === 404) return true
+  return /\b(400|404)\b|not supported|not found/i.test(error.message)
 }
