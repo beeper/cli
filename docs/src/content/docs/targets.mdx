@@ -18,8 +18,8 @@ commands use it unless `--target <name>` overrides.
 
 ```sh
 beeper targets list
-beeper targets add desktop [name] [--port N] [--server-env local|dev|staging|prod] [--default]
-beeper targets add server  [name] [--port N] [--server-env local|dev|staging|prod] [--default]
+beeper targets add desktop [name] [--port N] [--server-env prod|staging] [--default]
+beeper targets add server  [name] [--port N] [--server-env prod|staging] [--default]
 beeper targets add remote  <name> <url> [--default]
 beeper targets use <name>
 beeper targets show [name]

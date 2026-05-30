@@ -9,7 +9,7 @@ import { loginWithPKCE } from '../lib/oauth.js'
 import { findDesktopAppPath, launchDesktopApp, startProfile } from '../lib/profiles.js'
 import { interactiveEmailSetup } from '../lib/setup-login.js'
 import { renderStartupLogo } from '../lib/logo.js'
-import { SERVER_ENVIRONMENTS, SERVER_ENV_API_BASE_URLS, normalizeServerEnv } from '../lib/server-env.js'
+import { SERVER_ENV_API_BASE_URLS, normalizeServerEnv } from '../lib/server-env.js'
 import {
   builtInDesktopTargetID,
   createProfileTarget,
@@ -36,7 +36,7 @@ export default class Setup extends BeeperCommand {
     desktop: Flags.boolean({ default: false, description: 'Set up a local Beeper Desktop target' }),
     install: Flags.boolean({ default: false, description: 'Allow installing missing managed runtime' }),
     channel: Flags.string({ options: ['stable', 'nightly'], default: 'stable', description: 'Install release channel' }),
-    'server-env': Flags.string({ options: SERVER_ENVIRONMENTS, default: 'prod', description: 'Server feed environment' }),
+    'server-env': Flags.string({ default: 'prod', description: 'Server feed environment: prod or staging' }),
     email: Flags.string({ description: 'Sign in with an email address' }),
     username: Flags.string({ description: 'Username to use if setup creates a new account' }),
   }
