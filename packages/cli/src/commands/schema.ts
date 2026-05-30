@@ -24,8 +24,8 @@ export default class Schema extends BeeperCommand {
   }
 
   async run(): Promise<void> {
-    await this.parse(Schema)
-    const pathArgs = this.argv.filter(arg => !arg.startsWith('-'))
+    const { argv } = await this.parse(Schema)
+    const pathArgs = argv as string[]
     const requested = pathArgs.length > 0 ? pathArgs.join(' ') : undefined
     const manifestByCommand = new Map(commandManifest.map(item => [item.command, item]))
     const commands = (this.config.commands as RawCommand[])
@@ -121,15 +121,19 @@ function outputShape(kind: string): Record<string, unknown> {
     case 'list': {
       return { kind, envelope, data: 'array' }
     }
+
     case 'send-result': {
       return { kind, envelope, data: { chatID: 'string', pendingMessageID: 'string?', state: 'string?' } }
     }
+
     case 'stream': {
       return { kind, data: 'jsonl events or RPC lines' }
     }
+
     case 'success': {
       return { kind, envelope, data: { message: 'string', detail: 'string?', data: 'object?' } }
     }
+
     default: {
       return { kind, envelope, data: 'object' }
     }
