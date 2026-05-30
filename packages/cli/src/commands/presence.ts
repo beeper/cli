@@ -17,15 +17,15 @@ export default class Presence extends BeeperCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Presence)
-    ensureWritable(flags)
     if (flags.duration !== undefined && flags.duration <= 0) throw new Error('--duration must be a positive integer (seconds)')
     if (flags.duration !== undefined && flags.state !== 'typing') throw new Error('--duration only applies when --state is typing')
-    const client = await createClient(flags)
-    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     if (flags['dry-run']) {
-      await printDryRun('presence', { chatID, state: flags.state, durationSeconds: flags.duration }, flags.json ? 'json' : 'human')
+      await printDryRun('presence', { chat: flags.chat, pick: flags.pick, state: flags.state, durationSeconds: flags.duration }, flags.json ? 'json' : 'human')
       return
     }
+    ensureWritable(flags)
+    const client = await createClient(flags)
+    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     const post = (state: 'typing' | 'paused') =>
       client.post(`/v1/chats/${encodeURIComponent(chatID)}/typing`, { body: { state } })
 

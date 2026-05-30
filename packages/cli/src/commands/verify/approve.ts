@@ -9,12 +9,12 @@ export default class AuthVerifyApprove extends BeeperCommand {
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthVerifyApprove)
-    ensureWritable(flags)
-    const client = await createClient(flags)
     if (flags['dry-run']) {
       await printDryRun('verify.approve', { id: flags.id ?? 'active' }, flags.json ? 'json' : 'human')
       return
     }
+    ensureWritable(flags)
+    const client = await createClient(flags)
     await printData(await client.app.verifications.accept(flags.id ?? 'active'), flags.json ? 'json' : 'human')
   }
 }

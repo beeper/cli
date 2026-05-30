@@ -7,15 +7,15 @@ export default class AuthLogout extends BeeperCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthLogout)
-    ensureWritable(flags)
+    if (!flags['dry-run']) ensureWritable(flags)
     const target = await resolveTarget({ target: flags.target, baseURL: flags['base-url'] })
-    if (process.env.BEEPER_ACCESS_TOKEN && !target.auth?.accessToken) {
-      throw new Error('auth logout cannot clear BEEPER_ACCESS_TOKEN from the environment; unset it in the calling process.')
-    }
     const token = target.auth?.accessToken
     if (flags['dry-run']) {
       await printDryRun('auth.logout', { target: target.id, baseURL: target.baseURL, hadToken: Boolean(token), revokeToken: Boolean(token) }, flags.json ? 'json' : 'human')
       return
+    }
+    if (process.env.BEEPER_ACCESS_TOKEN && !target.auth?.accessToken) {
+      throw new Error('auth logout cannot clear BEEPER_ACCESS_TOKEN from the environment; unset it in the calling process.')
     }
     let revoked = false
     if (token) {

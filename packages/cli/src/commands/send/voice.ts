@@ -21,11 +21,9 @@ export default class SendVoice extends BeeperCommand {
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(SendVoice)
-    ensureWritable(flags)
-    const client = await createClient(flags)
-    const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
-    const request = {
-      chatID,
+    const dryRunRequest = {
+      chat: flags.to,
+      pick: flags.pick,
       file: flags.file,
       fileName: flags.filename,
       mimeType: flags.mime,
@@ -37,11 +35,15 @@ export default class SendVoice extends BeeperCommand {
       waitTimeoutMs: flags['wait-timeout'],
     }
     if (flags['dry-run']) {
-      await printDryRun('send.voice', request, flags.json ? 'json' : 'human')
+      await printDryRun('send.voice', dryRunRequest, flags.json ? 'json' : 'human')
       return
     }
+
+    ensureWritable(flags)
+    const client = await createClient(flags)
+    const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
     await printData(
-      await sendMessage(client, request),
+      await sendMessage(client, { ...dryRunRequest, chatID }),
       flags.json ? 'json' : 'human',
     )
   }

@@ -29,7 +29,6 @@ export default class AccountsAdd extends BeeperCommand {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(AccountsAdd)
-    ensureWritable(flags)
     const client = await createClient(flags)
 
     if (!args.bridge) {
@@ -83,6 +82,7 @@ export default class AccountsAdd extends BeeperCommand {
       return
     }
 
+    ensureWritable(flags)
     const step = await client.bridges.loginSessions.create(accountType.id, {
       flowID,
       loginID: flags['login-id'],

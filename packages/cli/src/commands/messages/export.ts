@@ -23,12 +23,10 @@ export default class MessagesExport extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(MessagesExport)
     if (flags['before-cursor'] && flags['after-cursor']) throw new Error('Use only one of --before-cursor or --after-cursor')
-    if (flags.output !== '-') ensureWritable(flags)
-    const client = await createClient(flags)
-    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     if (flags['dry-run']) {
       await printDryRun('messages.export', {
-        chatID,
+        chat: flags.chat,
+        pick: flags.pick,
         output: flags.output,
         beforeCursor: flags['before-cursor'],
         afterCursor: flags['after-cursor'],
@@ -39,6 +37,9 @@ export default class MessagesExport extends BeeperCommand {
       }, flags.json ? 'json' : 'human')
       return
     }
+    if (flags.output !== '-') ensureWritable(flags)
+    const client = await createClient(flags)
+    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     const cursor = flags['before-cursor'] ?? flags['after-cursor']
     const direction = flags['before-cursor'] ? 'before' : flags['after-cursor'] ? 'after' : undefined
     const afterTs = flags.after ? Date.parse(flags.after) : undefined

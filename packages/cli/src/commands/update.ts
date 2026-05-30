@@ -23,7 +23,7 @@ export default class Update extends BeeperCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(Update)
-    if (!flags.check) ensureWritable(flags)
+    if (!flags.check && !flags['dry-run']) ensureWritable(flags)
     const selected = flags.cli || flags.desktop || flags.server
     if (flags['dry-run'] && !flags.check) {
       await printDryRun('update', { cli: !selected || flags.cli, desktop: !selected || flags.desktop, server: !selected || flags.server }, flags.json ? 'json' : 'human')

@@ -17,15 +17,15 @@ export default class ChatsDisappear extends BeeperCommand {
   }
   async run(): Promise<void> {
     const { flags } = await this.parse(ChatsDisappear)
-    ensureWritable(flags)
-    const client = await createClient(flags)
-    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     const expiry = flags.seconds.toLowerCase() === 'off' ? null : Number(flags.seconds)
     if (expiry !== null && (!Number.isInteger(expiry) || expiry < 0)) throw new Error('--seconds must be a positive integer or "off"')
     if (flags['dry-run']) {
-      await printDryRun('chats.disappear', { chatID, messageExpirySeconds: expiry }, flags.json ? 'json' : 'human')
+      await printDryRun('chats.disappear', { chat: flags.chat, pick: flags.pick, messageExpirySeconds: expiry }, flags.json ? 'json' : 'human')
       return
     }
+    ensureWritable(flags)
+    const client = await createClient(flags)
+    const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     await printData(await client.chats.update(chatID, { messageExpirySeconds: expiry }), flags.json ? 'json' : 'human')
   }
 }
