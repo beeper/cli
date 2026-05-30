@@ -9,8 +9,8 @@ import starlight from '@astrojs/starlight';
 // When you pick a home for the docs, set `site` to the canonical origin (used
 // for sitemap + canonical URLs) and, if serving from a sub-path, set `base`.
 export default defineConfig({
-  site: 'https://example.com',
-  base: '/',
+  site: 'https://beeper.github.io',
+  base: '/cli/',
   output: 'static',
   trailingSlash: 'always',
   integrations: [
@@ -27,12 +27,12 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/beeper/desktop-api-cli',
+          href: 'https://github.com/beeper/cli',
         },
       ],
       editLink: {
         baseUrl:
-          'https://github.com/beeper/desktop-api-cli/edit/main/docs/',
+          'https://github.com/beeper/cli/edit/main/docs/',
       },
       customCss: ['./src/styles/theme.css'],
       // Starlight ships full-text search (Pagefind) and dark mode by default.
@@ -84,7 +84,7 @@ export default defineConfig({
             { label: 'Updating', link: '/update/' },
             {
               label: 'Full command reference',
-              link: 'https://github.com/beeper/desktop-api-cli/blob/main/packages/cli/README.md',
+              link: 'https://github.com/beeper/cli/blob/main/packages/cli/README.md',
               attrs: { target: '_blank' },
             },
             {

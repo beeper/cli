@@ -33,11 +33,10 @@ const commandList = commands.map(command => {
 const examplesByID = new Map(commandManifest.map(item => [item.command, item.examples ?? []]));
 const commandSections = commands.map(command => commandSection(command)).join('\n\n');
 
-// Origin where the Astro docs site (in `docs/`) is published. Keep this in sync
-// with `site` in `docs/astro.config.mjs`. Until the docs have a permanent home
-// this is a placeholder; flip both in one commit when you pick a host.
-const docsUrl = 'https://example.com';
-const repoUrl = 'https://github.com/beeper/desktop-api-cli';
+// Public URL where the Astro docs site (in `docs/`) is published. Keep this in
+// sync with `site` + `base` in `docs/astro.config.mjs`.
+const docsUrl = 'https://beeper.github.io/cli';
+const repoUrl = 'https://github.com/beeper/cli';
 
 const intro = `<div align="center">
 
