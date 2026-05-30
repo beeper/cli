@@ -2,7 +2,7 @@ import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { readTarget, resolveTarget } from '../../lib/targets.js'
 import { assertServerProfile, stopProfile } from '../../lib/profiles.js'
-import { printSuccess } from '../../lib/output.js'
+import { printDryRun, printSuccess } from '../../lib/output.js'
 
 export default class TargetsStop extends BeeperCommand {
   static override summary = 'Stop a local Beeper Server target'
@@ -13,6 +13,10 @@ export default class TargetsStop extends BeeperCommand {
     const target = await resolveTarget({ target: args.name ?? flags.target, baseURL: flags['base-url'] })
     if (!target) throw new Error(`Unknown Beeper target "${args.name}".`)
     assertServerProfile(target)
+    if (flags['dry-run']) {
+      await printDryRun('targets.stop', { target }, flags.json ? 'json' : 'human')
+      return
+    }
     await stopProfile(target)
     await printSuccess({ message: `Stopped target: ${target.id}`, data: { target } }, flags.json ? 'json' : 'human')
   }

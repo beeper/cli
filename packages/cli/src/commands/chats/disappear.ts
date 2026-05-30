@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsDisappear extends BeeperCommand {
@@ -22,6 +22,10 @@ export default class ChatsDisappear extends BeeperCommand {
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     const expiry = flags.seconds.toLowerCase() === 'off' ? null : Number(flags.seconds)
     if (expiry !== null && (!Number.isInteger(expiry) || expiry < 0)) throw new Error('--seconds must be a positive integer or "off"')
+    if (flags['dry-run']) {
+      await printDryRun('chats.disappear', { chatID, messageExpirySeconds: expiry }, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.chats.update(chatID, { messageExpirySeconds: expiry }), flags.json ? 'json' : 'human')
   }
 }

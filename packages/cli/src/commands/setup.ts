@@ -23,7 +23,7 @@ import {
   type AuthSource,
   type Target,
 } from '../lib/targets.js'
-import { printData, printSuccess } from '../lib/output.js'
+import { printData, printDryRun, printSuccess } from '../lib/output.js'
 
 export default class Setup extends BeeperCommand {
   static override summary = 'Make the selected target ready for messaging'
@@ -57,6 +57,22 @@ export default class Setup extends BeeperCommand {
     if (authModeCount > 1) throw new Error('Specify at most one of --local, --oauth, or --email')
     if ((flags.local || flags.oauth) && (flags.remote || flags.server || flags.desktop)) {
       throw new Error('Use --local or --oauth with an existing target, not with --remote, --server, or --desktop.')
+    }
+    if (flags['dry-run']) {
+      await printDryRun('setup', {
+        target: flags.target,
+        baseURL: flags['base-url'],
+        targetMode: flags.remote ? 'remote' : flags.server ? 'server' : flags.desktop ? 'desktop' : 'selected',
+        authMode: flags.local ? 'local' : flags.oauth ? 'oauth' : flags.email ? 'email' : 'auto',
+        remote: flags.remote,
+        install: flags.install,
+        channel: flags.channel,
+        serverEnv: flags['server-env'],
+        email: flags.email,
+        username: flags.username,
+        yes: flags.yes,
+      }, flags.json ? 'json' : 'human')
+      return
     }
     if (flags.events) writeEvent('setup_step', { step: 'start', target: flags.target })
 

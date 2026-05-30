@@ -1,7 +1,7 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printSuccess } from '../../lib/output.js'
+import { printDryRun, printSuccess } from '../../lib/output.js'
 import { resolveAccountID } from '../../lib/resolve.js'
 
 export default class AccountsRemove extends BeeperCommand {
@@ -14,6 +14,10 @@ export default class AccountsRemove extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
     const accountID = await resolveAccountID(client, args.account)
+    if (flags['dry-run']) {
+      await printDryRun('accounts.remove', { accountID }, flags.json ? 'json' : 'human')
+      return
+    }
     const accounts = client.accounts as any
     if (accounts.delete) await accounts.delete(accountID)
     else if (accounts.remove) await accounts.remove(accountID)

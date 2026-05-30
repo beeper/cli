@@ -1,13 +1,18 @@
-# targets
+---
+title: Targets
+description: Manage local Desktop, managed Server, and remote Beeper targets — add, switch, start/stop a managed runtime, or remove a target.
+---
 
-Read when: managing local Desktop, managed Server, or remote Beeper API
-targets — adding, switching, starting/stopping a managed runtime, or removing
-a target.
+import { Aside } from '@astrojs/starlight/components';
 
-A *target* is a runnable or reachable Beeper endpoint profile: local Server,
-local Desktop, Desktop API, or a profile that combines Desktop/Server runtime
-state. The CLI tracks an optional default; commands use it unless
-`--target <name>` overrides.
+A **target** is a runnable or reachable Beeper endpoint profile: local Desktop,
+local Server, or a remote Desktop/Server. The CLI tracks an optional default;
+commands use it unless `--target <name>` overrides.
+
+<Aside type="tip" title="Read when">
+  Managing local Desktop, managed Server, or remote Beeper API targets — adding,
+  switching, starting/stopping a managed runtime, or removing a target.
+</Aside>
 
 ## Commands
 
@@ -27,12 +32,13 @@ beeper targets remove <name>
 
 ## Notes
 
-- `list` prints all configured targets; the one used by default has `default: true`.
+- `list` prints all configured targets; the default one has `default: true`.
 - `show` defaults to the currently-selected target if no name is given.
 - `status` checks endpoint and process reachability. For setup/auth/encryption
   diagnostics use `beeper doctor`.
-- `start`/`stop`/`restart` only apply to managed targets (`type: desktop|server`); they error for `remote`.
-- `enable`/`disable` registers/unregisters the launchd or systemd unit that
+- `start` / `stop` / `restart` only apply to managed targets (`type:
+  desktop|server`); they error for `remote`.
+- `enable` / `disable` registers or unregisters the launchd or systemd unit that
   starts the managed target at login.
 - Removing the active default clears the `defaultTarget` config field.
 - `BEEPER_TARGET=<name>` overrides the default for a single shell.
@@ -48,3 +54,9 @@ beeper targets use work
 beeper targets logs work | less
 beeper targets restart work
 ```
+
+## See also
+
+- [Connect a target](/connect/) — first-time setup for each target type.
+- [Auth & verification](/auth/) — sign-in state and encryption readiness.
+- [Configuration](/config/) — where the selected target is stored.

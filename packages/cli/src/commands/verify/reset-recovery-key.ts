@@ -1,6 +1,6 @@
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { promptYesNoDefaultYes } from '../../lib/app-api.js'
 
 export default class AuthVerifyResetRecoveryKey extends BeeperCommand {
@@ -10,6 +10,10 @@ export default class AuthVerifyResetRecoveryKey extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyResetRecoveryKey)
     ensureWritable(flags)
     const client = await createClient(flags)
+    if (flags['dry-run']) {
+      await printDryRun('verify.reset-recovery-key', { confirmWithYes: flags.yes }, flags.json ? 'json' : 'human')
+      return
+    }
     const reset = await client.app.login.verification.recoveryKey.reset.create({})
 
     if ((flags.json || !process.stdin.isTTY) && !flags.yes) {

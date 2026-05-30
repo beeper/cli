@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsPriority extends BeeperCommand {
@@ -19,6 +19,10 @@ export default class ChatsPriority extends BeeperCommand {
     const update = flags.level === 'inbox'
       ? { isArchived: false, isLowPriority: false }
       : { isLowPriority: true }
+    if (flags['dry-run']) {
+      await printDryRun('chats.priority', { chatID, level: flags.level, update }, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.chats.update(chatID, update), flags.json ? 'json' : 'human')
   }
 }

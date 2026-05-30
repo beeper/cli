@@ -1,6 +1,15 @@
-# beeper — One CLI for all your chats
+<div align="center">
 
-> Built for you and your agent. Batteries included.
+# beeper
+
+**One CLI for all your chats.** Built for you and your agent — batteries included.
+
+[![npm](https://img.shields.io/npm/v/beeper-cli.svg?label=npm&color=6E56F8)](https://www.npmjs.com/package/beeper-cli)
+[![license](https://img.shields.io/badge/license-MIT-6E56F8.svg)](https://github.com/beeper/desktop-api-cli/blob/main/packages/cli/LICENSE)
+[![docs](https://img.shields.io/badge/docs-online-6E56F8.svg)](https://example.com)
+[![built with Bun](https://img.shields.io/badge/built%20with-Bun-6E56F8.svg)](https://bun.sh)
+
+</div>
 
 Talks to Beeper Desktop on this machine, to a Beeper Server you self-host, or
 to either one running somewhere else. Send and receive across the chat
@@ -13,7 +22,7 @@ Facebook Messenger · X (Twitter) DMs · LinkedIn · Slack ·
 Google Messages (RCS/SMS) · Google Chat · Matrix · IRC · Bluesky.
 Run `beeper bridges list` for the live list on your target.
 
-Command manual: `beeper man` · CLI docs: `beeper docs`
+📖 **[Read the docs](https://example.com)** · command manual: `beeper man` · open docs: `beeper docs`
 
 ## Features
 
@@ -193,19 +202,22 @@ WhatsApp, Telegram, Discord, iMessage, and the rest show up under `accounts list
 
 ## Documentation
 
+Full documentation lives at **[example.com](https://example.com)**
+(built from [`docs/`](docs/) with Astro Starlight — a fully static site).
+
 | Topic | Page | Commands |
 | --- | --- | --- |
-| **Setup + install** | [setup](docs/setup.md) · [auth](docs/auth.md) | `setup` · `install desktop` · `install server` · `verify` · `status` · `doctor` · `auth status` |
-| **Targets** | [targets](docs/targets.md) | `targets list` · `targets add desktop` · `targets add server` · `targets add remote` · `targets use` · `targets status` · `targets logs` |
-| **Bridges + accounts** | [accounts](docs/accounts.md) | `bridges list` · `bridges show` · `accounts list` · `accounts add` · `accounts show` · `accounts use` · `accounts remove` |
-| **Chats** | [chats](docs/chats.md) | `chats list` · `chats search` · `chats show` · `chats start` · `chats archive` · `chats pin` · `chats mute` · `chats priority` · `chats remind` · `chats rename` · `chats draft` · `chats focus` |
-| **Messages** | [messages](docs/messages.md) · [send](docs/send.md) · [presence](docs/presence.md) | `messages list` · `messages search` · `messages export` · `send text` · `send file` · `send sticker` · `send voice` · `send react` · `presence` |
-| **Contacts + media** | [contacts](docs/contacts.md) · [media](docs/media.md) · [export](docs/export.md) | `contacts list` · `contacts search` · `media download` · `export` |
-| **Automation** | [watch](docs/watch.md) · [rpc](docs/rpc.md) · [api](docs/api.md) | `watch` · `watch --webhook` · `rpc` · `man` · `api get` · `api post` · `api request` |
-| **Maintenance** | [config](docs/config.md) · [update](docs/update.md) | `update` · `config` · `completion` · `docs` · `version` |
+| **Setup + install** | [connect](https://example.com/connect/) · [install](https://example.com/install/) · [auth](https://example.com/auth/) | `setup` · `install desktop` · `install server` · `verify` · `status` · `doctor` · `auth status` |
+| **Targets** | [targets](https://example.com/targets/) | `targets list` · `targets add desktop` · `targets add server` · `targets add remote` · `targets use` · `targets status` · `targets logs` |
+| **Bridges + accounts** | [accounts](https://example.com/accounts/) | `bridges list` · `bridges show` · `accounts list` · `accounts add` · `accounts show` · `accounts use` · `accounts remove` |
+| **Chats** | [chats](https://example.com/chats/) | `chats list` · `chats search` · `chats show` · `chats start` · `chats archive` · `chats pin` · `chats mute` · `chats priority` · `chats remind` · `chats rename` · `chats draft` · `chats focus` |
+| **Messages** | [messages](https://example.com/messages/) · [send](https://example.com/send/) · [presence](https://example.com/presence/) | `messages list` · `messages search` · `messages export` · `send text` · `send file` · `send sticker` · `send voice` · `send react` · `presence` |
+| **Contacts + media** | [contacts](https://example.com/contacts/) · [media](https://example.com/media/) · [export](https://example.com/export/) | `contacts list` · `contacts search` · `media download` · `export` |
+| **Automation** | [scripting](https://example.com/scripting/) · [watch](https://example.com/watch/) · [rpc](https://example.com/rpc/) · [api](https://example.com/api/) | `watch` · `watch --webhook` · `rpc` · `man` · `api get` · `api post` · `api request` |
+| **Maintenance** | [config](https://example.com/config/) · [update](https://example.com/update/) | `update` · `config` · `completion` · `docs` · `version` |
 
 Use `beeper docs` to open the CLI docs and `beeper man` to print the local
-command manual.
+command manual. To work on the docs site locally: `cd docs && bun install && bun run dev`.
 
 ## Configuration
 

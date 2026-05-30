@@ -1,6 +1,6 @@
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { clearTargetAuth, resolveTarget } from '../../lib/targets.js'
-import { printSuccess } from '../../lib/output.js'
+import { printDryRun, printSuccess } from '../../lib/output.js'
 
 export default class AuthLogout extends BeeperCommand {
   static override summary = 'Clear stored authentication'
@@ -13,6 +13,10 @@ export default class AuthLogout extends BeeperCommand {
       throw new Error('auth logout cannot clear BEEPER_ACCESS_TOKEN from the environment; unset it in the calling process.')
     }
     const token = target.auth?.accessToken
+    if (flags['dry-run']) {
+      await printDryRun('auth.logout', { target: target.id, baseURL: target.baseURL, hadToken: Boolean(token), revokeToken: Boolean(token) }, flags.json ? 'json' : 'human')
+      return
+    }
     let revoked = false
     if (token) {
       const response = await fetch(new URL('/oauth/revoke', target.baseURL), {

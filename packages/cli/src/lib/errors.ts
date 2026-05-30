@@ -25,10 +25,14 @@ export type ExitCode = typeof ExitCodes[keyof typeof ExitCodes]
 export class CLIError extends Error {
   readonly exitCode: ExitCode
   readonly tryMessage?: string
-  constructor(message: string, exitCode: ExitCode, tryMessage?: string) {
+  readonly code?: string
+  readonly data?: Record<string, unknown>
+  constructor(message: string, exitCode: ExitCode, tryMessage?: string, options: { code?: string; data?: Record<string, unknown> } = {}) {
     super(message)
     this.exitCode = exitCode
     this.tryMessage = tryMessage
+    this.code = options.code
+    this.data = options.data
     this.name = 'CLIError'
   }
 }
@@ -38,8 +42,8 @@ export class CLIError extends Error {
  * Renders as a single-line red message. Do not include a stack trace.
  */
 export class AbortError extends CLIError {
-  constructor(message: string, exitCode: ExitCode = ExitCodes.Generic, tryMessage?: string) {
-    super(message, exitCode, tryMessage)
+  constructor(message: string, exitCode: ExitCode = ExitCodes.Generic, tryMessage?: string, options: { code?: string; data?: Record<string, unknown> } = {}) {
+    super(message, exitCode, tryMessage, options)
     this.name = 'AbortError'
   }
 }
@@ -50,7 +54,7 @@ export class AbortError extends CLIError {
  */
 export class BugError extends CLIError {
   constructor(message: string, tryMessage?: string) {
-    super(message, ExitCodes.Generic, tryMessage)
+    super(message, ExitCodes.Generic, tryMessage, { code: 'internal_error' })
     this.name = 'BugError'
   }
 }
@@ -58,5 +62,5 @@ export class BugError extends CLIError {
 export const usageError = (message: string) => new AbortError(message, ExitCodes.Usage)
 export const authRequired = (message: string) => new AbortError(message, ExitCodes.AuthRequired)
 export const notReady = (message: string) => new AbortError(message, ExitCodes.NotReady)
-export const notFound = (message: string) => new AbortError(message, ExitCodes.NotFound)
-export const ambiguous = (message: string) => new AbortError(message, ExitCodes.Ambiguous)
+export const notFound = (message: string, data?: Record<string, unknown>) => new AbortError(message, ExitCodes.NotFound, undefined, { code: 'not_found', data })
+export const ambiguous = (message: string, data?: Record<string, unknown>) => new AbortError(message, ExitCodes.Ambiguous, 'Pass an exact ID or --pick N.', { code: 'ambiguous_selector', data })

@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData, printSuccess } from '../../lib/output.js'
+import { printDryRun, printSuccess } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class MessagesDelete extends BeeperCommand {
@@ -17,6 +17,10 @@ export default class MessagesDelete extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
+    if (flags['dry-run']) {
+      await printDryRun('messages.delete', { chatID, messageID: flags.id, forEveryone: flags['for-everyone'] }, flags.json ? 'json' : 'human')
+      return
+    }
     await client.messages.delete(flags.id, { chatID, forEveryone: flags['for-everyone'] || undefined })
     await printSuccess({ message: flags['for-everyone'] ? 'Deleted for everyone' : 'Deleted', data: { chatID, messageID: flags.id, forEveryone: flags['for-everyone'] } }, flags.json ? 'json' : 'human')
   }

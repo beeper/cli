@@ -106,11 +106,17 @@ const expectedCommands = [
   'contacts list',
   'contacts search',
   'contacts show',
+  'resolve chat',
+  'resolve account',
+  'resolve contact',
+  'resolve target',
+  'resolve bridge',
   'media download',
   'export',
   'watch',
   'rpc',
   'man',
+  'schema',
   'doctor',
   'status',
   'docs',
@@ -176,12 +182,12 @@ assert.match(setupHelp, /--email/, 'setup should expose email setup start')
 assert.doesNotMatch(setupHelp, /--code|--accept-terms/, 'setup must not accept OTP or terms flags in the first command')
 
 const man = JSON.parse(ok('man', '--json'))
-assert.equal(man.success, true)
+assert.equal(man.ok, true)
 assert.equal(man.error, null)
 assert.deepEqual(man.data.map(item => item.command), expectedCommands)
 
 const availablePlugins = JSON.parse(ok('plugins', 'available', '--json'))
-assert.equal(availablePlugins.success, true)
+assert.equal(availablePlugins.ok, true)
 assert.equal(availablePlugins.data[0].name, '@beeper/cli-plugin-cloudflare')
 assert.equal(availablePlugins.data[0].status, 'not installed')
 assert.deepEqual(availablePlugins.data[0].commands, ['targets tunnel'])
@@ -199,41 +205,41 @@ rmSync(configDir, { recursive: true, force: true })
 let result = run('targets', 'add', 'remote', 'work', 'http://127.0.0.1:23373', '--default', '--json')
 assert.equal(result.status, 0, result.stderr)
 let envelope = JSON.parse(result.stdout)
-assert.equal(envelope.success, true)
+assert.equal(envelope.ok, true)
 assert.equal(envelope.data.id, 'work')
 assert.equal(envelope.data.type, 'remote')
 
 result = run('targets', 'list', '--json')
 assert.equal(result.status, 0, result.stderr)
 envelope = JSON.parse(result.stdout)
-assert.equal(envelope.success, true)
+assert.equal(envelope.ok, true)
 assert(envelope.data.some(item => item.id === 'work' && item.default))
 
 result = run('auth', 'status', '--json')
 assert.equal(result.status, 0, result.stderr)
 envelope = JSON.parse(result.stdout)
-assert.equal(envelope.success, true)
+assert.equal(envelope.ok, true)
 assert.equal(envelope.data.authenticated, false)
 assert.equal(envelope.data.target, 'work')
 
 result = run('send', 'text', '--to', 'family', '--message', 'on my way', '--read-only', '--json')
 assert.notEqual(result.status, 0)
 envelope = JSON.parse(result.stderr)
-assert.equal(envelope.success, false)
-assert.match(envelope.error, /read-only mode/)
+assert.equal(envelope.ok, false)
+assert.match(envelope.error.message, /read-only mode/)
 
 result = run('setup', '--remote', 'http://127.0.0.1:9', '--target', 'email-remote', '--email', 'staging-user-123456@example.invalid', '--json')
 assert.notEqual(result.status, 0)
 envelope = JSON.parse(result.stderr)
-assert.equal(envelope.success, false)
-assert.match(envelope.error, /auth email start/)
-assert.doesNotMatch(envelope.error, /--code|OTP/i, 'setup must direct automation to the two-step email commands without accepting OTP itself')
+assert.equal(envelope.ok, false)
+assert.match(envelope.error.message, /auth email start/)
+assert.doesNotMatch(envelope.error.message, /--code|OTP/i, 'setup must direct automation to the two-step email commands without accepting OTP itself')
 
 result = run('targets', 'show', 'email-remote', '--json')
 assert.notEqual(result.status, 0)
 envelope = JSON.parse(result.stderr)
-assert.equal(envelope.success, false)
-assert.match(envelope.error, /Unknown Beeper target/)
+assert.equal(envelope.ok, false)
+assert.match(envelope.error.message, /Unknown Beeper target/)
 
 rmSync(configDir, { recursive: true, force: true })
 const fakeServerPath = join(configDir, 'bin', 'beeper-server')
@@ -256,7 +262,7 @@ writeFileSync(join(configDir, 'installations.json'), `${JSON.stringify({
 result = run('setup', '--json')
 assert.equal(result.status, 0, result.stderr)
 envelope = JSON.parse(result.stdout)
-assert.equal(envelope.success, true)
+assert.equal(envelope.ok, true)
 assert(envelope.data.availableActions.some(action => action.id === 'use-installed-server' && action.command === 'beeper setup --server --yes'))
 assert(!envelope.data.availableActions.some(action => action.id === 'install-server'), 'setup must not offer to reinstall an already installed Server')
 
@@ -273,7 +279,7 @@ assert.equal(rpcResult.status, 0, rpcResult.stderr)
 const rpcLine = JSON.parse(rpcResult.stdout)
 assert.equal(rpcLine.id, 1)
 assert.equal(rpcLine.ok, true)
-assert.match(rpcLine.stdout, /"success": true/)
+assert.match(rpcLine.stdout, /"ok": true/)
 
 const stagingServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'staging', channel: 'stable', platform: 'darwin', arch: 'arm64' })
 assert.equal(stagingServerRequest.channel, 'nightly')
@@ -314,6 +320,7 @@ assert.equal(await resolveChatID(fakeClient, '10313'), '10313')
 assert.equal(await resolveChatID(fakeClient, 'Family Work'), '8951')
 assert.equal(await resolveChatID(fakeClient, 'fam', { pick: 2 }), '8951')
 await assert.rejects(() => resolveChatID(fakeClient, 'fam'), /Ambiguous chat/)
+await assert.rejects(() => resolveChatID(fakeClient, 'missing'), /No chat matches/)
 
 function listCommandFiles(dir) {
   const output = []

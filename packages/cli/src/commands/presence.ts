@@ -2,7 +2,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../lib/command.js'
 import { createClient } from '../lib/client.js'
-import { printSuccess } from '../lib/output.js'
+import { printDryRun, printSuccess } from '../lib/output.js'
 import { resolveChatID } from '../lib/resolve.js'
 
 export default class Presence extends BeeperCommand {
@@ -22,6 +22,10 @@ export default class Presence extends BeeperCommand {
     if (flags.duration !== undefined && flags.state !== 'typing') throw new Error('--duration only applies when --state is typing')
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
+    if (flags['dry-run']) {
+      await printDryRun('presence', { chatID, state: flags.state, durationSeconds: flags.duration }, flags.json ? 'json' : 'human')
+      return
+    }
     const post = (state: 'typing' | 'paused') =>
       client.post(`/v1/chats/${encodeURIComponent(chatID)}/typing`, { body: { state } })
 

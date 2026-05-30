@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 import { sendMessage } from '../../lib/send-message.js'
 
@@ -29,6 +29,11 @@ export default class SendFile extends BeeperCommand {
     ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
-    await printData(await sendMessage(client, { chatID, file: flags.file, fileName: flags.filename, mimeType: flags.mime, replyTo: flags['reply-to'], text: flags.caption || '', wait: flags.wait, waitTimeoutMs: flags['wait-timeout'] }), flags.json ? 'json' : 'human')
+    const request = { chatID, file: flags.file, fileName: flags.filename, mimeType: flags.mime, replyTo: flags['reply-to'], text: flags.caption || '', wait: flags.wait, waitTimeoutMs: flags['wait-timeout'] }
+    if (flags['dry-run']) {
+      await printDryRun('send.file', request, flags.json ? 'json' : 'human')
+      return
+    }
+    await printData(await sendMessage(client, request), flags.json ? 'json' : 'human')
   }
 }

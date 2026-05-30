@@ -2,7 +2,7 @@ import { Args, Flags } from '@oclif/core'
 import type { ChatStartParams } from '@beeper/desktop-api/resources/chats'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 import { listAccountIDs, resolveAccountID, userQueryFromInput } from '../../lib/resolve.js'
 
 export default class ChatsStart extends BeeperCommand {
@@ -20,6 +20,10 @@ export default class ChatsStart extends BeeperCommand {
     const accountID = flags.account ? await resolveAccountID(client, flags.account) : await defaultAccountID(client)
     const user = userQueryFromInput(args.user)
     const payload: ChatStartParams & { title?: string } = { accountID, user, title: flags.title }
+    if (flags['dry-run']) {
+      await printDryRun('chats.start', payload as unknown as Record<string, unknown>, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.chats.start(payload), flags.json ? 'json' : 'human')
   }
 }

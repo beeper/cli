@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 export default class AuthVerifyQrConfirm extends BeeperCommand {
   static override summary = 'Confirm that the other device scanned your QR code'
   static override flags = {
@@ -11,6 +11,10 @@ export default class AuthVerifyQrConfirm extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyQrConfirm)
     ensureWritable(flags)
     const client = await createClient(flags)
+    if (flags['dry-run']) {
+      await printDryRun('verify.qr-confirm', { id: flags.id ?? 'active' }, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.app.verifications.qr.confirmScanned(flags.id ?? 'active'), flags.json ? 'json' : 'human')
   }
 }

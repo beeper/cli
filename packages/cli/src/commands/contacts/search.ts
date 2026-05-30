@@ -2,7 +2,7 @@ import { Args, Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { apiCopy, cliCopy } from '../../lib/copy.js'
-import { printList } from '../../lib/output.js'
+import { isMachineReadableOutput, printList } from '../../lib/output.js'
 import { listAccountIDs, resolveAccountIDs } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
@@ -32,7 +32,7 @@ export default class ContactsSearch extends BeeperCommand {
       }
       return collected
     }
-    const useSpinner = !flags.json
+    const useSpinner = !isMachineReadableOutput(flags.json ? 'json' : 'human')
     const results = useSpinner
       ? await withSpinner(`Searching contacts for "${args.query}"…`, load, {
         done: value => `${value.length} match${value.length === 1 ? '' : 'es'} across ${accountIDs.length} account${accountIDs.length === 1 ? '' : 's'}`,

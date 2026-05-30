@@ -2,7 +2,7 @@ import { Args, Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { appRequest } from '../../lib/app-api.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 
 export default class ApiPost extends BeeperCommand {
   static override summary = 'Call a raw Desktop API POST path with a JSON body'
@@ -23,6 +23,10 @@ export default class ApiPost extends BeeperCommand {
       body = JSON.parse(flags.body) as Record<string, unknown>
     } catch {
       throw new Error(`--body is not valid JSON: ${flags.body}`)
+    }
+    if (flags['dry-run']) {
+      await printDryRun('api.post', { method: 'POST', path: args.path, body, noAuth: flags['no-auth'], target: flags.target, baseURL: flags['base-url'] }, flags.json ? 'json' : 'human')
+      return
     }
     if (flags['no-auth']) {
       await printData(await appRequest('POST', args.path, { baseURL: flags['base-url'], body, target: flags.target, token: false }), flags.json ? 'json' : 'human')

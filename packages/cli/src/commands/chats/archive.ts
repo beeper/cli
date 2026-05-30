@@ -2,7 +2,7 @@ import { Flags } from '@oclif/core'
 import { createReadStream } from 'node:fs'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData, printSuccess } from '../../lib/output.js'
+import { printData, printDryRun, printSuccess } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsArchive extends BeeperCommand {
@@ -14,6 +14,10 @@ export default class ChatsArchive extends BeeperCommand {
     
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
+    if (flags['dry-run']) {
+      await printDryRun('chats.archive', { chatID, isArchived: true }, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.chats.update(chatID, { isArchived: true }), flags.json ? 'json' : 'human')
   }
 }

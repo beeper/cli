@@ -1,7 +1,7 @@
 import { Args, Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
 import { createProfileTarget, readTarget, updateConfig } from '../../../lib/targets.js'
-import { printSuccess } from '../../../lib/output.js'
+import { printDryRun, printSuccess } from '../../../lib/output.js'
 
 export default class TargetsAddDesktop extends BeeperCommand {
   static override summary = 'Add a managed Beeper Desktop target'
@@ -16,6 +16,10 @@ export default class TargetsAddDesktop extends BeeperCommand {
     ensureWritable(flags)
     const id = args.name ?? 'desktop'
     if (await readTarget(id)) throw new Error(`Target "${id}" already exists.`)
+    if (flags['dry-run']) {
+      await printDryRun('targets.add.desktop', { id, type: 'desktop', serverEnv: flags['server-env'], port: flags.port, default: flags.default }, flags.json ? 'json' : 'human')
+      return
+    }
     const target = await createProfileTarget('desktop', id, { serverEnv: flags['server-env'], port: flags.port })
     if (flags.default) await updateConfig(config => ({ ...config, defaultTarget: target.id }))
     await printSuccess({ message: `Added target: ${target.id}`, detail: target.baseURL, data: target }, flags.json ? 'json' : 'human')

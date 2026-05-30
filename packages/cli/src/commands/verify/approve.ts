@@ -1,7 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData } from '../../lib/output.js'
+import { printData, printDryRun } from '../../lib/output.js'
 export default class AuthVerifyApprove extends BeeperCommand {
   static override summary = 'Approve a pending device verification request'
   static override flags = {
@@ -11,6 +11,10 @@ export default class AuthVerifyApprove extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyApprove)
     ensureWritable(flags)
     const client = await createClient(flags)
+    if (flags['dry-run']) {
+      await printDryRun('verify.approve', { id: flags.id ?? 'active' }, flags.json ? 'json' : 'human')
+      return
+    }
     await printData(await client.app.verifications.accept(flags.id ?? 'active'), flags.json ? 'json' : 'human')
   }
 }

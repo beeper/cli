@@ -2,7 +2,7 @@ import { Flags } from '@oclif/core'
 import { createReadStream } from 'node:fs'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData, printSuccess } from '../../lib/output.js'
+import { printData, printDryRun, printSuccess } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsDraft extends BeeperCommand {
@@ -24,7 +24,15 @@ export default class ChatsDraft extends BeeperCommand {
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
     if (flags.clear) {
+      if (flags['dry-run']) {
+        await printDryRun('chats.draft', { chatID, draft: null }, flags.json ? 'json' : 'human')
+        return
+      }
       await printData(await client.chats.update(chatID, { draft: null }), flags.json ? 'json' : 'human')
+      return
+    }
+    if (flags['dry-run']) {
+      await printDryRun('chats.draft', { chatID, draft: { text: flags.text!, file: flags.file, fileName: flags.filename, mimeType: flags.mime } }, flags.json ? 'json' : 'human')
       return
     }
     const upload = flags.file ? await client.assets.upload({ file: createReadStream(flags.file), fileName: flags.filename, mimeType: flags.mime }) : undefined

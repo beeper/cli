@@ -17,9 +17,9 @@ describe('messages search query-or-filter requirement', () => {
     const result = run('messages', 'search', '--json')
     expect(result.status).toBe(2)
     const envelope = JSON.parse(result.stderr)
-    expect(envelope.success).toBe(false)
-    expect(envelope.exitCode).toBe(2)
-    expect(envelope.error).toMatch(/Provide a search query or at least one filter flag/)
+    expect(envelope.ok).toBe(false)
+    expect(envelope.error.exitCode).toBe(2)
+    expect(envelope.error.message).toMatch(/Provide a search query or at least one filter flag/)
   })
 
   it('accepts a bare query', () => {

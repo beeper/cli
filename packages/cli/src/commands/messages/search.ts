@@ -2,7 +2,7 @@ import { Args, Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { usageError } from '../../lib/errors.js'
-import { collectPage, printIDs, printList } from '../../lib/output.js'
+import { collectPage, isMachineReadableOutput, printIDs, printList } from '../../lib/output.js'
 import { resolveAccountIDs, resolveChatID } from '../../lib/resolve.js'
 import { withInkSpinner as withSpinner } from '../../lib/ink/spinner.js'
 
@@ -58,7 +58,7 @@ export default class MessagesSearch extends BeeperCommand {
       query: args.query,
       sender: flags.sender as 'me' | 'others' | (string & {}) | undefined,
     }
-    const useSpinner = !flags.json && !flags.ids
+    const useSpinner = !isMachineReadableOutput(flags.ids ? 'ids' : flags.json ? 'json' : 'human')
     const label = args.query ? `Searching messages for "${args.query}"…` : 'Searching messages…'
     const items = useSpinner
       ? await withSpinner(label, () => collectPage(client.messages.search(params), flags.limit), {
