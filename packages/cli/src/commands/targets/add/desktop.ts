@@ -2,6 +2,7 @@ import { Args, Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../../lib/command.js'
 import { createProfileTarget, readTarget, updateConfig } from '../../../lib/targets.js'
 import { printDryRun, printSuccess } from '../../../lib/output.js'
+import { SERVER_ENVIRONMENTS, normalizeServerEnv } from '../../../lib/server-env.js'
 
 export default class TargetsAddDesktop extends BeeperCommand {
   static override summary = 'Add a managed Beeper Desktop target'
@@ -9,7 +10,7 @@ export default class TargetsAddDesktop extends BeeperCommand {
   static override flags = {
     port: Flags.integer({ description: 'TCP port the managed Desktop will expose its API on' }),
     default: Flags.boolean({ default: false, description: 'Set this target as the default after creation' }),
-    'server-env': Flags.string({ default: 'prod', description: 'Server feed environment: prod or staging' }),
+    'server-env': Flags.string({ default: 'prod', description: 'Server environment: local, dev, staging, or prod', options: [...SERVER_ENVIRONMENTS], parse: async value => normalizeServerEnv(value) }),
   }
   async run(): Promise<void> {
     const { args, flags } = await this.parse(TargetsAddDesktop)

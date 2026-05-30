@@ -9,7 +9,7 @@ import { loginWithPKCE } from '../lib/oauth.js'
 import { findDesktopAppPath, launchDesktopApp, startProfile } from '../lib/profiles.js'
 import { interactiveEmailSetup } from '../lib/setup-login.js'
 import { renderStartupLogo } from '../lib/logo.js'
-import { SERVER_ENV_API_BASE_URLS, normalizeServerEnv } from '../lib/server-env.js'
+import { SERVER_ENVIRONMENTS, SERVER_ENV_API_BASE_URLS, normalizeServerEnv } from '../lib/server-env.js'
 import {
   builtInDesktopTargetID,
   createProfileTarget,
@@ -36,7 +36,7 @@ export default class Setup extends BeeperCommand {
     desktop: Flags.boolean({ default: false, description: 'Set up a local Beeper Desktop target' }),
     install: Flags.boolean({ default: false, description: 'Allow installing missing managed runtime' }),
     channel: Flags.string({ options: ['stable', 'nightly'], default: 'stable', description: 'Install release channel' }),
-    'server-env': Flags.string({ default: 'prod', description: 'Server feed environment: prod or staging' }),
+    'server-env': Flags.string({ default: 'prod', description: 'Server environment: local, dev, staging, or prod', options: [...SERVER_ENVIRONMENTS], parse: async value => normalizeServerEnv(value) }),
     email: Flags.string({ description: 'Sign in with an email address' }),
     username: Flags.string({ description: 'Username to use if setup creates a new account' }),
   }
@@ -170,7 +170,8 @@ export default class Setup extends BeeperCommand {
     const readiness = await evaluateReadiness({ baseURL: target.baseURL, target: target.id })
     if (readiness.state === 'target-unreachable' && target.type !== 'desktop') {
       if (flags.json || !process.stdin.isTTY) {
-        await printData(currentTargetBrokenOutput(target, readiness), flags.json ? 'json' : 'human')
+        const serverInstalled = await isServerInstalled()
+        await printData(currentTargetBrokenOutput(target, readiness, serverInstalled), flags.json ? 'json' : 'human')
         return
       }
       if (await this.handleBrokenCurrentTarget(target, readiness, flags)) return
@@ -707,7 +708,7 @@ function installedServerAction(installed: boolean): { id: string; command: strin
     : action('install-server', 'beeper setup --server --install --yes')
 }
 
-function currentTargetBrokenOutput(target: Target, readiness: Readiness): Record<string, unknown> {
+function currentTargetBrokenOutput(target: Target, readiness: Readiness, serverInstalled: boolean): Record<string, unknown> {
   return {
     state: 'current-target-unreachable',
     message: `Beeper CLI is set up for ${target.name ?? target.id}, but it is not reachable.`,
@@ -717,7 +718,7 @@ function currentTargetBrokenOutput(target: Target, readiness: Readiness): Record
     availableActions: [
       action('retry-current', `beeper setup -t ${target.id}`),
       action('use-desktop', 'beeper setup --desktop'),
-      action('install-server', 'beeper setup --server --install --yes'),
+      installedServerAction(serverInstalled),
       action('connect-remote', 'beeper setup --remote <url>'),
     ],
   }

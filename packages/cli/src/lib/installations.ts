@@ -148,8 +148,13 @@ export async function checkInstallationUpdate(installation: Installation): Promi
 
 export async function installDesktop(options: { channel?: InstallChannel; serverEnv?: string } = {}): Promise<Installation> {
   const request = normalizeInstallRequest({ kind: 'desktop', channel: options.channel, serverEnv: options.serverEnv })
-  if (request.serverEnv !== 'prod') throw new Error('Desktop non-production installs are not supported by the CLI.')
-  const feedURL = feedURLFor(request)
+  const feedRequest = request.serverEnv === 'prod'
+    ? request
+    : { ...request, serverEnv: 'prod' as const, apiBaseURL: SERVER_ENV_API_BASE_URLS.prod }
+  if (request.serverEnv !== feedRequest.serverEnv) {
+    process.stderr.write(`Desktop ${request.serverEnv} installs use the production update feed; the app will still launch against ${request.serverEnv}.\n`)
+  }
+  const feedURL = feedURLFor(feedRequest)
   const feed = await fetchFeed(feedURL)
   const downloadURL = feed.url
   if (!downloadURL) throw new Error('Desktop update feed did not include a download URL.')
