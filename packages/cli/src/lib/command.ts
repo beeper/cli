@@ -47,7 +47,7 @@ export abstract class BeeperCommand extends Command {
     const code = inferredCode ?? error.exitCode ?? ExitCodes.Generic
     process.exitCode = process.exitCode ?? code
     const tryMessage = error instanceof CLIError ? error.tryMessage : undefined
-    const isBug = error instanceof BugError || (!(error instanceof CLIError) && inferredCode === undefined)
+    const isBug = error instanceof BugError || !(error instanceof CLIError)
 
     if (this.argv.includes('--events')) {
       writeEvent('error', { message, exitCode: code, kind: isBug ? 'bug' : 'abort', tryMessage })
@@ -102,10 +102,6 @@ export function ensureWritable(flags: { 'read-only'?: boolean }): void {
   if (readOnly) throw new CLIError('read-only mode: command would modify Beeper or local CLI state', ExitCodes.Usage)
 }
 
-export function ensureNotDryRun(flags: { 'dry-run'?: boolean }, action: string): void {
-  if (flags['dry-run']) throw new CLIError(`dry-run: ${action}`, ExitCodes.Success)
-}
-
 export function writeEvent(event: string, data: Record<string, unknown> = {}): void {
   process.stderr.write(`${JSON.stringify({ event, data, ts: Date.now() })}\n`)
 }
@@ -148,12 +144,26 @@ function isMachineOutput(argv: string[]): boolean {
 function errorCode(code: number, isBug: boolean): string {
   if (isBug) return 'internal_error'
   switch (code) {
-    case ExitCodes.Usage: return 'usage_error'
-    case ExitCodes.AuthRequired: return 'auth_required'
-    case ExitCodes.NotReady: return 'not_ready'
-    case ExitCodes.NotFound: return 'not_found'
-    case ExitCodes.Ambiguous: return 'ambiguous_selector'
-    case ExitCodes.CommandNotFound: return 'command_not_found'
-    default: return 'runtime_error'
+    case ExitCodes.Ambiguous: {
+      return 'ambiguous_selector'
+    }
+    case ExitCodes.AuthRequired: {
+      return 'auth_required'
+    }
+    case ExitCodes.CommandNotFound: {
+      return 'command_not_found'
+    }
+    case ExitCodes.NotFound: {
+      return 'not_found'
+    }
+    case ExitCodes.NotReady: {
+      return 'not_ready'
+    }
+    case ExitCodes.Usage: {
+      return 'usage_error'
+    }
+    default: {
+      return 'runtime_error'
+    }
   }
 }
