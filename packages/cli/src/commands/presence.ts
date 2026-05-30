@@ -23,6 +23,7 @@ export default class Presence extends BeeperCommand {
       await printDryRun('presence', { chat: flags.chat, pick: flags.pick, state: flags.state, durationSeconds: flags.duration }, flags.json ? 'json' : 'human')
       return
     }
+
     ensureWritable(flags)
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
@@ -36,6 +37,7 @@ export default class Presence extends BeeperCommand {
       await printSuccess({ message: `Sent typing then paused after ${flags.duration}s`, data: { chatID, state: 'paused', durationSeconds: flags.duration } }, flags.json ? 'json' : 'human')
       return
     }
+
     await printSuccess({ message: `Sent ${flags.state} indicator`, data: { chatID, state: flags.state } }, flags.json ? 'json' : 'human')
   }
 }
