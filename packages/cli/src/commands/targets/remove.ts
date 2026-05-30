@@ -4,7 +4,7 @@ import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createProfileTarget, listTargets, readConfig, readTarget, removeTarget, resolveTarget, updateConfig, writeTarget, type Target } from '../../lib/targets.js'
 import { disableProfile, enableProfile, profileErrorLogPath, profileLogPath, profileStatus, startProfile, stopProfile } from '../../lib/profiles.js'
 import { targetLiveStatus } from '../../lib/target-status.js'
-import { printData, printDryRun, printSuccess } from '../../lib/output.js'
+import { printDryRun, printSuccess } from '../../lib/output.js'
 
 export default class TargetsRemove extends BeeperCommand {
   static override summary = 'Remove a target'

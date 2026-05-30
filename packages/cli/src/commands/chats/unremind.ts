@@ -2,7 +2,7 @@ import { Flags } from '@oclif/core'
 import { createReadStream } from 'node:fs'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { printData, printDryRun, printSuccess } from '../../lib/output.js'
+import { printDryRun, printSuccess } from '../../lib/output.js'
 import { resolveChatID } from '../../lib/resolve.js'
 
 export default class ChatsUnremind extends BeeperCommand {
