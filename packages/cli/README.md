@@ -1249,8 +1249,9 @@ Flags:
 | `--guided` | boolean | Prompt through login steps until completion |
 | `--login-id=<value>` | option | Existing login ID to re-login as |
 | `--non-interactive` | boolean | Do not prompt; require --flow, --field, and --cookie values when needed. |
-| `--webview` | boolean | Use Bun.WebView to collect cookie login fields when a cookie step is returned. |
+| `--webview` | boolean | Sign in through a browser and collect cookie fields automatically. Interactive runs open a visible browser with a fresh temporary profile. |
 | `--webview-backend=<auto\|chrome\|webkit>` | option | Bun.WebView backend for cookie login steps. Default: chrome |
+| `--webview-browser-path=<value>` | option | Chromium-family browser to open for --webview sign-in (Chrome, Brave, Edge, …). Defaults to the first one found. |
 | `--webview-timeout=<value>` | option | Seconds to wait for Bun.WebView cookie collection. Default: 120 |
 
 Examples:

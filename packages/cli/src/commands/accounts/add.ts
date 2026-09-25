@@ -22,8 +22,9 @@ export default class AccountsAdd extends BeeperCommand {
     guided: Flags.boolean({ default: true, allowNo: true, description: 'Prompt through login steps until completion' }),
     'login-id': Flags.string({ description: 'Existing login ID to re-login as' }),
     'non-interactive': Flags.boolean({ default: false, description: 'Do not prompt; require --flow, --field, and --cookie values when needed.' }),
-    webview: Flags.boolean({ default: false, description: 'Use Bun.WebView to collect cookie login fields when a cookie step is returned.' }),
+    webview: Flags.boolean({ default: false, description: 'Sign in through a browser and collect cookie fields automatically. Interactive runs open a visible browser with a fresh temporary profile.' }),
     'webview-backend': Flags.string({ default: 'chrome', description: 'Bun.WebView backend for cookie login steps.', options: ['auto', 'chrome', 'webkit'] }),
+    'webview-browser-path': Flags.string({ description: 'Chromium-family browser to open for --webview sign-in (Chrome, Brave, Edge, …). Defaults to the first one found.' }),
     'webview-timeout': Flags.integer({ default: 120, description: 'Seconds to wait for Bun.WebView cookie collection.' }),
   }
 
@@ -77,6 +78,7 @@ export default class AccountsAdd extends BeeperCommand {
       nonInteractive: flags['non-interactive'],
       webview: flags.webview,
       webviewBackend: flags['webview-backend'] as 'auto' | 'chrome' | 'webkit',
+      webviewBrowserPath: flags['webview-browser-path'],
       webviewTimeoutMs: flags['webview-timeout'] * 1000,
     }) : step
     if (flags.json) await printData(result, 'json')
