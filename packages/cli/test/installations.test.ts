@@ -1,12 +1,14 @@
 import { expect, it } from 'bun:test'
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { downloadArtifact } from '../src/lib/installations.js'
 
-it('installs a complete download on the destination filesystem', async () => {
-  // The checkout can be on a different filesystem from the system temp directory.
-  const destination = await mkdtemp(join(fileURLToPath(new URL('..', import.meta.url)), '.download-test-'))
+it('installs a complete download without staging it in the system temp directory', async () => {
+  const destination = await mkdtemp(join(tmpdir(), 'beeper-download-'))
+  const originalTmpdir = process.env.TMPDIR
+  // An unusable temp directory fails the same way a temp directory on another filesystem does.
+  process.env.TMPDIR = join(destination, 'unavailable')
   const server = Bun.serve({
     hostname: '127.0.0.1',
     port: 0,
@@ -19,7 +21,10 @@ it('installs a complete download on the destination filesystem', async () => {
     expect(await readFile(artifact, 'utf8')).toBe('server artifact')
     expect(await readdir(destination)).toEqual(['beeper-server.tar.gz'])
   } finally {
+    if (originalTmpdir === undefined) delete process.env.TMPDIR
+    else process.env.TMPDIR = originalTmpdir
     server.stop(true)
     await rm(destination, { recursive: true, force: true })
   }
 })
+
