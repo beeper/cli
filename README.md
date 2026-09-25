@@ -159,6 +159,19 @@ $ beeper accounts add
 
 Variants: `beeper install server`, `beeper install server --server-env staging`.
 
+#### Headless server (no browser)
+
+On a VPS or any machine without a browser, sign in with an emailed code.
+`setup` prompts for the code, then starts device verification:
+
+```sh
+beeper setup --server --install --email you@example.com
+beeper verify recovery-key -t server --key "ABCD-EFGH-IJKL-MNOP"  # if no other device can approve
+beeper targets enable server                                      # start at login
+```
+
+Scripts, agents, and start-at-boot: [Headless server setup](https://github.com/beeper/cli/blob/main/packages/cli/docs/setup.md#headless-server-setup).
+
 ### 3. Remote Desktop or Server via OAuth (PKCE)
 
 For a Beeper Desktop or Server running on another machine, authorize the CLI
