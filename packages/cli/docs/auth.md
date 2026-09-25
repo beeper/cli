@@ -37,6 +37,7 @@ beeper verify cancel
 - For agents, drive the explicit subcommands (`start` → `sas` → `sas-confirm`) and use `--json` to inspect state.
 - `verify status` returns the encryption-readiness state (`ready`, `needs-verification`, `verification-in-progress`).
 - `recovery-key` and `reset-recovery-key` apply to the encrypted-messages key, not to Beeper account login.
+- `reset-recovery-key` signs out every chat account connected through Beeper Cloud on all your devices. Use it only when the recovery key is lost and no other device is verified; otherwise run `verify recovery-key` or approve from another device.
 
 ## Examples
 
