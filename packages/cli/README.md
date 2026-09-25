@@ -1049,6 +1049,8 @@ Create a new encrypted-messages recovery key
 beeper verify reset-recovery-key
 ```
 
+Resetting the recovery key signs out every chat account connected through Beeper Cloud (WhatsApp, Telegram, Signal, …) on all your devices. You will need to reconnect them. Use only when you have lost your recovery key and have no other verified device.
+
 Examples:
 
 ```sh

@@ -1,24 +1,28 @@
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
-import { promptYesNoDefaultYes } from '../../lib/app-api.js'
+import { promptYesNo } from '../../lib/app-api.js'
+
+const resetWarning = 'Resetting the recovery key signs out every chat account connected through Beeper Cloud (WhatsApp, Telegram, Signal, …) on all your devices. You will need to reconnect them.'
 
 export default class AuthVerifyResetRecoveryKey extends BeeperCommand {
   static override summary = 'Create a new encrypted-messages recovery key'
+  static override description = `${resetWarning} Use only when you have lost your recovery key and have no other verified device.`
 
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthVerifyResetRecoveryKey)
     ensureWritable(flags)
+    if ((flags.json || !process.stdin.isTTY) && !flags.yes) {
+      throw new Error(`${resetWarning} Pass --yes to confirm in non-interactive mode.`)
+    }
+
     const client = await createClient(flags)
     const reset = await client.app.login.verification.recoveryKey.reset.create({})
 
-    if ((flags.json || !process.stdin.isTTY) && !flags.yes) {
-      throw new Error('Resetting the recovery key requires --yes in non-interactive mode so the new key can be confirmed.')
-    }
-
+    process.stderr.write(`Warning: ${resetWarning}\n`)
     if (!flags.yes) {
       process.stderr.write(`New recovery key:\n${reset.recoveryKey}\n`)
-      if (!await promptYesNoDefaultYes('I saved this recovery key. Use it for this account?')) throw new Error('Recovery key reset cancelled.')
+      if (!await promptYesNo('I saved this recovery key. Reset now and disconnect my chat accounts?')) throw new Error('Recovery key reset cancelled.')
     }
 
     const confirmed = await client.app.login.verification.recoveryKey.reset.confirm({ recoveryKey: reset.recoveryKey })
