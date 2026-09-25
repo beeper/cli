@@ -80,7 +80,6 @@ export function normalizeInstallRequest(options: {
   kind: InstallKind
   channel: InstallChannel
   serverEnv: ServerEnv
-  platform: 'macos' | 'windows' | 'linux'
   feedPlatform: 'darwin' | 'win32' | 'linux'
   arch: 'x64' | 'arm64'
   bundleID: string
@@ -88,7 +87,6 @@ export function normalizeInstallRequest(options: {
 } {
   const serverEnv = normalizeServerEnv(options.serverEnv)
   const channel = options.channel ?? 'stable'
-  const platform = normalizeDownloadPlatform(options.platform ?? process.platform)
   const feedPlatform = normalizeFeedPlatform(options.platform ?? process.platform)
   const arch = normalizeArch(options.arch ?? process.arch)
   const bundleID = bundleIDFor(options.kind, channel)
@@ -96,7 +94,6 @@ export function normalizeInstallRequest(options: {
     kind: options.kind,
     channel,
     serverEnv,
-    platform,
     feedPlatform,
     arch,
     bundleID,
@@ -111,10 +108,6 @@ export function feedURLFor(options: ReturnType<typeof normalizeInstallRequest>):
   url.searchParams.set('channel', options.channel)
   url.searchParams.set('arch', options.arch)
   return url.toString()
-}
-
-export function downloadURLFor(options: ReturnType<typeof normalizeInstallRequest>): string {
-  return `${options.apiBaseURL}/desktop/download/${options.platform}/${options.arch}/${options.channel}/${options.bundleID}`
 }
 
 export async function fetchFeed(feedURL: string): Promise<FeedInfo> {
@@ -356,13 +349,6 @@ function normalizeServerEnv(value?: string): ServerEnv {
   if (!value || value === 'production' || value === 'prod') return 'production'
   if (value === 'staging') return 'staging'
   throw new Error(`Unsupported server env "${value}". Expected production or staging.`)
-}
-
-function normalizeDownloadPlatform(platform: NodeJS.Platform): 'macos' | 'windows' | 'linux' {
-  if (platform === 'darwin') return 'macos'
-  if (platform === 'win32') return 'windows'
-  if (platform === 'linux') return 'linux'
-  throw new Error(`Unsupported platform "${platform}".`)
 }
 
 function normalizeFeedPlatform(platform: NodeJS.Platform): 'darwin' | 'win32' | 'linux' {

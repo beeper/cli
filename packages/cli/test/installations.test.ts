@@ -3,7 +3,7 @@ import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { createServer, type Socket } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { downloadArtifact, downloadURLFor, feedURLFor, installServer, normalizeInstallRequest } from '../src/lib/installations.js'
+import { downloadArtifact, feedURLFor, installServer, normalizeInstallRequest } from '../src/lib/installations.js'
 
 const originalFetch = globalThis.fetch
 
@@ -66,7 +66,6 @@ describe('server installation artifact selection', () => {
     expect(request.bundleID).toBe('com.automattic.beeper.server')
     expect(request.apiBaseURL).toBe('https://api.beeper.com')
     expect(feedURLFor(request)).toBe('https://api.beeper.com/desktop/update-feed.json?bundleID=com.automattic.beeper.server&platform=linux&channel=stable&arch=x64')
-    expect(downloadURLFor(request)).toBe('https://api.beeper.com/desktop/download/linux/x64/stable/com.automattic.beeper.server')
   })
 
   it('keeps staging stable when staging is explicitly selected', () => {
@@ -76,7 +75,6 @@ describe('server installation artifact selection', () => {
     expect(request.serverEnv).toBe('staging')
     expect(request.bundleID).toBe('com.automattic.beeper.server')
     expect(request.apiBaseURL).toBe('https://api.beeper-staging.com')
-    expect(downloadURLFor(request)).toBe('https://api.beeper-staging.com/desktop/download/linux/x64/stable/com.automattic.beeper.server')
   })
 
   it('keeps nightly explicit instead of deriving it from the environment', () => {
@@ -86,7 +84,6 @@ describe('server installation artifact selection', () => {
     expect(request.serverEnv).toBe('production')
     expect(request.bundleID).toBe('com.automattic.beeper.server.nightly')
     expect(request.apiBaseURL).toBe('https://api.beeper.com')
-    expect(downloadURLFor(request)).toBe('https://api.beeper.com/desktop/download/linux/x64/nightly/com.automattic.beeper.server.nightly')
   })
 
   it('fails closed when the selected Server feed has no artifact URL', async () => {
