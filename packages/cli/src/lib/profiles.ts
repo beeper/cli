@@ -117,12 +117,20 @@ export async function findDesktopAppPath(): Promise<string | undefined> {
       const path = join(desktopInstallDir(), entry)
       if (await isBeeperDesktopApp(path)) return path
     }
+    const registeredPath = await readDesktopEntryExec(join(process.env.HOME ?? homedir(), '.local', 'share', 'applications', 'Beeper.desktop'))
+    if (registeredPath && await pathExists(registeredPath)) return registeredPath
     for (const path of ['/usr/bin/beeper', '/usr/local/bin/beeper']) {
       if (await pathExists(path)) return path
     }
   }
 
   return undefined
+}
+
+// Beeper Desktop writes this entry on Linux launch, with Exec pointing at the running AppImage.
+async function readDesktopEntryExec(path: string): Promise<string | undefined> {
+  const entry = await readFile(path, 'utf8').catch(() => '')
+  return entry.match(/^Exec=(.+?)(?:\s+%[A-Za-z])*\s*$/m)?.[1]
 }
 
 async function isBeeperDesktopApp(path: string): Promise<boolean> {

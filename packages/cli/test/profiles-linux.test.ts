@@ -7,6 +7,7 @@ import { desktopInstallDir, writeInstallations, type Installation } from '../src
 import { findDesktopAppPath, launchDesktopApp } from '../src/lib/profiles.js'
 
 const originalPath = process.env.PATH
+const originalHome = process.env.HOME
 const originalConfigDir = process.env.BEEPER_CLI_CONFIG_DIR
 const originalCapture = process.env.BEEPER_TEST_CAPTURE
 const originalOpenCapture = process.env.BEEPER_TEST_OPEN_CAPTURE
@@ -17,11 +18,13 @@ beforeEach(() => {
   tempDir = mkdtempSync(join(tmpdir(), 'beeper-cli-linux-profile-'))
   process.env.BEEPER_CLI_CONFIG_DIR = join(tempDir, 'config')
   process.env.PATH = join(tempDir, 'bin') + ':' + (originalPath ?? '')
+  process.env.HOME = join(tempDir, 'home')
 })
 
 afterEach(() => {
   rmSync(tempDir, { recursive: true, force: true })
   restoreEnvironment('PATH', originalPath)
+  restoreEnvironment('HOME', originalHome)
   restoreEnvironment('BEEPER_CLI_CONFIG_DIR', originalConfigDir)
   restoreEnvironment('BEEPER_TEST_CAPTURE', originalCapture)
   restoreEnvironment('BEEPER_TEST_OPEN_CAPTURE', originalOpenCapture)
@@ -79,6 +82,18 @@ describe.if(process.platform === 'linux')('Linux Desktop profiles', () => {
     await mkdir(dirname(appPath), { recursive: true })
     await writeFile(appPath, '#!/bin/sh\n')
     await chmod(appPath, 0o755)
+
+    expect(await findDesktopAppPath()).toBe(appPath)
+  })
+
+  it('discovers the AppImage that Desktop registered in its desktop entry', async () => {
+    const appPath = join(tempDir, 'My Apps', 'Beeper-4.3.152-x86_64.AppImage')
+    const entryPath = join(tempDir, 'home', '.local', 'share', 'applications', 'Beeper.desktop')
+    await mkdir(dirname(appPath), { recursive: true })
+    await mkdir(dirname(entryPath), { recursive: true })
+    await writeFile(appPath, '#!/bin/sh\n')
+    await chmod(appPath, 0o755)
+    await writeFile(entryPath, `[Desktop Entry]\nName=Beeper\nExec=${appPath} %u\nType=Application\n`)
 
     expect(await findDesktopAppPath()).toBe(appPath)
   })
