@@ -216,8 +216,13 @@ export async function downloadArtifact(url: string, destinationDir: string): Pro
   const filename = filenameFromResponse(response) ?? (basename(new URL(response.url).pathname) || `beeper-download-${Date.now()}`)
   const finalPath = join(destinationDir, filename)
   const tmpPath = join(destinationDir, `${filename}.${process.pid}.${Date.now()}.tmp`)
-  await writeResponseToFile(response, tmpPath)
-  await rename(tmpPath, finalPath)
+  try {
+    await writeResponseToFile(response, tmpPath)
+    await rename(tmpPath, finalPath)
+  } catch (error) {
+    await rm(tmpPath, { force: true })
+    throw error
+  }
   return finalPath
 }
 
