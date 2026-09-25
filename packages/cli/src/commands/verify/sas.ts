@@ -1,6 +1,7 @@
 import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
+import { resolveVerificationID } from '../../lib/app-state.js'
 import { printData } from '../../lib/output.js'
 export default class AuthVerifySas extends BeeperCommand {
   static override summary = 'Start emoji verification'
@@ -11,6 +12,6 @@ export default class AuthVerifySas extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifySas)
     ensureWritable(flags)
     const client = await createClient(flags)
-    await printData(await client.app.verifications.sas.start(flags.id ?? 'active'), flags.json ? 'json' : 'human')
+    await printData(await client.app.verifications.sas.start(await resolveVerificationID(client, flags.id)), flags.json ? 'json' : 'human')
   }
 }
