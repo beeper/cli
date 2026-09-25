@@ -183,9 +183,9 @@ async function collectCookieFieldsWithWebView(step: CookieLoginStep, options: Ac
 
   const backend = options.webviewBackend && options.webviewBackend !== 'auto' ? options.webviewBackend : undefined
   if (options.webviewBrowserPath && backend === 'webkit') throw new Error('--webview-browser-path requires the chrome backend.')
-  const browserPath = !options.nonInteractive && (backend === 'chrome' || (!backend && process.platform !== 'darwin'))
-    ? options.webviewBrowserPath ?? findChromiumBrowser(BunRuntime?.which)
-    : undefined
+  const browserPath = options.nonInteractive || backend === 'webkit'
+    ? undefined
+    : options.webviewBrowserPath ?? (backend === 'chrome' || process.platform !== 'darwin' ? findChromiumBrowser(BunRuntime?.which) : undefined)
   const browser = browserPath ? await launchVisibleBrowser(browserPath) : undefined
   const usesChrome = backend === 'chrome' || Boolean(browser)
   let view: InstanceType<WebViewConstructor>
