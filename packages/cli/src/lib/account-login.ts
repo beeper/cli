@@ -263,20 +263,20 @@ async function launchVisibleBrowser(path: string): Promise<{ url: string; close(
   const server = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: () => new Response() })
   const port = server.port
   await server.stop(true)
-  const process = spawn(path, [`--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, '--no-first-run', '--no-default-browser-check', 'about:blank'], { stdio: 'ignore' })
+  const browserProcess = spawn(path, [`--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, '--no-first-run', '--no-default-browser-check', 'about:blank'], { stdio: 'ignore' })
   let launchError: Error | undefined
-  process.once('error', error => { launchError = error })
+  browserProcess.once('error', error => { launchError = error })
 
   try {
     for (let attempt = 0; attempt < 100; attempt++) {
       if (launchError) throw launchError
-      if (process.exitCode !== null) throw new Error(`Browser exited with code ${process.exitCode}.`)
+      if (browserProcess.exitCode !== null) throw new Error(`Browser exited with code ${browserProcess.exitCode}.`)
       const endpoint = await fetch(`http://127.0.0.1:${port}/json/version`).then(response => response.json() as Promise<{ webSocketDebuggerUrl?: string }>).catch(() => undefined)
       if (endpoint?.webSocketDebuggerUrl) return {
         url: endpoint.webSocketDebuggerUrl,
         close: async () => {
-          process.kill()
-          await Promise.race([new Promise<void>(resolve => process.once('exit', () => resolve())), sleep(1000)])
+          browserProcess.kill()
+          await Promise.race([new Promise<void>(resolve => browserProcess.once('exit', () => resolve())), sleep(1000)])
           await rm(profile, { recursive: true, force: true })
         },
       }
@@ -284,7 +284,7 @@ async function launchVisibleBrowser(path: string): Promise<{ url: string; close(
     }
     throw new Error(`Timed out starting browser ${path}.`)
   } catch (error) {
-    process.kill()
+    browserProcess.kill()
     await rm(profile, { recursive: true, force: true })
     throw error
   }
