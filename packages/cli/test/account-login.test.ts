@@ -74,13 +74,13 @@ describe('runGuidedAccountLogin', () => {
     })
   })
 
-  it('submits manual cookie values in non-interactive mode', async () => {
+  it('submits manual cookie values and omits missing optional cookies in non-interactive mode', async () => {
     const cookieStep = session({
       currentStep: {
         type: 'cookies',
         stepID: 'step-cookies',
         url: 'https://discord.com/login',
-        fields: [{ id: 'sessiontoken', type: 'cookie' }],
+        fields: [{ id: 'sessiontoken', type: 'cookie' }, { id: 'optionaltoken', required: false, type: 'cookie' }],
       },
     })
     const complete = session({ status: 'complete', currentStep: { type: 'complete', login: { loginID: 'discord' } } })
