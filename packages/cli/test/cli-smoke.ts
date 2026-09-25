@@ -5,7 +5,6 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { commandManifest } from '../dist/lib/manifest.js'
 import { resolveAccountID, resolveAccountIDs, resolveChatID } from '../dist/lib/resolve.js'
-import { downloadURLFor, feedURLFor, normalizeInstallRequest } from '../dist/lib/installations.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const configDir = '/tmp/beeper-cli-test'
@@ -249,15 +248,6 @@ const rpcLine = JSON.parse(rpcResult.stdout)
 assert.equal(rpcLine.id, 1)
 assert.equal(rpcLine.ok, true)
 assert.match(rpcLine.stdout, /"success": true/)
-
-const stagingServerRequest = normalizeInstallRequest({ kind: 'server', serverEnv: 'staging', channel: 'stable', platform: 'darwin', arch: 'arm64' })
-assert.equal(stagingServerRequest.channel, 'nightly')
-assert.equal(stagingServerRequest.bundleID, 'com.automattic.beeper.server.nightly')
-assert.equal(feedURLFor(stagingServerRequest), 'https://api.beeper-staging.com/desktop/update-feed.json?bundleID=com.automattic.beeper.server.nightly&platform=darwin&channel=nightly&arch=arm64')
-assert.equal(downloadURLFor(stagingServerRequest), 'https://api.beeper-staging.com/desktop/download/macos/arm64/stable/com.automattic.beeper.server.nightly')
-
-const desktopNightlyRequest = normalizeInstallRequest({ kind: 'desktop', channel: 'nightly', platform: 'darwin', arch: 'arm64' })
-assert.equal(downloadURLFor(desktopNightlyRequest), 'https://api.beeper.com/desktop/download/macos/arm64/nightly/com.automattic.beeper.desktop.nightly')
 
 const fakeClient = {
   accounts: {

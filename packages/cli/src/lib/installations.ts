@@ -80,18 +80,13 @@ export function normalizeInstallRequest(options: {
   kind: InstallKind
   channel: InstallChannel
   serverEnv: ServerEnv
-  platform: 'macos' | 'windows' | 'linux'
   feedPlatform: 'darwin' | 'win32' | 'linux'
   arch: 'x64' | 'arm64'
   bundleID: string
   apiBaseURL: string
 } {
-  // TODO: switch Server installs back to production once the production download
-  // endpoint returns a beeper-server artifact instead of the Desktop app bundle.
-  const serverEnv = options.kind === 'server' ? 'staging' : normalizeServerEnv(options.serverEnv)
-  let channel = options.channel ?? 'stable'
-  if (serverEnv === 'staging') channel = 'nightly'
-  const platform = normalizeDownloadPlatform(options.platform ?? process.platform)
+  const serverEnv = normalizeServerEnv(options.serverEnv)
+  const channel = options.channel ?? 'stable'
   const feedPlatform = normalizeFeedPlatform(options.platform ?? process.platform)
   const arch = normalizeArch(options.arch ?? process.arch)
   const bundleID = bundleIDFor(options.kind, channel)
@@ -99,11 +94,10 @@ export function normalizeInstallRequest(options: {
     kind: options.kind,
     channel,
     serverEnv,
-    platform,
     feedPlatform,
     arch,
     bundleID,
-    apiBaseURL: options.kind === 'server' || serverEnv === 'staging' ? 'https://api.beeper-staging.com' : 'https://api.beeper.com',
+    apiBaseURL: serverEnv === 'staging' ? 'https://api.beeper-staging.com' : 'https://api.beeper.com',
   }
 }
 
@@ -114,11 +108,6 @@ export function feedURLFor(options: ReturnType<typeof normalizeInstallRequest>):
   url.searchParams.set('channel', options.channel)
   url.searchParams.set('arch', options.arch)
   return url.toString()
-}
-
-export function downloadURLFor(options: ReturnType<typeof normalizeInstallRequest>): string {
-  const channelSegment = options.serverEnv === 'staging' && options.kind === 'server' ? 'stable' : options.channel
-  return `${options.apiBaseURL}/desktop/download/${options.platform}/${options.arch}/${channelSegment}/${options.bundleID}`
 }
 
 export async function fetchFeed(feedURL: string): Promise<FeedInfo> {
@@ -180,8 +169,18 @@ export async function installServer(options: { channel?: InstallChannel; serverE
   if (process.platform === 'win32') throw new Error('Beeper Server install is not available on Windows.')
   const request = normalizeInstallRequest({ kind: 'server', channel: options.channel, serverEnv: options.serverEnv })
   const feedURL = feedURLFor(request)
-  const downloadURL = downloadURLFor(request)
-  const feed = await fetchFeed(feedURL).catch(() => ({ raw: undefined, version: undefined }))
+  let feed: FeedInfo
+  try {
+    feed = await fetchFeed(feedURL)
+  } catch (error) {
+    const reason = error instanceof Error ? ` ${error.message}` : ''
+    throw new Error(`Beeper Server ${request.channel} artifact is unavailable from the ${request.serverEnv} update feed; refusing to install a different channel.${reason}`)
+  }
+  const downloadURL = feed.url
+  if (!downloadURL) {
+    throw new Error(`Beeper Server ${request.channel} update feed did not include an artifact URL; refusing to install a different channel.`)
+  }
+  assertServerArtifactChannel(downloadURL, request.channel)
   const version = feed.version ?? 'unknown'
   const stageDir = join(serverInstallRoot(), `${request.channel}-${version}-${Date.now()}`)
   await mkdir(stageDir, { recursive: true })
@@ -203,6 +202,22 @@ export async function installServer(options: { channel?: InstallChannel; serverE
     installedAt: now,
     updatedAt: now,
   })
+}
+
+function assertServerArtifactChannel(downloadURL: string, channel: InstallChannel): void {
+  let filename: string
+  try {
+    filename = decodeURIComponent(basename(new URL(downloadURL).pathname)).toLowerCase()
+  } catch {
+    throw new Error(`Beeper Server ${channel} update feed returned an invalid artifact URL; refusing to install it.`)
+  }
+  if (!filename.startsWith('beeper-server-')) {
+    throw new Error(`Beeper Server ${channel} update feed returned a non-Server artifact; refusing to install it.`)
+  }
+  const artifactChannel: InstallChannel = filename.includes('nightly') ? 'nightly' : 'stable'
+  if (artifactChannel !== channel) {
+    throw new Error(`Beeper Server ${channel} update feed returned a ${artifactChannel} artifact; refusing to install a different channel.`)
+  }
 }
 
 export async function updateServerInstallation(installation: Installation): Promise<Installation> {
@@ -334,13 +349,6 @@ function normalizeServerEnv(value?: string): ServerEnv {
   if (!value || value === 'production' || value === 'prod') return 'production'
   if (value === 'staging') return 'staging'
   throw new Error(`Unsupported server env "${value}". Expected production or staging.`)
-}
-
-function normalizeDownloadPlatform(platform: NodeJS.Platform): 'macos' | 'windows' | 'linux' {
-  if (platform === 'darwin') return 'macos'
-  if (platform === 'win32') return 'windows'
-  if (platform === 'linux') return 'linux'
-  throw new Error(`Unsupported platform "${platform}".`)
 }
 
 function normalizeFeedPlatform(platform: NodeJS.Platform): 'darwin' | 'win32' | 'linux' {
