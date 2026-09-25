@@ -27,7 +27,7 @@ afterEach(() => {
   restoreEnvironment('BEEPER_TEST_OPEN_CAPTURE', originalOpenCapture)
 })
 
-describe('Linux Desktop profiles', () => {
+describe.if(process.platform === 'linux')('Linux Desktop profiles', () => {
   it('launches an installed executable directly with the profile environment and arguments', async () => {
     const appPath = join(tempDir, 'Beeper')
     const capturePath = join(tempDir, 'app-capture')

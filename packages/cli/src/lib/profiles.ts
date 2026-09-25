@@ -73,6 +73,8 @@ export async function launchDesktopApp(target?: Target): Promise<{ id: string; s
   } else if (process.platform === 'linux' || process.platform === 'win32') {
     if (!appPath) throw new Error('Beeper Desktop was not found. Install Beeper Desktop and try again.')
     spawn(appPath, desktopLaunchArgs(target), { detached: true, stdio: 'ignore', env }).unref()
+  } else {
+    throw new Error(`Beeper Desktop launch is not supported on ${process.platform}.`)
   }
   return { id: target?.id ?? 'desktop', startedAt: new Date().toISOString() }
 }
