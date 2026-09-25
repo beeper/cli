@@ -111,8 +111,11 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
           continue
         }
 
-        if (options.nonInteractive) throw new Error(`Missing required cookie ${id}. Pass --cookie ${id}=... or run without --non-interactive.`)
         const optional = (field as CookieField).required === false
+        if (options.nonInteractive) {
+          if (optional) continue
+          throw new Error(`Missing required cookie ${id}. Pass --cookie ${id}=... or run without --non-interactive.`)
+        }
         const value = await promptSecret(`${id}${optional ? ' (optional, Enter to skip if not found)' : ''}: `)
         if (value || !optional) fields[id] = value
       }
