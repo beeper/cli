@@ -196,29 +196,16 @@ Variants: \`beeper install server\`, \`beeper install server --server-env stagin
 
 #### Headless server (no browser)
 
-On a VPS or machine without a graphical environment, use the email-based auth
-flow instead of OAuth:
+On a VPS or any machine without a browser, sign in with an emailed code.
+\`setup\` prompts for the code, then starts device verification:
 
-\`\`\`text
-$ beeper setup --server --install
-▎ Installed   Beeper Server (stable)
-▎ Started     server on http://127.0.0.1:23374
-
-$ beeper auth email start --email you@example.com -t server
-  setupRequestID  20260527…-a76ef169-…
-
-$ beeper auth email response --code 570056 --setup-request-id 20260527…-a76ef169-… -t server --yes
-▎ Not ready  needs verification
-
-$ beeper verify recovery-key -t server --key "XXXX-XXXX-XXXX-…"
-▎ Ready       server
-  endpoint    http://127.0.0.1:23374
-
-$ beeper targets enable server
-Enabled target at login
+\`\`\`sh
+beeper setup --server --install --email you@example.com
+beeper verify recovery-key -t server --key "ABCD-EFGH-IJKL-MNOP"  # if no other device can approve
+beeper targets enable server                                      # start at login
 \`\`\`
 
-See [setup — Headless server setup](packages/cli/docs/setup.md#headless-server-setup) for details.
+Scripts, agents, and start-at-boot: [Headless server setup](https://github.com/beeper/cli/blob/main/packages/cli/docs/setup.md#headless-server-setup).
 
 ### 3. Remote Desktop or Server via OAuth (PKCE)
 
