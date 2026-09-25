@@ -1,5 +1,6 @@
 import { createInterface } from 'node:readline/promises'
 import { execFileSync, spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -252,7 +253,13 @@ async function collectCookieFieldsWithWebView(step: CookieLoginStep, options: Ac
 }
 
 function findChromiumBrowser(which: ((name: string) => string | null) | undefined): string | undefined {
-  return process.env.BUN_CHROME_PATH || [
+  if (process.env.BUN_CHROME_PATH) return process.env.BUN_CHROME_PATH
+  if (process.platform === 'darwin') {
+    return ['Google Chrome', 'Chromium', 'Brave Browser', 'Microsoft Edge', 'Vivaldi', 'Opera']
+      .map(name => `/Applications/${name}.app/Contents/MacOS/${name}`)
+      .find(path => existsSync(path))
+  }
+  return [
     'google-chrome-stable', 'google-chrome', 'chromium', 'chromium-browser',
     'brave-browser', 'microsoft-edge', 'opera-gx', 'opera', 'vivaldi',
   ].map(name => which?.(name)).find((path): path is string => Boolean(path))
