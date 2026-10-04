@@ -54,7 +54,7 @@ Command manual: \`beeper man\` · CLI docs: \`beeper docs\`
 
 - **Connects to your Beeper.** Local Beeper Desktop on this machine (default), a Beeper Server you install and manage via the CLI, or a remote Beeper Desktop or Beeper Server authorized over OAuth/PKCE — or a bearer token in CI.
 - **Setup that does the work.** \`beeper setup\` finds Beeper Desktop, offers to launch it, adopts the session. \`--server --install\` installs and starts a headless server in one step. \`--oauth\` opens the browser. \`--remote URL\` does the rest.
-- **Every chat, every network.** List, search, start, archive, pin, mute, rename, focus. Read, edit, delete, react. Send text, files, stickers, voice, typing indicators. Download media. Export to JSON or Markdown.
+- **Every chat, every network.** List, search, start, archive, pin, mute, rename, focus. Read labels and scope chat workflows by label. Read, edit, delete, react. Send text, files, stickers, voice, typing indicators. Download media. Export to JSON or Markdown.
 - **Verification first-class.** SAS/QR device verification, recovery-key unlock, \`status\`/\`doctor\` to reach an encrypted-ready target — without leaving the shell.
 - **Agent-shaped automation.** \`--json\` everywhere, NDJSON \`--events\`, \`watch\` with WebSocket + outbound HMAC-signed webhooks, \`rpc\` over stdin/stdout, \`man --json\` tool manifests, raw \`api get\`/\`post\`/\`request\` for Beeper Client API endpoints we haven't wrapped yet.
 - **Safe by default.** \`--read-only\` rejects every mutating command. Writes stay explicit. Plugins extend the CLI without forking it.
@@ -246,7 +246,7 @@ WhatsApp, Telegram, Discord, iMessage, and the rest show up under \`accounts lis
 | **Setup + install** | [setup](docs/setup.md) · [auth](docs/auth.md) | \`setup\` · \`install desktop\` · \`install server\` · \`verify\` · \`status\` · \`doctor\` · \`auth status\` |
 | **Targets** | [targets](docs/targets.md) | \`targets list\` · \`targets add desktop\` · \`targets add server\` · \`targets add remote\` · \`targets use\` · \`targets status\` · \`targets logs\` |
 | **Bridges + accounts** | [accounts](docs/accounts.md) | \`bridges list\` · \`bridges show\` · \`accounts list\` · \`accounts add\` · \`accounts show\` · \`accounts use\` · \`accounts remove\` |
-| **Chats** | [chats](docs/chats.md) | \`chats list\` · \`chats search\` · \`chats show\` · \`chats start\` · \`chats archive\` · \`chats pin\` · \`chats mute\` · \`chats priority\` · \`chats remind\` · \`chats rename\` · \`chats draft\` · \`chats focus\` |
+| **Chats + labels** | [chats](docs/chats.md) · [labels](docs/labels.md) | \`labels list\` · \`chats list\` · \`chats search\` · \`chats show\` · \`chats start\` · \`chats archive\` · \`chats pin\` · \`chats mute\` · \`chats priority\` · \`chats remind\` · \`chats rename\` · \`chats draft\` · \`chats focus\` |
 | **Messages** | [messages](docs/messages.md) · [send](docs/send.md) · [presence](docs/presence.md) | \`messages list\` · \`messages search\` · \`messages export\` · \`send text\` · \`send file\` · \`send sticker\` · \`send voice\` · \`send react\` · \`presence\` |
 | **Contacts + media** | [contacts](docs/contacts.md) · [media](docs/media.md) · [export](docs/export.md) | \`contacts list\` · \`contacts search\` · \`media download\` · \`export\` |
 | **Automation** | [watch](docs/watch.md) · [rpc](docs/rpc.md) · [api](docs/api.md) | \`watch\` · \`watch --webhook\` · \`rpc\` · \`man\` · \`api get\` · \`api post\` · \`api request\` |
@@ -294,6 +294,7 @@ JSON output preserves the same envelope on failure: \`{"success":false,"data":nu
 - Ambiguous chat matches return numbered choices; pass \`--pick N\` to select one.
 - Account arguments accept account IDs, network names, bridge type/id, or account user identity.
 - Account filters can expand a network name to multiple matching accounts.
+- Label filters accept a label ID, exact name, or unique partial name. Run \`beeper labels list\` to discover labels.
 - \`contacts search\` and \`chats start\` can search across all accounts when \`--account\` is omitted.
 - \`contacts list\` accepts the same account selectors as other account-scoped commands.
 
