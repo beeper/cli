@@ -2,14 +2,14 @@ import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
-import { resolveChatID } from '../../lib/resolve.js'
-import { sendMessage } from '../../lib/send-message.js'
+import { resolveSendChatID, sendMessage } from '../../lib/send-message.js'
 
 export default class SendSticker extends BeeperCommand {
   static override summary = 'Send a sticker'
   static override description = 'Uploads the file and sends as a sticker message. Defaults --mime to image/webp.'
   static override flags = {
-    to: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
+    to: Flags.string({ required: true, description: 'Chat selector, or recipient phone/email/name when --account is used' }),
+    account: Flags.string({ description: 'Account selector; when set, resolve or start a direct chat for --to on this account' }),
     file: Flags.string({ required: true, description: 'Sticker file (typically 512x512 WebP)' }),
     filename: Flags.string({ description: 'Override the displayed filename' }),
     mime: Flags.string({ default: 'image/webp', description: 'MIME type for the sticker (default: image/webp)' }),
@@ -22,7 +22,7 @@ export default class SendSticker extends BeeperCommand {
     const { flags } = await this.parse(SendSticker)
     ensureWritable(flags)
     const client = await createClient(flags)
-    const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
+    const chatID = await resolveSendChatID(client, { to: flags.to, pick: flags.pick, account: flags.account })
     await printData(
       await sendMessage(client, {
         chatID,

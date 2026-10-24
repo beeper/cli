@@ -27,6 +27,8 @@ beeper accounts remove <selector>
   omitted.
 - `accounts use ""` clears the default.
 - `accounts list --json` annotates the default account with `default: true`.
+- Native iMessage can be active even when `/v1/accounts` omits it. When that happens, the CLI infers the stable `imessage_*` account ID from iMessage chats, marks the row `native: true` / `inferredFrom: "chats"`, and allows `iMessage` as an account selector.
+- Use `beeper doctor --network imessage` to inspect native-account discovery, contact-name resolution, and older-history pagination. A discovered account/chat may be cached; it does **not** verify live connectivity or delivery. The JSON check reports `connectivity: "unverified"` and distinguishes a successful `/v1/accounts` check from an API failure through `accountProbe`. A failed accounts request stops normal `accounts list` rather than producing an apparently authoritative list based on cached chats. Target readiness retains its separate exit status.
 - For non-interactive sign-in, pass `--flow`, `--field`, and `--cookie` and
   add `--non-interactive` to fail instead of prompting.
 - For cookie-based sign-in, `--webview` signs you in through a browser and
@@ -37,6 +39,7 @@ beeper accounts remove <selector>
 
 ```sh
 beeper accounts list --json
+beeper doctor --network imessage
 beeper bridges list
 beeper accounts add local-whatsapp
 beeper accounts add discord --non-interactive --cookie sessionid=…

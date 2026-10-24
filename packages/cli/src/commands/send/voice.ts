@@ -2,14 +2,14 @@ import { Flags } from '@oclif/core'
 import { BeeperCommand, ensureWritable } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { printData } from '../../lib/output.js'
-import { resolveChatID } from '../../lib/resolve.js'
-import { sendMessage } from '../../lib/send-message.js'
+import { resolveSendChatID, sendMessage } from '../../lib/send-message.js'
 
 export default class SendVoice extends BeeperCommand {
   static override summary = 'Send a voice note'
   static override description = 'Uploads the audio file and sends as a voice note. Defaults --mime to audio/ogg.'
   static override flags = {
-    to: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
+    to: Flags.string({ required: true, description: 'Chat selector, or recipient phone/email/name when --account is used' }),
+    account: Flags.string({ description: 'Account selector; when set, resolve or start a direct chat for --to on this account' }),
     file: Flags.string({ required: true, description: 'Voice note audio file (OGG/Opus recommended)' }),
     duration: Flags.integer({ description: 'Voice note duration in seconds (overrides upload-detected duration)' }),
     filename: Flags.string({ description: 'Override the displayed filename' }),
@@ -23,7 +23,7 @@ export default class SendVoice extends BeeperCommand {
     const { flags } = await this.parse(SendVoice)
     ensureWritable(flags)
     const client = await createClient(flags)
-    const chatID = await resolveChatID(client, flags.to, { pick: flags.pick })
+    const chatID = await resolveSendChatID(client, { to: flags.to, pick: flags.pick, account: flags.account })
     await printData(
       await sendMessage(client, {
         chatID,
