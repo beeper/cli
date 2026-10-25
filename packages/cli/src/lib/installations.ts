@@ -1,7 +1,7 @@
 import { createWriteStream } from 'node:fs'
 import { chmod, cp, mkdir, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join } from 'node:path'
-import { Readable } from 'node:stream'
+import { Readable, Transform } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { ReadableStream } from 'node:stream/web'
 import { execFile } from 'node:child_process'
@@ -224,15 +224,37 @@ export async function updateServerInstallation(installation: Installation): Prom
   return installServer({ channel: installation.channel, serverEnv: installation.serverEnv })
 }
 
-export async function downloadArtifact(url: string, destinationDir: string): Promise<string> {
+// Time allowed for the server to start a download (response headers). The
+// artifact archives are large, so the body itself is only bounded while it
+// makes no progress - a slow but advancing download is allowed to finish.
+const DOWNLOAD_RESPONSE_TIMEOUT_MS = 30_000
+const DOWNLOAD_IDLE_TIMEOUT_MS = 120_000
+
+export type DownloadOptions = {
+  responseTimeoutMs?: number
+  idleTimeoutMs?: number
+}
+
+export async function downloadArtifact(url: string, destinationDir: string, options: DownloadOptions = {}): Promise<string> {
+  const responseTimeoutMs = options.responseTimeoutMs ?? DOWNLOAD_RESPONSE_TIMEOUT_MS
+  const idleTimeoutMs = options.idleTimeoutMs ?? DOWNLOAD_IDLE_TIMEOUT_MS
   await mkdir(destinationDir, { recursive: true })
-  const response = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(120_000) })
+  const controller = new AbortController()
+  const responseTimer = setTimeout(() => {
+    controller.abort(new Error(`Download server did not respond within ${Math.round(responseTimeoutMs / 1000)} seconds. Check your connection and try again.`))
+  }, responseTimeoutMs)
+  let response: Response
+  try {
+    response = await fetch(url, { redirect: 'follow', signal: controller.signal })
+  } finally {
+    clearTimeout(responseTimer)
+  }
   if (!response.ok || !response.body) throw new Error(`Download returned ${response.status} ${response.statusText}`)
   const filename = filenameFromResponse(response) ?? (basename(new URL(response.url).pathname) || `beeper-download-${Date.now()}`)
   const finalPath = join(destinationDir, filename)
   const tmpPath = join(destinationDir, `${filename}.${process.pid}.${Date.now()}.tmp`)
   try {
-    await writeResponseToFile(response, tmpPath)
+    await writeResponseToFile(response, tmpPath, idleTimeoutMs)
     await rename(tmpPath, finalPath)
   } catch (error) {
     await rm(tmpPath, { force: true })
@@ -383,10 +405,32 @@ function stringField(value: unknown, fields: string[]): string | undefined {
   return undefined
 }
 
-async function writeResponseToFile(response: Response, path: string): Promise<void> {
+async function writeResponseToFile(response: Response, path: string, idleTimeoutMs: number): Promise<void> {
   if (!response.body) throw new Error('Download response did not include a body.')
 
-  await pipeline(Readable.fromWeb(response.body as unknown as ReadableStream), createWriteStream(path))
+  let timer: NodeJS.Timeout | undefined
+  const reset = () => {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => {
+      watchdog.destroy(new Error(`Download stalled: no data received for ${Math.round(idleTimeoutMs / 1000)} seconds. Check your connection and try again.`))
+    }, idleTimeoutMs)
+  }
+  const watchdog = new Transform({
+    transform(chunk, _encoding, callback) {
+      reset()
+      callback(null, chunk)
+    },
+    final(callback) {
+      if (timer) clearTimeout(timer)
+      callback()
+    },
+  })
+  watchdog.on('close', () => {
+    if (timer) clearTimeout(timer)
+  })
+  reset()
+
+  await pipeline(Readable.fromWeb(response.body as unknown as ReadableStream), watchdog, createWriteStream(path))
 }
 
 function filenameFromResponse(response: Response): string | undefined {

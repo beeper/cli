@@ -57,6 +57,81 @@ it('removes the partial file when a download is interrupted', async () => {
   }
 })
 
+it('finishes a slow download as long as data keeps flowing', async () => {
+  const destination = await mkdtemp(join(tmpdir(), 'beeper-download-'))
+  const chunks = ['alpha-', 'beta-', 'gamma-', 'delta-', 'epsilon']
+  const server = Bun.serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    fetch: () =>
+      new Response(
+        new ReadableStream({
+          async start(controller) {
+            for (const chunk of chunks) {
+              // Every gap stays under the idle timeout while the whole body
+              // takes far longer - a fixed total deadline would abort this.
+              await Bun.sleep(30)
+              controller.enqueue(new TextEncoder().encode(chunk))
+            }
+            controller.close()
+          },
+        }),
+        { headers: { 'content-type': 'application/octet-stream' } },
+      ),
+  })
+  try {
+    const artifact = await downloadArtifact(new URL('/beeper-server.tar.gz', server.url).href, destination, { idleTimeoutMs: 60 })
+
+    expect(await readFile(artifact, 'utf8')).toBe(chunks.join(''))
+    expect(await readdir(destination)).toEqual(['beeper-server.tar.gz'])
+  } finally {
+    server.stop(true)
+    await rm(destination, { recursive: true, force: true })
+  }
+})
+
+it('fails a download that stalls mid-body even when the server stays connected', async () => {
+  const destination = await mkdtemp(join(tmpdir(), 'beeper-download-'))
+  const server = Bun.serve({
+    hostname: '127.0.0.1',
+    port: 0,
+    fetch: () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('partial'))
+            // Never enqueues again and never closes: the connection looks
+            // alive, but the download makes no progress.
+          },
+        }),
+        { headers: { 'content-type': 'application/octet-stream' } },
+      ),
+  })
+  try {
+    await expect(downloadArtifact(new URL('/beeper-server.tar.gz', server.url).href, destination, { idleTimeoutMs: 50 })).rejects.toThrow(/stalled/)
+    expect(await readdir(destination)).toEqual([])
+  } finally {
+    server.stop(true)
+    await rm(destination, { recursive: true, force: true })
+  }
+})
+
+it('fails when the server never starts the download', async () => {
+  const destination = await mkdtemp(join(tmpdir(), 'beeper-download-'))
+  const server = createServer(socket => {
+    socket.on('data', () => {}) // Accept the request, never write a response.
+  })
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address() as { port: number }
+  try {
+    await expect(downloadArtifact(`http://127.0.0.1:${port}/beeper-server.tar.gz`, destination, { responseTimeoutMs: 50 })).rejects.toThrow(/did not respond/)
+    expect(await readdir(destination)).toEqual([])
+  } finally {
+    server.close()
+    await rm(destination, { recursive: true, force: true })
+  }
+})
+
 describe('server installation artifact selection', () => {
   it('uses the production stable Server artifact by default', () => {
     const request = normalizeInstallRequest({ kind: 'server', platform: 'linux', arch: 'x64' })
