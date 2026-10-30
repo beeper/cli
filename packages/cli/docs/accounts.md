@@ -28,7 +28,8 @@ beeper accounts remove <selector>
 - `accounts use ""` clears the default.
 - `accounts list --json` annotates the default account with `default: true`.
 - For non-interactive sign-in, pass `--flow`, `--field`, and `--cookie` and
-  add `--non-interactive` to fail instead of prompting.
+  add `--non-interactive` to fail instead of prompting. QR and pairing-code
+  steps still print the code and wait until the sign-in finishes.
 - For cookie-based sign-in, `--webview` signs you in through a browser and
   collects the cookie fields for you. Anything it can't collect falls back to
   prompts. See [Browser sign-in](#browser-sign-in-webview).

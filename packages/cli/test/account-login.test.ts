@@ -30,7 +30,7 @@ describe('runGuidedAccountLogin', () => {
     })
   })
 
-  it('returns display steps without blocking in non-interactive mode', async () => {
+  it('waits on display steps in non-interactive mode', async () => {
     const displayStep = session({
       currentStep: {
         type: 'display_and_wait',
@@ -38,12 +38,17 @@ describe('runGuidedAccountLogin', () => {
         display: { type: 'code', data: '123456' },
       },
     })
-    const submit = mock(async () => session({ status: 'complete' }))
+    const complete = session({ status: 'complete', currentStep: { type: 'complete', login: { loginID: 'login-1' } } })
+    const submit = mock(async () => complete)
 
-    const result = await runGuidedAccountLogin(fakeClient(submit), 'telegram', displayStep, { nonInteractive: true })
+    const result = await runGuidedAccountLogin(fakeClient(submit), 'local-whatsapp', displayStep, { nonInteractive: true })
 
-    expect(result).toBe(displayStep)
-    expect(submit).not.toHaveBeenCalled()
+    expect(result).toBe(complete)
+    expect(submit).toHaveBeenCalledWith('step-display', {
+      bridgeID: 'local-whatsapp',
+      loginSessionID: 'session-1',
+      type: 'display_and_wait',
+    })
   })
 
   it('submits user-input fields from flags and initial values in non-interactive mode', async () => {

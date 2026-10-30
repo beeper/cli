@@ -63,7 +63,6 @@ export async function runGuidedAccountLogin(client: BeeperDesktop, bridgeID: str
     if (!step || !('stepID' in step)) throw new Error('Account login session did not include a current step.')
 
     if (step.type === 'display_and_wait') {
-      if (options.nonInteractive) return session
       output.write('waiting for this step to complete...\n')
       session = await client.bridges.loginSessions.steps.submit(step.stepID, { bridgeID, loginSessionID: session.loginSessionID, type: 'display_and_wait' })
       continue
