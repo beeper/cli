@@ -192,3 +192,30 @@ export function userQueryFromInput(input: string): AnyRecord {
   if (/^\+?[\d\s().-]{5,}$/.test(trimmed)) return { phoneNumber: trimmed }
   return { fullName: trimmed, username: trimmed, id: trimmed }
 }
+
+/**
+ * Desktop API message list cursors are sortKeys, not message IDs.
+ * When chatID is available, resolve a user-supplied cursor (typically a message
+ * ID from CLI flags) by fetching the message and returning its sortKey.
+ * Values that are already sortKeys (retrieve 404s / no sortKey) pass through.
+ */
+export async function resolveMessageCursor(
+  client: any,
+  chatID: string,
+  cursor: string | undefined,
+): Promise<string | undefined> {
+  if (!cursor) return undefined
+  if (!client.messages?.retrieve) return cursor
+
+  try {
+    const message = await client.messages.retrieve(cursor, { chatID })
+    if (typeof message?.sortKey === 'string' && message.sortKey.length > 0) {
+      return message.sortKey
+    }
+  } catch (error) {
+    const text = error instanceof Error ? error.message : String(error)
+    if (/not\s*found|404/i.test(text)) return cursor
+    throw error
+  }
+  return cursor
+}

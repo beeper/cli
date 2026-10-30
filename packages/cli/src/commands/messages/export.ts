@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises'
 import { Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
-import { resolveChatID } from '../../lib/resolve.js'
+import { resolveChatID, resolveMessageCursor } from '../../lib/resolve.js'
 
 export default class MessagesExport extends BeeperCommand {
   static override summary = 'Export one chat to JSON'
@@ -10,8 +10,8 @@ export default class MessagesExport extends BeeperCommand {
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
     pick: Flags.integer({ description: 'Pick the Nth result when the selector is ambiguous (1-indexed)' }),
-    'before-cursor': Flags.string({ description: 'Paginate messages older than this message ID' }),
-    'after-cursor': Flags.string({ description: 'Paginate messages newer than this message ID' }),
+    'before-cursor': Flags.string({ description: 'Paginate messages older than this cursor (message ID or sortKey)' }),
+    'after-cursor': Flags.string({ description: 'Paginate messages newer than this cursor (message ID or sortKey)' }),
     after: Flags.string({ description: 'Only messages at or after this ISO timestamp (client-side filter)' }),
     before: Flags.string({ description: 'Only messages at or before this ISO timestamp (client-side filter)' }),
     limit: Flags.integer({ description: 'Maximum messages to export' }),
@@ -24,7 +24,7 @@ export default class MessagesExport extends BeeperCommand {
     if (flags['before-cursor'] && flags['after-cursor']) throw new Error('Use only one of --before-cursor or --after-cursor')
     const client = await createClient(flags)
     const chatID = await resolveChatID(client, flags.chat, { pick: flags.pick })
-    const cursor = flags['before-cursor'] ?? flags['after-cursor']
+    const cursor = await resolveMessageCursor(client, chatID, flags['before-cursor'] ?? flags['after-cursor'])
     const direction = flags['before-cursor'] ? 'before' : flags['after-cursor'] ? 'after' : undefined
     const afterTs = flags.after ? Date.parse(flags.after) : undefined
     const beforeTs = flags.before ? Date.parse(flags.before) : undefined

@@ -24,6 +24,7 @@ export type FakeChat = {
 export type FakeMessage = {
   id: string
   chatID: string
+  sortKey?: string
   text?: string
   isSender?: boolean
   senderID?: string
