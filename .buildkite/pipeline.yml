@@ -13,7 +13,8 @@ steps:
     command: .buildkite/commands/build-sign-notarize.sh
     plugins: [$CI_TOOLKIT_PLUGIN]
     artifact_paths:
-      - dist/*
+      - packages/cli/dist/bin/binaries.json
+      - packages/cli/dist/release/*
     notify:
       - github_commit_status:
           context: Build, Sign & Notarize

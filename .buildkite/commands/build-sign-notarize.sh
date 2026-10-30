@@ -35,14 +35,6 @@ ruby -rjson -e '
   end
 ' "$bin_dir/binaries.json" | (cd "$bin_dir" && shasum -a 256 -c -)
 
-echo "--- :package: archive binaries"
-
-# dist/ is gitignored, and the step's `artifact_paths` glob picks it up even if a
-# later command fails.
-mkdir -p dist
-
-# Buildkite artifacts carry bytes, not file modes, so a bare binary downloads
-# without its executable bit. Tar records the mode; extraction restores it.
-tar -czf dist/beeper-cli-binaries.tar.gz -C "$bin_dir" \
-  binaries.json beeper-darwin-arm64 beeper-darwin-x64 beeper-linux-arm64 beeper-linux-x64
-cp "$bin_dir/binaries.json" dist/binaries.json
+echo "--- :package: build release archives"
+# binaries.json records absolute paths on this agent, so the archives must be built here.
+bun run --cwd packages/cli scripts/build-homebrew-archive.ts
