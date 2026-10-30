@@ -636,31 +636,45 @@ export const DoctorCard: React.FC<{ checks: Array<{ ok: boolean; name: string; d
 }
 
 export const AuthStatusCard: React.FC<{ auth: RecordValue }> = ({ auth }) => {
-  const ok = Boolean(auth.authenticated)
+  const check = auth.check && typeof auth.check === 'object' ? auth.check as RecordValue : undefined
+  const checkState = check ? stringValue(check.state) : undefined
+  const stored = Boolean(auth.authenticated)
+  const ok = checkState ? checkState === 'valid' : stored
   const expires = auth.expiresAt ? formatTime(auth.expiresAt) ?? String(auth.expiresAt) : undefined
+  const status = checkState === 'valid'
+    ? { color: theme.mine, glyph: glyphs.check, label: 'token valid' }
+    : checkState === 'invalid'
+      ? { color: theme.danger, glyph: glyphs.cross, label: 'token invalid' }
+      : checkState === 'unknown'
+        ? { color: theme.warn, glyph: glyphs.ring, label: 'check unknown' }
+        : checkState === 'missing'
+          ? { color: theme.warn, glyph: glyphs.ring, label: 'no token' }
+          : stored
+            ? { color: theme.mine, glyph: glyphs.check, label: 'signed in' }
+            : { color: theme.warn, glyph: glyphs.ring, label: 'signed out' }
+
   return (
     <Box flexDirection="column">
       <Box>
-        <Rail color={ok ? theme.mine : theme.warn} />
+        <Rail color={status.color} />
         <Text> </Text>
         <Text bold color={theme.text}>Authentication</Text>
         <Text>  </Text>
-        {ok ? (
-          <Text color={theme.mine}>{glyphs.check} signed in</Text>
-        ) : (
-          <Text color={theme.warn}>{glyphs.ring} signed out</Text>
-        )}
+        <Text color={status.color}>{status.glyph} {status.label}</Text>
       </Box>
       <KV label="endpoint" value={
         <Hyperlink url={String(auth.baseURL)}><Text color={theme.link}>{String(auth.baseURL)}</Text></Hyperlink>
       } />
       <KV label="source" value={String(auth.source ?? 'none')} tone="muted" />
+      {checkState ? <KV label="check" value={checkState} tone={checkState === 'valid' ? 'muted' : 'normal'} /> : null}
+      {typeof check?.status === 'number' ? <KV label="http" value={String(check.status)} tone="dim" /> : null}
+      {check?.error ? <KV label="error" value={String(check.error)} tone="muted" /> : null}
       {auth.clientID ? <KV label="client" value={String(auth.clientID)} tone="dim" /> : null}
       {auth.scope ? <KV label="scope" value={String(auth.scope)} tone="muted" /> : null}
       {expires ? <KV label="expires" value={expires} tone="muted" /> : null}
       {!ok && (
         <Suggestions suggestions={[
-          { command: 'beeper setup', hint: 'continue target setup' },
+          { command: 'beeper setup', hint: checkState === 'invalid' ? 'refresh authentication' : 'continue target setup' },
         ]} />
       )}
     </Box>

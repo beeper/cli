@@ -895,11 +895,18 @@ Show stored auth for the selected target
 beeper auth status
 ```
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--check` | boolean | Validate the selected bearer token against the live target |
+
 Examples:
 
 ```sh
 beeper auth status
-beeper auth status --json
+beeper auth status --check
+beeper auth status --check --json
 ```
 
 Global flags: `--base-url`, `--target`, `--debug`, `--events`, `--full`, `--json`, `--quiet`, `--read-only`, `--timeout`, `--yes`.

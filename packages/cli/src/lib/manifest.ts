@@ -118,7 +118,7 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'auth status',
     description: 'Show stored auth for the selected target',
-    examples: ['beeper auth status', 'beeper auth status --json'],
+    examples: ['beeper auth status', 'beeper auth status --check', 'beeper auth status --check --json'],
   },
   {
     command: 'auth logout',
