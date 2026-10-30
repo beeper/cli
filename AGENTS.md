@@ -36,8 +36,6 @@ Try the CLI from source with `bun --filter @beeper/cli run dev -- <args>`.
 `bun run test` in `packages/cli` is more than unit tests: it builds, verifies the README is up to date, checks API copy against the SDK, validates the command manifest, runs `test/cli-smoke.ts`, then `bun test`.
 Unit tests use `bun:test` and live in `packages/cli/test/*.test.ts`; stub the SDK with `test/fixtures/fake-client.ts`.
 
-Ignore the shell scripts in `packages/cli/scripts/` without an extension (`format`, `mock`, `test`, …); use the `package.json` scripts.
-
 ## Adding or changing a command
 
 Commands extend `BeeperCommand` (`src/lib/command.ts`), which supplies the global flags.
