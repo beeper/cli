@@ -5,3 +5,8 @@ node_modules/
 /beeper-desktop-cli
 .upstream/
 *.exe
+
+# Ruby and fastlane
+/vendor/bundle/
+/fastlane/README.md
+/fastlane/report.xml
