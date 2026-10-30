@@ -34,7 +34,7 @@ jobs:
       with:
         node-version: "24"
         registry-url: https://registry.npmjs.org
-    # Trusted publishing needs npm 11.5.1 or newer.
+    # Trusted publishing and `npm stage` need a recent npm.
     - name: Update npm
       run: npm install -g npm@latest
     - name: Download release binaries.json
@@ -51,6 +51,7 @@ jobs:
     - name: Build npm package
       working-directory: packages/npm
       run: bun run build
-    - name: Publish
+    # Stage only: a maintainer approves the version on npmjs.com (Staged Packages) before it goes live.
+    - name: Stage publish
       working-directory: packages/npm
-      run: npm publish --access public
+      run: npm stage publish
