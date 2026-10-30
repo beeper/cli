@@ -500,7 +500,7 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'doctor',
     description: 'Probe the target live and report diagnostics',
-    examples: ['beeper doctor', 'beeper doctor --json'],
+    examples: ['beeper doctor', 'beeper doctor --data', 'beeper doctor --json'],
   },
   {
     command: 'status',

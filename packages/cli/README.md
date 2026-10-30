@@ -2488,10 +2488,17 @@ beeper doctor
 
 Active reachability check plus readiness diagnostics. Exits non-zero when the target is not ready. For a cheap snapshot use `beeper status`.
 
+Flags:
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--data` | boolean | Cross-check accounts, chats, messages, bridges, and bridge logins for data-plane drift |
+
 Examples:
 
 ```sh
 beeper doctor
+beeper doctor --data
 beeper doctor --json
 ```
 
