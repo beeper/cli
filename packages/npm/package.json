@@ -3,6 +3,11 @@
   "version": "0.6.3",
   "description": "Beeper CLI binary launcher",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beeper/cli.git",
+    "directory": "packages/npm"
+  },
   "type": "module",
   "bin": {
     "beeper": "bin/beeper.js"
