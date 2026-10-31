@@ -10,7 +10,7 @@ target file under `~/.beeper/targets/`; `BEEPER_ACCESS_TOKEN` overrides it.
 ## Commands
 
 ```sh
-beeper auth status
+beeper auth status [--check]
 beeper auth logout
 beeper auth email start     --email <addr>                          # headless sign-in, step 1
 beeper auth email response  --setup-request-id <id> --code <code>   # step 2
@@ -30,7 +30,7 @@ beeper verify cancel
 
 ## Notes
 
-- `auth status` reports the token source (env vs. target file) and metadata; it does not call the network.
+- `auth status` reports the token source (env vs. target file) and metadata without a network call by default. Add `--check` to ask the selected target whether that bearer is still accepted; the result is `valid`, `invalid`, `unknown`, or `missing`, and the token itself is never printed.
 - `auth logout` revokes the token at the Desktop OAuth endpoint and clears the local copy.
 - `auth email start` + `auth email response` sign in with an emailed code, no browser and no prompts. `response` also takes `--username <name> --yes` when the email has no Beeper account yet. Walkthrough: [Headless server setup](setup.md#headless-server-setup).
 - `verify` (no subcommand) walks the most common SAS/emoji verification flow interactively.
@@ -41,7 +41,7 @@ beeper verify cancel
 ## Examples
 
 ```sh
-beeper auth status --json
+beeper auth status --check --json
 beeper auth email start --email you@example.com -t server --json
 beeper auth email response --setup-request-id <id> --code 123456 -t server --json
 beeper verify
