@@ -31,7 +31,7 @@ export default class Setup extends BeeperCommand {
     oauth: Flags.boolean({ default: false, description: 'Authorize the target with browser OAuth/PKCE' }),
     remote: Flags.string({ description: 'Connect to a remote Beeper Desktop or Server URL' }),
     server: Flags.boolean({ default: false, description: 'Set up a local Beeper Server target' }),
-    desktop: Flags.boolean({ default: false, description: 'Set up a local Beeper Desktop target' }),
+    desktop: Flags.boolean({ default: false, description: 'Set up a separate CLI-managed Beeper Desktop profile; use --local for an already-running Desktop' }),
     install: Flags.boolean({ default: false, description: 'Allow installing missing managed runtime' }),
     channel: Flags.string({ options: ['stable', 'nightly'], default: 'stable', description: 'Install release channel' }),
     'server-env': Flags.string({ options: ['production', 'staging'], default: 'production', description: 'Server environment (production or staging)' }),
@@ -222,7 +222,10 @@ export default class Setup extends BeeperCommand {
     const target = await readTarget(id) ?? await createProfileTarget(type, id, { serverEnv: flags['server-env'], port: undefined })
     if (!flags.target) await updateConfig(config => ({ ...config, defaultTarget: config.defaultTarget ?? target.id }))
     await startProfile(target).catch(error => {
-      if (type === 'desktop') return undefined
+      if (type === 'desktop') {
+        this.warn(`Could not launch Beeper Desktop: ${error instanceof Error ? error.message : String(error)}`)
+        return undefined
+      }
       throw error
     })
     if (flags.email) {

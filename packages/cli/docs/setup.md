@@ -20,6 +20,7 @@ beeper install server  [--channel stable|nightly] [--server-env production|stagi
 ## Notes
 
 - `setup --local` reuses the local Beeper Desktop session (fastest trusted-device path).
+- `setup --desktop` starts a separate CLI-managed Beeper Desktop profile on its own port. Use `setup --local` for an already-running Desktop.
 - `setup --oauth` runs browser-based OAuth/PKCE against the resolved target.
 - `setup --remote URL` configures a remote Beeper Desktop or Server target.
 - `setup --desktop --install` or `setup --server --install` installs the runtime if missing, then sets up.

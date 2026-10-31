@@ -437,7 +437,7 @@ Flags:
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--channel=<stable\|nightly>` | option | Install release channel Default: stable |
-| `--desktop` | boolean | Set up a local Beeper Desktop target |
+| `--desktop` | boolean | Set up a separate CLI-managed Beeper Desktop profile; use --local for an already-running Desktop |
 | `--email=<value>` | option | Sign in with an email address |
 | `--install` | boolean | Allow installing missing managed runtime |
 | `--local` | boolean | Use the local Beeper Desktop session on this device |
