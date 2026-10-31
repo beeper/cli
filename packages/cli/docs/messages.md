@@ -6,7 +6,7 @@ reacting to, or exporting messages from chats.
 ## Commands
 
 ```sh
-beeper messages list   --chat SEL [--before-cursor MSG_ID | --after-cursor MSG_ID] [--sender me|others|<id>] [--asc] [--limit N] [--ids] [--pick N]
+beeper messages list   --chat SEL [--before-cursor CURSOR | --after-cursor CURSOR] [--sender me|others|<id>] [--asc] [--limit N] [--ids] [--pick N]
 beeper messages search [query] [--account SEL]... [--chat SEL]... [--chat-type group|single] [--sender me|others|<id>] [--media TYPE]... [--after ISO] [--before ISO] [--include-muted | --no-include-muted] [--exclude-low-priority | --no-exclude-low-priority] [--limit N] [--ids]
 beeper messages show     --chat SEL --id MSG_ID [--pick N]
 beeper messages context  --chat SEL --id MSG_ID [--before N] [--after N] [--pick N]
@@ -14,12 +14,12 @@ beeper messages edit     --chat SEL --id MSG_ID --message TEXT [--pick N]
 beeper messages delete   --chat SEL --id MSG_ID [--for-everyone] [--pick N]
 beeper messages react    --chat SEL --id MSG_ID --reaction KEY [--pick N]   # hidden; prefer `send react`
 beeper messages unreact  --chat SEL --id MSG_ID --reaction KEY [--pick N]   # hidden; prefer `send unreact`
-beeper messages export   --chat SEL [--before-cursor MSG_ID | --after-cursor MSG_ID] [--after ISO] [--before ISO] [--limit N] [--output PATH | -o -] [--asc] [--pick N]
+beeper messages export   --chat SEL [--before-cursor CURSOR | --after-cursor CURSOR] [--after ISO] [--before ISO] [--limit N] [--output PATH | -o -] [--asc] [--pick N]
 ```
 
 ## Notes
 
-- `--before-cursor` / `--after-cursor` paginate by message ID (the SDK's cursor model).
+- `--before-cursor` / `--after-cursor` paginate by Desktop API cursor (`sortKey`). Message IDs are accepted and resolved to `sortKey` via message lookup.
 - `--before` / `--after` in `messages search` and `messages export` filter by ISO timestamp.
 - `messages search` rejects an empty query *and* no filter flags with exit code 2 (`usageError`).
 - `messages list --sender` filters client-side: `me` (your own messages), `others`, or an exact user ID.

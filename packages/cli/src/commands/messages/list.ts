@@ -2,14 +2,14 @@ import { Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { collectPage, printIDs, printList } from '../../lib/output.js'
-import { resolveChatID } from '../../lib/resolve.js'
+import { resolveChatID, resolveMessageCursor } from '../../lib/resolve.js'
 
 export default class MessagesList extends BeeperCommand {
   static override summary = 'List chat messages'
   static override flags = {
     chat: Flags.string({ required: true, description: 'Chat selector (ID, local ID, title, or search text)' }),
-    'before-cursor': Flags.string({ description: 'Paginate messages older than this message ID' }),
-    'after-cursor': Flags.string({ description: 'Paginate messages newer than this message ID' }),
+    'before-cursor': Flags.string({ description: 'Paginate messages older than this cursor (message ID or sortKey)' }),
+    'after-cursor': Flags.string({ description: 'Paginate messages newer than this cursor (message ID or sortKey)' }),
     sender: Flags.string({ description: 'Filter by sender: me, others, or a specific user ID (client-side)' }),
     asc: Flags.boolean({ default: false, description: 'Order oldest first (default: newest first)' }),
     ids: Flags.boolean({ default: false, description: 'Print only message IDs' }),
@@ -23,7 +23,8 @@ export default class MessagesList extends BeeperCommand {
     const before = flags['before-cursor']
     const after = flags['after-cursor']
     if (before && after) throw new Error('Use only one of --before-cursor or --after-cursor')
-    let items = await collectFiltered(client.messages.list(chatID, { cursor: before ?? after, direction: before ? 'before' : after ? 'after' : undefined }), flags.limit, flags.sender)
+    const cursor = await resolveMessageCursor(client, chatID, before ?? after)
+    let items = await collectFiltered(client.messages.list(chatID, { cursor, direction: before ? 'before' : after ? 'after' : undefined }), flags.limit, flags.sender)
     if (flags.asc) items = [...items].reverse()
     if (flags.ids) printIDs(items)
     else await printList(items, flags.json ? 'json' : 'human', { title: 'No messages yet', subtitle: 'This chat is empty.' })
