@@ -22,6 +22,7 @@ beeper messages export   --chat SEL [--before-cursor MSG_ID | --after-cursor MSG
 - `--before-cursor` / `--after-cursor` paginate by message ID (the SDK's cursor model).
 - `--before` / `--after` in `messages search` and `messages export` filter by ISO timestamp.
 - `messages search` rejects an empty query *and* no filter flags with exit code 2 (`usageError`).
+- When `messages search` uses `--chat`, the CLI avoids the Desktop API's currently lossy `chatIDs` search path and applies the resolved chat filter client-side over account-scoped search results, preventing silent one-message-per-chat truncation.
 - `messages list --sender` filters client-side: `me` (your own messages), `others`, or an exact user ID.
 - `messages list --asc` reverses the default newest-first order.
 - `messages export` writes one chat to JSON. Use top-level `export` for a full
