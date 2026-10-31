@@ -78,7 +78,7 @@ function formula({formulaClass, formulaName, sourceRepository, tag, version, met
   end
 
   def install
-    bin.install "bin/${commandName}"
+    bin.install "${commandName}"
   end
 
   test do
