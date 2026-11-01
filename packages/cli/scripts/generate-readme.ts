@@ -239,6 +239,30 @@ Once connected, \`beeper accounts add\` walks each chat-network bridge through
 its own login — QR, code, OAuth, cookie, whatever the bridge requires — so
 WhatsApp, Telegram, Discord, iMessage, and the rest show up under \`accounts list\`.
 
+
+## MCP (agents)
+
+Beeper Desktop and Beeper Server both serve an MCP endpoint when enabled.
+Confirm with \`beeper api get /v1/info\` — look for \`"mcp_enabled": true\`. Use \`/v0/mcp\` on the selected target's actual base URL (shown by
+\`beeper auth status\`). Desktop normally uses \`http://127.0.0.1:23373\`;
+managed Server targets may use a different port.
+
+On Beeper Server (headless), authenticate with a bearer token. The browser
+OAuth approval UI needs Beeper Desktop; on Server, pass
+\`Authorization: Bearer …\` instead. Use the token the CLI stores for your
+target under \`~/.beeper/targets/\`, or set \`BEEPER_ACCESS_TOKEN\`.
+
+Example (Claude Code), substituting the base URL for your selected target:
+
+\`\`\`sh
+claude mcp add beeper <target-base-url>/v0/mcp -t http \\
+  -H "Authorization: Bearer <token>"
+\`\`\`
+
+A \`beeper mcp\` helper that performs this wiring is tracked with the docs/agent
+CLI work in [#10](https://github.com/beeper/cli/pull/10). Until then, point
+your MCP client at the URL above with the bearer header.
+
 ## Documentation
 
 | Topic | Page | Commands |
