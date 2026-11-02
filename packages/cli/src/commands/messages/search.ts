@@ -60,11 +60,12 @@ export default class MessagesSearch extends BeeperCommand {
     }
     const useSpinner = !flags.json && !flags.ids
     const label = args.query ? `Searching messages for "${args.query}"…` : 'Searching messages…'
+    const load = () => collectMessageSearch(client, params, flags.limit, chatIDs)
     const items = useSpinner
-      ? await withSpinner(label, () => collectPage(client.messages.search(params), flags.limit), {
+      ? await withSpinner(label, load, {
         done: value => `${value.length} match${value.length === 1 ? '' : 'es'}`,
       })
-      : await collectPage(client.messages.search(params), flags.limit)
+      : await load()
     if (flags.ids) {
       printIDs(items)
       return
@@ -78,4 +79,61 @@ export default class MessagesSearch extends BeeperCommand {
       ],
     })
   }
+}
+
+
+async function collectMessageSearch(
+  client: any,
+  params: Record<string, unknown> & { accountIDs?: string[]; chatIDs?: string[] },
+  limit: number,
+  resolvedChatIDs?: string[],
+): Promise<any[]> {
+  if (!resolvedChatIDs?.length) {
+    return collectPage(client.messages.search(params), limit)
+  }
+
+  // Desktop currently truncates message search to one result per chat when chatIDs
+  // is supplied. Search the relevant account(s) instead, then apply the exact chat
+  // filter client-side so CLI results are not silently incomplete.
+  const allowedChatIDs = new Set(resolvedChatIDs.map(String))
+  const accountIDs = new Set<string>()
+  let canScopeAccounts = true
+
+  for (const chatID of resolvedChatIDs) {
+    try {
+      const chat = await client.chats.retrieve(chatID)
+      if (chat?.id) allowedChatIDs.add(String(chat.id))
+      if (chat?.localChatID) allowedChatIDs.add(String(chat.localChatID))
+      if (chat?.accountID) accountIDs.add(String(chat.accountID))
+      const memberChatIDs = chat?.merge?.chatIDs
+      if (Array.isArray(memberChatIDs) && memberChatIDs.length) {
+        canScopeAccounts = false
+        for (const memberChatID of memberChatIDs) allowedChatIDs.add(String(memberChatID))
+      }
+    } catch {
+      // The resolver already identified this chat. Keep the resolved selector in
+      // the filter even if details cannot be loaded for account narrowing.
+      canScopeAccounts = false
+    }
+  }
+
+  const scopedAccountIDs = params.accountIDs?.length
+    ? params.accountIDs
+    : canScopeAccounts && accountIDs.size
+      ? Array.from(accountIDs)
+      : undefined
+
+  const safeParams = {
+    ...params,
+    accountIDs: scopedAccountIDs,
+    chatIDs: undefined,
+  }
+
+  const items: any[] = []
+  for await (const message of client.messages.search(safeParams)) {
+    if (!allowedChatIDs.has(String(message?.chatID ?? ''))) continue
+    items.push(message)
+    if (items.length >= limit) break
+  }
+  return items
 }
