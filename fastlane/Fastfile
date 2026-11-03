@@ -3,6 +3,7 @@
 require 'digest'
 require 'fileutils'
 require 'json'
+require 'plist'
 require 'shellwords'
 
 UI.user_error!('Please run fastlane via `bundle exec`') unless FastlaneCore::Helper.bundler?
@@ -12,6 +13,11 @@ BINARIES_MANIFEST = File.join(PROJECT_ROOT_FOLDER, 'packages', 'cli', 'dist', 'b
 
 APPLE_TEAM_ID = 'PZYM8XX95Q'
 SIGNING_IDENTITY = "Developer ID Application: Automattic, Inc. (#{APPLE_TEAM_ID})"
+
+ENTITLEMENTS_FILE = File.join(PROJECT_ROOT_FOLDER, 'packages', 'cli', 'macos.entitlements')
+# Without it, Bun still starts and passes smoke tests under the hardened runtime, but its
+# JavaScript engine silently falls back to the interpreter.
+ALLOW_JIT_ENTITLEMENT = 'com.apple.security.cs.allow-jit'
 
 CODE_SIGNING_STORAGE_OPTIONS = {
   storage_mode: 's3',
@@ -102,6 +108,7 @@ lane :sign_and_notarize do |binary:|
     '--sign', SIGNING_IDENTITY,
     # The hardened runtime is a precondition for notarization.
     '--options', 'runtime',
+    '--entitlements', ENTITLEMENTS_FILE,
     '--timestamp',
     '--force',
     binary
@@ -147,6 +154,9 @@ lane :verify_code_signing do |binary:|
   end
 
   UI.user_error!("#{binary} is not signed with the hardened runtime:\n#{details}") unless details.include?('(runtime)')
+
+  entitlements = Plist.parse_xml(sh("codesign --display --entitlements - --xml #{binary.shellescape} 2>/dev/null", log: false))
+  UI.user_error!("#{binary} is missing the #{ALLOW_JIT_ENTITLEMENT} entitlement") unless entitlements&.fetch(ALLOW_JIT_ENTITLEMENT, false) == true
 
   UI.success("#{binary} is signed by #{SIGNING_IDENTITY}")
 end

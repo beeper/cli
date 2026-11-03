@@ -51,6 +51,8 @@ try {
       '--force',
       '--options',
       'runtime',
+      '--entitlements',
+      join(root, 'macos.entitlements'),
       '--timestamp',
       '--sign',
       resolvedIdentity,
