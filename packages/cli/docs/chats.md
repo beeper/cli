@@ -8,7 +8,7 @@ disappear timer, reminders.
 
 ```sh
 beeper chats list [--account SEL]... [--archived] [--pinned] [--muted] [--unread] [--low-priority] [--limit N] [--ids]
-beeper chats search <query> [--account SEL]... [--limit N] [--ids]
+beeper chats search [query] [--account SEL]... [--label NAME_OR_ID] [--unread] [--limit N] [--ids]
 beeper chats show     --chat SEL [--max-participants N] [--pick N]
 beeper chats start    <user> [--account SEL] [--title TEXT]
 beeper chats archive | unarchive          --chat SEL [--pick N]
@@ -35,7 +35,7 @@ beeper chats focus        --chat SEL [--message MSG_ID] [--draft TEXT] [--attach
 - `chats mute` is currently boolean — the Desktop API does not yet expose a mute duration.
 - `chats focus` opens Beeper Desktop on the selected chat (and optionally scrolls to a message or prefills the composer).
 - `chats disappear --seconds 0` turns disappearing messages off.
-- Labels are not yet supported by the Desktop API; there is no `chats label` command in this CLI.
+- Labels are readable through the Desktop API. Use `beeper labels list` to discover them, then `beeper chats search --label <name-or-id>` to work within one. Label creation and assignment are not yet exposed by the API, so the CLI does not offer label writes.
 
 ## Examples
 
@@ -43,6 +43,9 @@ beeper chats focus        --chat SEL [--message MSG_ID] [--draft TEXT] [--attach
 beeper chats list --pinned --limit 50
 beeper chats list --unread --no-muted --json
 beeper chats search Family
+beeper labels list
+beeper chats search --label Work --unread
+beeper chats search invoice --label Customers
 beeper chats start +15551234567
 beeper chats archive --chat "Family"
 beeper chats mute --chat "Marketing"

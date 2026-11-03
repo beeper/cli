@@ -231,6 +231,11 @@ export const commandManifest: ManifestCommand[] = [
     examples: ['beeper accounts use whatsapp-main'],
   },
   {
+    command: 'labels list',
+    description: 'List chat labels',
+    examples: ['beeper labels list', 'beeper labels list --json'],
+  },
+  {
     command: 'chats list',
     description: 'List chats',
     examples: [
@@ -242,7 +247,11 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'chats search',
     description: 'Search chats',
-    examples: ['beeper chats search Family'],
+    examples: [
+      'beeper chats search Family',
+      'beeper chats search --label Work --unread',
+      'beeper chats search invoice --label Customers',
+    ],
   },
   {
     command: 'chats show',

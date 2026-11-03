@@ -66,6 +66,7 @@ const expectedCommands = [
   'accounts show',
   'accounts remove',
   'accounts use',
+  'labels list',
   'chats list',
   'chats search',
   'chats show',
@@ -149,6 +150,7 @@ assert.match(help, /\bplugins\b/, 'help should expose plugin management')
 assert.doesNotMatch(help, /^\s{2,}autocomplete\s/m, 'help should expose completion instead of raw autocomplete')
 assert.match(help, /\bbridges\b/, 'help should expose bridges')
 assert.match(help, /\bverify\b/, 'help should expose verification')
+assert.match(help, /\blabels\b/, 'help should expose labels')
 assert.doesNotMatch(help, /\bassets\b|\bapp\b/, 'help must not expose old API namespaces')
 
 for (const command of expectedCommands) {
@@ -161,6 +163,9 @@ assert.match(ok('send', 'text', '--help'), /--to/, 'send text should use --to')
 assert.match(ok('send', 'text', '--help'), /--message/, 'send text should use --message')
 assert.match(ok('send', 'file', '--help'), /--file/, 'send file should use --file')
 assert.match(ok('send', 'file', '--help'), /--caption/, 'send file should use --caption')
+assert.match(ok('labels', 'list', '--help'), /chat labels/i, 'labels list should expose label discovery')
+assert.match(ok('chats', 'search', '--help'), /--label/, 'chats search should expose label filtering')
+assert.match(ok('chats', 'search', '--help'), /--unread/, 'chats search should expose unread filtering')
 assert.match(ok('messages', 'list', '--help'), /--chat/, 'messages list should use --chat')
 assert.doesNotMatch(ok('chats', 'mute', '--help'), /--duration/, 'chats mute must not expose duration until API supports it')
 assert.match(ok('chats', 'list', '--help'), /--account=<value>\.\.\./, 'account filters must stay local')
