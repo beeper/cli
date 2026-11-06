@@ -60,7 +60,7 @@ function formatBugPanel(error: Error, version: string): string {
     ...stack.split('\n').map(line => `│   ${line}`),
     '│',
     `│ beeper-cli ${version} — please report at`,
-    '│   https://github.com/beeper/desktop-api-cli/issues',
+    '│   https://github.com/beeper/cli/issues',
     `└${'─'.repeat(60)}`,
     '',
   ].join('\n')

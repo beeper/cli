@@ -11,6 +11,6 @@ export default class AuthVerifyStart extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyStart)
     ensureWritable(flags)
     const client = await createClient(flags)
-    await printData(await client.app.verifications.create({ userID: flags.user }), flags.json ? 'json' : 'human')
+    await printData(await client.app.setup.verifications.create({ userID: flags.user }), flags.json ? 'json' : 'human')
   }
 }

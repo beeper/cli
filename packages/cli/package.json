@@ -118,7 +118,7 @@
     }
   },
   "dependencies": {
-    "@beeper/desktop-api": "github:beeper/desktop-api-js#next",
+    "@beeper/desktop-api": "github:beeper/desktop-api-js#fe1e736ccd101f687da03abfdaeb69ab57fa4bcf",
     "@oclif/core": "^4.11.2",
     "@oclif/plugin-autocomplete": "^3.2.49",
     "@oclif/plugin-help": "^6.2.48",

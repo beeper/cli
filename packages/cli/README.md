@@ -2308,7 +2308,7 @@ Search contacts
 beeper contacts search <query>
 ```
 
-Search contacts on a specific account using merged account contacts, network search, and exact identifier lookup.
+Search contacts on a specific account using merged account contacts, network search, and exact identifier lookup. The exact lookup only runs when the query is a phone number, email address, or username; pass one of those to resolve a specific person.
 
 Arguments:
 

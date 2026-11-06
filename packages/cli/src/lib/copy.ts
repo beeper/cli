@@ -19,7 +19,7 @@ export const apiCopy = {
   },
   contacts: {
     list: 'List merged contacts for a specific account with cursor-based pagination.',
-    search: 'Search contacts on a specific account using merged account contacts, network search, and exact identifier lookup.',
+    search: 'Search contacts on a specific account using merged account contacts, network search, and exact identifier lookup. The exact lookup only runs when the query is a phone number, email address, or username; pass one of those to resolve a specific person.',
   },
   messages: {
     delete: 'Delete a message by final message ID. Pending message IDs are not accepted because messages cannot be deleted while sending.',

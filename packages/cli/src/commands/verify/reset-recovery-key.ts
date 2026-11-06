@@ -10,7 +10,7 @@ export default class AuthVerifyResetRecoveryKey extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyResetRecoveryKey)
     ensureWritable(flags)
     const client = await createClient(flags)
-    const reset = await client.app.login.verification.recoveryKey.reset.create({})
+    const reset = await client.app.setup.recoveryKey.reset.create({})
 
     if ((flags.json || !process.stdin.isTTY) && !flags.yes) {
       throw new Error('Resetting the recovery key requires --yes in non-interactive mode so the new key can be confirmed.')
@@ -21,7 +21,7 @@ export default class AuthVerifyResetRecoveryKey extends BeeperCommand {
       if (!await promptYesNoDefaultYes('I saved this recovery key. Use it for this account?')) throw new Error('Recovery key reset cancelled.')
     }
 
-    const confirmed = await client.app.login.verification.recoveryKey.reset.confirm({ recoveryKey: reset.recoveryKey })
+    const confirmed = await client.app.setup.recoveryKey.reset.confirm({ recoveryKey: reset.recoveryKey })
 
     await printData({ recoveryKey: reset.recoveryKey, session: confirmed.session }, flags.json ? 'json' : 'human')
   }

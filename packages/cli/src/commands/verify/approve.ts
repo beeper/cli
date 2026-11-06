@@ -12,6 +12,6 @@ export default class AuthVerifyApprove extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyApprove)
     ensureWritable(flags)
     const client = await createClient(flags)
-    await printData(await client.app.verifications.accept(await resolveVerificationID(client, flags.id)), flags.json ? 'json' : 'human')
+    await printData(await client.app.setup.verifications.accept(await resolveVerificationID(client, flags.id)), flags.json ? 'json' : 'human')
   }
 }

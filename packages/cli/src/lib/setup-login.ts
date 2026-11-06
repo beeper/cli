@@ -13,8 +13,8 @@ export type SetupLoginResult = {
 
 export async function startEmailSetup(target: Target, email: string): Promise<{ setupRequestID: string }> {
   const client = setupClient(target)
-  const start = await client.app.login.start()
-  await client.app.login.email({ setupRequestID: start.setupRequestID, email })
+  const start = await client.app.setup.start()
+  await client.app.setup.email({ setupRequestID: start.setupRequestID, email })
   return { setupRequestID: start.setupRequestID }
 }
 
@@ -27,13 +27,13 @@ export async function finishEmailSetup(target: Target, options: {
   yes?: boolean
 }): Promise<SetupLoginResult> {
   const client = setupClient(target)
-  let output = await client.app.login.response({ setupRequestID: options.setupRequestID, response: options.code })
+  let output = await client.app.setup.response({ setupRequestID: options.setupRequestID, response: options.code })
   if (isRegistrationRequired(output)) {
     if ((options.json || !process.stdin.isTTY) && !options.yes) throw new Error('Registration requires --yes to accept the Beeper terms in non-interactive setup.')
     const username = options.username ?? (options.json || !process.stdin.isTTY ? undefined : await promptUsername(output.usernameSuggestions))
     if (!username) throw new Error('Registration requires --username.')
     if (!options.yes && !await promptYesNoDefaultYes('Accept the Beeper terms and create this account?')) throw new Error('Registration cancelled.')
-    output = await client.app.login.register({
+    output = await client.app.setup.register({
       acceptTerms: true,
       leadToken: output.leadToken,
       setupRequestID: output.setupRequestID,

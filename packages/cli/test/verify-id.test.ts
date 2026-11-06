@@ -3,7 +3,7 @@ import { resolveVerificationID } from '../src/lib/app-state.js'
 
 const clientWith = (items: Array<{ id: string }>) => {
   const list = mock(async () => ({ items }))
-  return { list, client: { app: { verifications: { list } } } }
+  return { list, client: { app: { setup: { verifications: { list } } } } }
 }
 
 describe('resolveVerificationID', () => {
