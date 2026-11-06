@@ -3,7 +3,6 @@
 require 'digest'
 require 'fileutils'
 require 'json'
-require 'shellwords'
 
 UI.user_error!('Please run fastlane via `bundle exec`') unless FastlaneCore::Helper.bundler?
 
@@ -137,18 +136,12 @@ end
 lane :verify_code_signing do |binary:|
   binary = resolve_from_project_root(binary)
 
-  sh('codesign', '--verify', '--strict', '--verbose=2', binary)
-
-  # `codesign --display` reports on stderr, which `sh` does not capture.
-  details = sh("codesign --display --verbose=2 #{binary.shellescape} 2>&1", log: false)
-
-  unless details.include?("Authority=#{SIGNING_IDENTITY}")
-    UI.user_error!("#{binary} is not signed by '#{SIGNING_IDENTITY}':\n#{details}")
-  end
-
-  UI.user_error!("#{binary} is not signed with the hardened runtime:\n#{details}") unless details.include?('(runtime)')
-
-  UI.success("#{binary} is signed by #{SIGNING_IDENTITY}")
+  macos_verify_code_signing(
+    artifact_path: binary,
+    expected_authority: SIGNING_IDENTITY,
+    verify_notarization: false,
+    verify_hardened_runtime: true
+  )
 end
 
 # fastlane runs lanes from the `fastlane/` directory, so a path a caller wrote
