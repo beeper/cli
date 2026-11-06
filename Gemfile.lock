@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/wordpress-mobile/release-toolkit
-  revision: 69214438466f39f56ead687ed1d3f19f22a09396
+  revision: 3b3d2221b48cfda6a1067fa76a0913e47dfb0f50
   branch: mokagio/macos-verify-bare-binaries
   specs:
     fastlane-plugin-wpmreleasetoolkit (15.2.0)

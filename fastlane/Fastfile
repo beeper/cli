@@ -139,13 +139,9 @@ lane :verify_code_signing do |binary:|
   macos_verify_code_signing(
     artifact_path: binary,
     expected_authority: SIGNING_IDENTITY,
-    verify_notarization: false
+    verify_notarization: false,
+    verify_hardened_runtime: true
   )
-
-  details = sh('codesign', '--display', '--verbose=2', binary, log: false)
-  UI.user_error!("#{binary} is not signed with the hardened runtime:\n#{details}") unless details.include?('(runtime)')
-
-  UI.success("#{binary} is signed by #{SIGNING_IDENTITY}")
 end
 
 # fastlane runs lanes from the `fastlane/` directory, so a path a caller wrote
