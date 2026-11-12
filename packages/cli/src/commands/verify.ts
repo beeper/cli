@@ -10,6 +10,10 @@ export default class AuthVerify extends BeeperCommand {
   async run(): Promise<void> {
     const { flags } = await this.parse(AuthVerify)
     ensureWritable(flags)
-    await printData(await driveVerification({ baseURL: flags['base-url'], target: flags.target, userID: flags.user, yes: flags.yes }), flags.json ? 'json' : 'human')
+    const state = await driveVerification({ baseURL: flags['base-url'], target: flags.target, userID: flags.user, yes: flags.yes })
+    if (!flags.json && state.state === 'needs-verification') {
+      process.stderr.write('Verification is pending. Approve on another signed-in device, then rerun `beeper verify`.\n')
+    }
+    await printData(state, flags.json ? 'json' : 'human')
   }
 }
