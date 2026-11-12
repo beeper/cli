@@ -69,12 +69,30 @@ export async function resolveVerificationID(client: VerificationLister, id?: str
   return active.id
 }
 
-export async function driveVerification(options: { baseURL?: string; target?: string; userID?: string; yes?: boolean } = {}): Promise<AppState> {
+function isCompletedVerificationConflict(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const match = /failed: 409 (\{.*\})$/s.exec(error.message)
+  if (!match) return false
+  try {
+    const body = JSON.parse(match[1]!) as { code?: string; details?: { state?: string } }
+    return body.code === 'verification_action_not_available' && body.details?.state === 'done'
+  } catch {
+    return false
+  }
+}
+
+export async function driveVerification(options: { baseURL?: string; target?: string; token?: string | false; userID?: string; yes?: boolean } = {}): Promise<AppState> {
   let state = await getAppState(options)
   if (state.state === 'ready') return state
   if (state.state === 'needs-login') throw new Error('Target is not signed in. Run `beeper setup` after signing in to Beeper Desktop.')
 
+  // A successful local SAS confirmation may return the previous availableActions.
+  // Never send sas.confirm twice for the same verification in one run.
+  const confirmedSAS = new Set<string>()
+
   for (;;) {
+    // Once setup has moved past verification, do not create a new request.
+    if (state.state !== 'needs-verification') return state
     const verification = state.verification
     const actions = new Set(verification?.availableActions ?? [])
     const id = verification?.id
@@ -98,12 +116,27 @@ export async function driveVerification(options: { baseURL?: string; target?: st
     }
 
     if (actions.has('sas.confirm') && id) {
+      if (confirmedSAS.has(id)) {
+        // The POST snapshot can still advertise sas.confirm even though the local
+        // confirmation was accepted. Re-read once; if still stale, return pending.
+        const latest = await getAppState(options)
+        if (latest.verification?.id === id && latest.verification.availableActions?.includes('sas.confirm')) return latest
+        state = latest
+        continue
+      }
       const sas = state.verification?.sas
       if (!options.yes) {
         process.stdout.write(`Verify that this matches on the other device:\n${sas?.emojis ?? sas?.decimals ?? '(no SAS data)'}\n`)
         if (!await promptYesNo('Do they match?')) throw new Error('Verification cancelled.')
       }
-      state = (await appRequest<SASConfirmResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/sas/confirm`, options)).session
+      try {
+        state = (await appRequest<SASConfirmResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/sas/confirm`, options)).session
+      } catch (error) {
+        // A 409 with state=done is a raced completion, not a failed verification.
+        if (!isCompletedVerificationConflict(error)) throw error
+        return getAppState(options)
+      }
+      confirmedSAS.add(id)
       continue
     }
 
