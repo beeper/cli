@@ -12,6 +12,6 @@ export default class AuthVerifySas extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifySas)
     ensureWritable(flags)
     const client = await createClient(flags)
-    await printData(await client.app.verifications.sas.start(await resolveVerificationID(client, flags.id)), flags.json ? 'json' : 'human')
+    await printData(await client.app.setup.verifications.sas.start(await resolveVerificationID(client, flags.id)), flags.json ? 'json' : 'human')
   }
 }

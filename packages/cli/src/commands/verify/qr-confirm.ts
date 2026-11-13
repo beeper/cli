@@ -12,6 +12,6 @@ export default class AuthVerifyQrConfirm extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyQrConfirm)
     ensureWritable(flags)
     const client = await createClient(flags)
-    await printData(await client.app.verifications.qr.confirmScanned(await resolveVerificationID(client, flags.id)), flags.json ? 'json' : 'human')
+    await printData(await client.app.setup.verifications.qr.confirmScanned(await resolveVerificationID(client, flags.id)), flags.json ? 'json' : 'human')
   }
 }

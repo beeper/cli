@@ -12,6 +12,6 @@ export default class AuthVerifyCancel extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyCancel)
     ensureWritable(flags)
     const client = await createClient(flags)
-    await printData(await client.app.verifications.cancel(await resolveVerificationID(client, flags.id), {}), flags.json ? 'json' : 'human')
+    await printData(await client.app.setup.verifications.cancel(await resolveVerificationID(client, flags.id), {}), flags.json ? 'json' : 'human')
   }
 }

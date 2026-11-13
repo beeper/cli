@@ -11,6 +11,6 @@ export default class AuthVerifyRecoveryKey extends BeeperCommand {
     const { flags } = await this.parse(AuthVerifyRecoveryKey)
     ensureWritable(flags)
     const client = await createClient(flags)
-    await printData(await client.app.login.verification.recoveryKey.verify({ recoveryKey: flags.key }), flags.json ? 'json' : 'human')
+    await printData(await client.app.setup.recoveryKey.verify({ recoveryKey: flags.key }), flags.json ? 'json' : 'human')
   }
 }

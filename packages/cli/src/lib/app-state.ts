@@ -1,8 +1,8 @@
-import type { AppSessionResponse } from '@beeper/desktop-api/resources/app'
-import type { QrConfirmScannedResponse, SASConfirmResponse, SASStartResponse, VerificationAcceptResponse, VerificationCreateResponse } from '@beeper/desktop-api/resources/app/verifications'
+import type { SetupRetrieveResponse } from '@beeper/desktop-api/resources/app/setup'
+import type { QRConfirmScannedResponse, SASConfirmResponse, SASStartResponse, VerificationAcceptResponse, VerificationCreateResponse } from '@beeper/desktop-api/resources/app/setup/verifications'
 import { appRequest, promptYesNo } from './app-api.js'
 
-export type AppState = AppSessionResponse
+export type AppState = SetupRetrieveResponse
 
 export type ReadinessState = AppState['state']
   | 'no-target'
@@ -59,12 +59,12 @@ export async function getAppState(options: { baseURL?: string; target?: string; 
   return appRequest<AppState>('GET', '/v1/app/setup', options)
 }
 
-type VerificationLister = { app: { verifications: { list(): PromiseLike<{ items: Array<{ id: string }> }> } } }
+type VerificationLister = { app: { setup: { verifications: { list(): PromiseLike<{ items: Array<{ id: string }> }> } } } }
 
 // The API has no "active" alias: action routes 409 unless the path carries the real verification ID.
 export async function resolveVerificationID(client: VerificationLister, id?: string): Promise<string> {
   if (id) return id
-  const active = (await client.app.verifications.list()).items[0]
+  const active = (await client.app.setup.verifications.list()).items[0]
   if (!active) throw new Error('No active verification. Start one with `beeper verify`.')
   return active.id
 }
@@ -108,7 +108,7 @@ export async function driveVerification(options: { baseURL?: string; target?: st
     }
 
     if (actions.has('qr.confirmScanned') && id) {
-      state = (await appRequest<QrConfirmScannedResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/qr/confirm-scanned`, options)).session
+      state = (await appRequest<QRConfirmScannedResponse>('POST', `/v1/app/setup/verifications/${encodeURIComponent(id)}/qr/confirm-scanned`, options)).session
       continue
     }
 

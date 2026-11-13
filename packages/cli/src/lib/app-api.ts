@@ -1,12 +1,12 @@
 import { createInterface } from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
 import { getAccessToken, resolveTarget, updateTargetCache } from './targets.js'
-import type { LoginRegisterResponse, LoginResponseResponse } from '@beeper/desktop-api/resources/app/login'
-import type { ResetCreateResponse } from '@beeper/desktop-api/resources/app/login/verification/recovery-key/reset'
+import type { SetupRegisterResponse, SetupResponseResponse } from '@beeper/desktop-api/resources/app/setup'
+import type { ResetCreateResponse } from '@beeper/desktop-api/resources/app/setup/recovery-key/reset'
 
-export type AppLoginSuccess = LoginResponseResponse.Success | LoginRegisterResponse
-export type AppRegistrationRequired = LoginResponseResponse.RegistrationRequired
-export type AppLoginOutput = LoginResponseResponse | LoginRegisterResponse
+export type AppLoginSuccess = SetupResponseResponse.Success | SetupRegisterResponse
+export type AppRegistrationRequired = SetupResponseResponse.RegistrationRequired
+export type AppLoginOutput = SetupResponseResponse | SetupRegisterResponse
 export type AppRecoveryCodeResetBeginResponse = ResetCreateResponse
 export type AppRequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
