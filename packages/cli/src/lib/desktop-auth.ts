@@ -1,4 +1,4 @@
-import { readConfig } from './targets.js'
+import { readConfig, saveTargetAuth, type Target } from './targets.js'
 import { authRequired, notReady } from './errors.js'
 import { loginWithPKCE } from './oauth.js'
 
@@ -44,20 +44,33 @@ export async function ensureDesktopToken(options: {
   save?: boolean
   scan?: boolean
   scope?: string
+  target?: Target
 } = {}): Promise<string> {
   const desktop = await findLocalDesktop({ baseURL: options.baseURL, scan: options.scan })
   if (desktop.status?.state === 'needs-login') {
     throw authRequired('Beeper Desktop is not signed in. Open Beeper Desktop and sign in, then rerun this command.')
   }
 
+  const target = options.target?.type !== 'desktop' && options.target?.baseURL === desktop.baseURL ? options.target : undefined
+  const source = target?.type === 'remote' ? 'remote-oauth' : 'desktop-oauth'
   const token = await loginWithPKCE({
     baseURL: desktop.baseURL,
     clientName: options.clientName ?? 'Beeper CLI',
     openBrowser: options.openBrowser ?? true,
-    save: options.save ?? true,
+    save: target ? false : options.save ?? true,
     scope: options.scope ?? 'read write',
-    source: 'desktop-oauth',
+    source,
   })
+  if (target && options.save !== false) {
+    await saveTargetAuth(target, {
+      accessToken: token.access_token,
+      clientID: token.clientID,
+      expiresAt: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : undefined,
+      scope: token.scope,
+      source,
+      tokenType: token.token_type,
+    })
+  }
   return token.access_token
 }
 
