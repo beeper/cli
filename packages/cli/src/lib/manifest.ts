@@ -408,6 +408,7 @@ export const commandManifest: ManifestCommand[] = [
     description: 'Send a text message',
     examples: [
       'beeper send text --to 10313 --message "on my way"',
+      'beeper send text --account iMessage --to +15551234567 --message "checking in"',
       'beeper send text --to 8951 --message "hi"',
       'beeper send text --to "Family" --message "hi" --pick 1',
     ],
@@ -415,7 +416,10 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'send file',
     description: 'Send a file',
-    examples: ['beeper send file --to 8951 --file ./photo.jpg --caption "from today"'],
+    examples: [
+      'beeper send file --to 8951 --file ./photo.jpg --caption "from today"',
+      'beeper send file --account iMessage --to +15551234567 --file ./proposal.pdf',
+    ],
   },
   {
     command: 'send react',
@@ -500,7 +504,7 @@ export const commandManifest: ManifestCommand[] = [
   {
     command: 'doctor',
     description: 'Probe the target live and report diagnostics',
-    examples: ['beeper doctor', 'beeper doctor --json'],
+    examples: ['beeper doctor', 'beeper doctor --network imessage', 'beeper doctor --json'],
   },
   {
     command: 'status',

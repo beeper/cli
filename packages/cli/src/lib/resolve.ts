@@ -1,4 +1,5 @@
 import { readConfig } from './targets.js'
+import { listAccountsIncludingNative } from './apple-messages.js'
 import { ambiguous, notFound } from './errors.js'
 import { confirmSuggestion, declineWithExit127, rankSuggestions } from './did-you-mean.js'
 
@@ -27,7 +28,11 @@ export async function resolveAccountIDs(
   }
   if (!effectiveInputs?.length) return undefined
 
-  const accounts = accountItems(await client.accounts.list())
+  const response = await client.accounts.list()
+  let accounts = accountItems(response)
+  const needsNativeFallback = effectiveInputs.some(input => matchAccounts(accounts, input).length === 0)
+  if (needsNativeFallback) accounts = await listAccountsIncludingNative(client)
+
   const resolved: string[] = []
   for (const input of effectiveInputs) {
     const matches = matchAccounts(accounts, input)
@@ -48,7 +53,7 @@ export async function resolveAccountID(client: any, input: string): Promise<stri
 }
 
 export async function listAccountIDs(client: any): Promise<string[]> {
-  const accounts = accountItems(await client.accounts.list())
+  const accounts = await listAccountsIncludingNative(client)
   return accounts.map(account => String(account.accountID)).filter(Boolean)
 }
 
@@ -106,6 +111,7 @@ async function suggestChat(client: any, input: string, options: ChatResolutionOp
   if (!ok) declineWithExit127(`no chat selected for "${input}"`)
   return chatInputID(top.value)
 }
+
 
 function accountItems(accounts: unknown): AnyRecord[] {
   if (Array.isArray(accounts)) return accounts as AnyRecord[]

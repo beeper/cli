@@ -1,6 +1,7 @@
 import { Args } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
+import { listAccountsIncludingNative } from '../../lib/apple-messages.js'
 import { printData } from '../../lib/output.js'
 import { resolveAccountID } from '../../lib/resolve.js'
 
@@ -13,7 +14,18 @@ export default class AccountsShow extends BeeperCommand {
     const { args, flags } = await this.parse(AccountsShow)
     const client = await createClient(flags)
     const accountID = await resolveAccountID(client, args.account)
-    const account = client.accounts.retrieve ? await client.accounts.retrieve(accountID) : (await client.accounts.list()).find((item: any) => (item.accountID ?? item.id) === accountID)
+    let account: unknown
+    if (client.accounts.retrieve) {
+      try {
+        account = await client.accounts.retrieve(accountID)
+      } catch (error) {
+        const text = error instanceof Error ? error.message : String(error)
+        if (!/not\s*found|404/i.test(text)) throw error
+      }
+    }
+    if (!account) {
+      account = (await listAccountsIncludingNative(client)).find((item: any) => (item.accountID ?? item.id) === accountID)
+    }
     await printData(account, flags.json ? 'json' : 'human')
   }
 }

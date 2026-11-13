@@ -2,6 +2,7 @@ import { Flags } from '@oclif/core'
 import { BeeperCommand } from '../../lib/command.js'
 import { createClient } from '../../lib/client.js'
 import { printList } from '../../lib/output.js'
+import { listAccountsIncludingNative } from '../../lib/apple-messages.js'
 import { resolveAccountIDs } from '../../lib/resolve.js'
 import { readConfig } from '../../lib/targets.js'
 
@@ -17,8 +18,7 @@ export default class AccountsList extends BeeperCommand {
     // Account filter is an explicit override here; do not auto-apply defaultAccount.
     const selected = await resolveAccountIDs(client, flags.account, { allowMultiplePerInput: true, applyDefault: false })
     const config = await readConfig()
-    const response = await client.accounts.list()
-    const rows = Array.isArray(response) ? response : ((response as any).items ?? [])
+    const rows = await listAccountsIncludingNative(client)
     const filtered = selected?.length ? rows.filter((row: any) => selected.includes(row.accountID ?? row.id)) : rows
     const items = filtered.map((row: any) => ({
       ...row,
